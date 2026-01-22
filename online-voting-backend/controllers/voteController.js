@@ -1,70 +1,55 @@
 const Vote = require("../models/Vote");
 const Election = require("../models/Election");
+const Candidate = require("../models/Candidate");
+const AppError = require("../utils/AppError");
 
-const castVote = async (req, res) => {
+// POST /api/votes
+const castVote = async (req, res, next) => {
   try {
     const { electionId, candidateId } = req.body;
-    const userId = req.user._id;
+    const userId = req.user._id; // from authMiddleware
 
-    // 1 Check if user is verified
-    if (!req.user.verified) {
-      return res
-        .status(403)
-        .json({ message: "User not verified. Cannot vote." });
-    }
-
-    // 2 Check if election exists and is active
+    // 1 Check election exists
     const election = await Election.findById(electionId);
-    if (!election) {
-      return res.status(404).json({ message: "Election not found" });
-    }
+    if (!election) return next(new AppError("Election not found", 404));
 
-    if (!election.isActive) {
-      return res.status(403).json({ message: "Election is not active" });
-    }
+    // 2 Check election is active
+    if (!election.isActive)
+      return next(new AppError("Election is not active", 400));
 
-    // 3 Check election eligibility (student vs political)
-    if (election.type === "student" && !req.user.isStudent) {
-      return res
-        .status(403)
-        .json({ message: "Only students can vote in student elections" });
-    }
+    // 3 Check election dates
+    const now = new Date();
+    if (now < new Date(election.startDate) || now > new Date(election.endDate))
+      return next(
+        new AppError("Voting not allowed outside election period", 400),
+      );
 
-    // 4 Check if user already voted in this election (DB index will prevent duplicate, but let's check explicitly)
+    // 4 Check user already voted
     const existingVote = await Vote.findOne({ userId, electionId });
-    if (existingVote) {
-      return res
-        .status(409)
-        .json({ message: "You have already voted in this election" });
-    }
+    if (existingVote)
+      return next(new AppError("You have already voted in this election", 400));
 
-    // 5 Create and save the vote
-    const vote = new Vote({
+    // 5 Check candidate exists in this election
+    const candidate = await Candidate.findOne({ _id: candidateId, electionId });
+    if (!candidate)
+      return next(new AppError("Candidate not found in this election", 404));
+
+    // 6 Cast vote
+    const vote = await Vote.create({
       userId,
       electionId,
       candidateId,
+      createdAt: new Date(),
+      transactionHash: "", // blockchain integration later
     });
-
-    await vote.save();
 
     res.status(201).json({
+      status: "success",
       message: "Vote cast successfully",
-      vote: {
-        id: vote._id,
-        userId: vote.userId,
-        electionId: vote.electionId,
-        candidateId: vote.candidateId,
-        createdAt: vote.createdAt,
-      },
+      data: vote,
     });
-  } catch (error) {
-    // Handle duplicate key error from DB index
-    if (error.code === 11000) {
-      return res
-        .status(409)
-        .json({ message: "You have already voted in this election" });
-    }
-    res.status(500).json({ error: error.message });
+  } catch (err) {
+    next(err);
   }
 };
 

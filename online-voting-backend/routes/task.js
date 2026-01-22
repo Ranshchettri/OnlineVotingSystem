@@ -1,9 +1,27 @@
 const express = require("express");
-const router = express.Router();
 const { protect, adminOnly } = require("../middlewares/authMiddleware");
-const { createTask, getTasks } = require("../controllers/taskController");
+const {
+  validateTask,
+  validateTaskVerification,
+} = require("../validators/taskValidator");
+const {
+  createTask,
+  verifyTask,
+  getTasks,
+} = require("../controllers/taskController");
+const router = express.Router();
 
-router.post("/", protect, adminOnly, createTask);
-router.get("/", protect, getTasks);
+// Admin routes
+router.post("/", protect, adminOnly, validateTask, createTask);
+router.patch(
+  "/verify",
+  protect,
+  adminOnly,
+  validateTaskVerification,
+  verifyTask,
+);
+
+// User/Admin view tasks
+router.get("/:candidateId", protect, getTasks);
 
 module.exports = router;

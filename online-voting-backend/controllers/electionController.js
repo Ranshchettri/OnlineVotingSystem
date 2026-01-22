@@ -1,4 +1,6 @@
 const Election = require("../models/Election");
+const User = require("../models/User");
+const sendEmail = require("../utils/email");
 
 const createElection = async (req, res) => {
   try {
@@ -40,6 +42,24 @@ const createElection = async (req, res) => {
 
     await election.save();
 
+    // Send email notification to all verified voters
+    const users = await User.find({ verified: true });
+    for (const user of users) {
+      if (user.email) {
+        await sendEmail({
+          to: user.email,
+          subject: `New Election Started: ${election.title}`,
+          html: `
+            <h3>Hello ${user.fullName},</h3>
+            <p>A new election "${election.title}" is now active!</p>
+            <p>Start: ${election.startDate}</p>
+            <p>End: ${election.endDate}</p>
+            <p>Visit your dashboard to vote.</p>
+          `,
+        });
+      }
+    }
+
     res.status(201).json({
       message: "Election created successfully",
       election,
@@ -52,6 +72,20 @@ const createElection = async (req, res) => {
 const getElections = async (req, res) => {
   try {
     const elections = await Election.find().sort({ createdAt: -1 });
+    res.json(elections);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getActiveElections = async (req, res) => {
+  try {
+    const now = new Date();
+    const elections = await Election.find({
+      isActive: true,
+      startDate: { $lte: now },
+      endDate: { $gte: now },
+    }).sort({ createdAt: -1 });
     res.json(elections);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -79,4 +113,9 @@ const toggleElectionStatus = async (req, res) => {
   }
 };
 
-module.exports = { createElection, getElections, toggleElectionStatus };
+module.exports = {
+  createElection,
+  getElections,
+  getActiveElections,
+  toggleElectionStatus,
+};

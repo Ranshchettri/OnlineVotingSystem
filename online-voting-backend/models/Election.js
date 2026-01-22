@@ -27,6 +27,17 @@ const electionSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    results: [
+      {
+        candidateId: { type: mongoose.Schema.Types.ObjectId, ref: "Candidate" },
+        totalVotes: Number,
+      },
+    ],
+
+    winnerIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Candidate" }],
+
+    isEnded: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

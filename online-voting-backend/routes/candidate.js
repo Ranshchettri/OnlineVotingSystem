@@ -7,7 +7,7 @@ const {
   getCandidates,
 } = require("../controllers/candidateController");
 
-router.post("/", protect, adminOnly, validateCandidate, createCandidate);
+router.post("/", protect, validateCandidate, createCandidate);
 router.get("/", protect, getCandidates);
 
 module.exports = router;

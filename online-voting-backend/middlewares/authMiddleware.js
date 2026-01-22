@@ -22,6 +22,18 @@ const protect = async (req, res, next) => {
         return res.status(401).json({ message: "User not found" });
       }
 
+      // 4 Check if email is verified (skip for auth routes that don't require verification)
+      if (
+        !req.user.isEmailVerified &&
+        !req.path.includes("/verify-email") &&
+        !req.path.includes("/forgot-password") &&
+        !req.path.includes("/reset-password")
+      ) {
+        return res
+          .status(403)
+          .json({ message: "Please verify your email first" });
+      }
+
       next(); // allow request
     } catch (error) {
       return res.status(401).json({ message: "Token invalid" });

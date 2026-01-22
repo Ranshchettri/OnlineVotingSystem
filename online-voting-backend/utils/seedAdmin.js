@@ -3,32 +3,35 @@ const bcrypt = require("bcryptjs");
 
 const seedAdmin = async () => {
   try {
-    // Check if admin already exists
-    const adminExists = await User.findOne({ email: "admin@vote.gov" });
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPassword = process.env.ADMIN_PASSWORD;
 
-    if (adminExists) {
-      console.log("Admin already exists");
+    if (!adminEmail || !adminPassword) {
+      console.log(" Admin credentials not found in .env");
       return;
     }
 
-    // Hash the password
-    const hashedPassword = await bcrypt.hash("admin123", 10);
+    const adminExists = await User.findOne({ email: adminEmail });
 
-    // Create admin user
-    const admin = new User({
+    if (adminExists) {
+      console.log(" Admin already exists");
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(adminPassword, 12);
+
+    await User.create({
       fullName: "System Admin",
-      email: "admin@vote.gov",
+      email: adminEmail,
       password: hashedPassword,
       role: "admin",
       verified: true,
-      voterIdNumber: "ADMIN001",
       verificationStatus: "auto-approved",
     });
 
-    await admin.save();
-    console.log("Admin created successfully");
+    console.log(" Admin account seeded successfully");
   } catch (error) {
-    console.log("Error seeding admin:", error);
+    console.error("Admin seeding failed:", error.message);
   }
 };
 

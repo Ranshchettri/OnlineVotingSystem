@@ -62,4 +62,32 @@ const validateLogin = (req, res, next) => {
   next();
 };
 
-module.exports = { validateRegister, validateLogin };
+const validateVerifyEmail = (req, res, next) => {
+  const { email, code } = req.body;
+
+  // Check required fields
+  if (!email || !code) {
+    return res.status(400).json({
+      message: "Email and verification code are required",
+    });
+  }
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({
+      message: "Please provide a valid email address",
+    });
+  }
+
+  // Validate code format (6 digits)
+  if (!/^\d{6}$/.test(code)) {
+    return res.status(400).json({
+      message: "Verification code must be 6 digits",
+    });
+  }
+
+  next();
+};
+
+module.exports = { validateRegister, validateLogin, validateVerifyEmail };
