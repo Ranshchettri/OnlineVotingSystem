@@ -1,5 +1,5 @@
 {
-  "name": "backend",
+  "name": "online-voting-backend",
   "version": "1.0.0",
   "description": "Backend for Online Voting System",
   "main": "server.js",

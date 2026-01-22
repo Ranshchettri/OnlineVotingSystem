@@ -27,7 +27,7 @@ const voteSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-// 🔒 Prevent double voting
+//  Prevent double voting
 voteSchema.index({ userId: 1, electionId: 1 }, { unique: true });
 
 module.exports = mongoose.model("Vote", voteSchema);
