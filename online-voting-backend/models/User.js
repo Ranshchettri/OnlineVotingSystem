@@ -70,6 +70,15 @@ const userSchema = new mongoose.Schema(
     passwordResetExpires: {
       type: Date,
     },
+
+    // Admin OTP for two-factor login
+    otp: {
+      type: String,
+    },
+
+    otpExpiry: {
+      type: Date,
+    },
   },
   { timestamps: true },
 );

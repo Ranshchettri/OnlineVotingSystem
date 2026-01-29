@@ -51,6 +51,7 @@ app.get("/", (req, res) => {
 const authRoutes = require("./routes/auth");
 const electionRoutes = require("./routes/election");
 const candidateRoutes = require("./routes/candidate");
+const partyRoutes = require("./routes/party");
 const taskRoutes = require("./routes/task");
 const voteRoutes = require("./routes/vote");
 const analyticsRoutes = require("./routes/analytics");
@@ -59,6 +60,7 @@ const resultRoutes = require("./routes/result");
 app.use("/api/auth", authRoutes);
 app.use("/api/elections", electionRoutes);
 app.use("/api/candidates", candidateRoutes);
+app.use("/api/parties", partyRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/votes", voteRoutes);
 app.use("/api/analytics", analyticsRoutes);
