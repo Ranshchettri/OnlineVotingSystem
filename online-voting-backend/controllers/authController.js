@@ -71,6 +71,37 @@ const loginUser = async (req, res) => {
         .json({ message: "Please verify your email first" });
     }
 
+    // If admin, initiate OTP flow (do NOT issue JWT yet)
+    if (user.role === "admin") {
+      const otp = crypto.randomInt(100000, 999999).toString();
+
+      user.otp = otp;
+      user.otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+      await user.save();
+
+      try {
+        await sendEmail({
+          to: user.email,
+          subject: "Admin Login OTP",
+          html: `
+            <h2>Admin Login Verification</h2>
+            <p>Your OTP is:</p>
+            <h1>${otp}</h1>
+            <p>This OTP expires in 5 minutes.</p>
+          `,
+        });
+      } catch (emailErr) {
+        console.error("Failed to send admin OTP email:", emailErr.message);
+      }
+
+      return res.json({
+        message: "OTP sent to admin email",
+        otpRequired: true,
+        adminId: user._id,
+      });
+    }
+
+    // Non-admin: generate JWT and continue as before
     const token = jwt.sign(
       { id: user._id, role: user.role, verified: user.verified },
       process.env.JWT_SECRET,
@@ -94,6 +125,49 @@ const loginUser = async (req, res) => {
     }
 
     res.json({ token, role: user.role });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const verifyAdminOtp = async (req, res) => {
+  try {
+    const { adminId, otp } = req.body;
+
+    const admin = await User.findById(adminId);
+
+    if (!admin || admin.role !== "admin") {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    if (
+      !admin.otp ||
+      admin.otp !== otp ||
+      !admin.otpExpiry ||
+      admin.otpExpiry < new Date()
+    ) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    // Invalidate OTP
+    admin.otp = undefined;
+    admin.otpExpiry = undefined;
+    await admin.save();
+
+    const token = jwt.sign(
+      { id: admin._id, role: admin.role, verified: admin.verified },
+      process.env.JWT_SECRET,
+    );
+
+    res.json({
+      message: "Admin login successful",
+      token,
+      user: {
+        id: admin._id,
+        email: admin.email,
+        role: admin.role,
+      },
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -216,4 +290,5 @@ module.exports = {
   verifyEmail,
   forgotPassword,
   resetPassword,
+  verifyAdminOtp,
 };
