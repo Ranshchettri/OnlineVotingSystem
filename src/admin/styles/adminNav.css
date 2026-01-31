@@ -1,0 +1,32 @@
+@import "../../styles/theme.css";
+
+.admin-nav {
+  background: var(--bg-card);
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--shadow-soft);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.admin-nav-brand {
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--primary);
+}
+
+.admin-logout-btn {
+  padding: 8px 16px;
+  background: var(--danger);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.admin-logout-btn:hover {
+  background: #dc2626;
+}

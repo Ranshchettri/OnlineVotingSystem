@@ -1,0 +1,96 @@
+@import "../../styles/theme.css";
+
+.admin-auth-container {
+  min-height: 100vh;
+  background: var(--bg-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+.admin-auth-card {
+  background: var(--bg-card);
+  width: 360px;
+  padding: 32px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+}
+
+.admin-auth-card h2 {
+  text-align: center;
+  margin-bottom: 24px;
+  color: var(--text-main);
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.admin-auth-card input {
+  width: 100%;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft);
+  font-size: 14px;
+  color: var(--text-main);
+  background: var(--bg-card);
+  transition: border-color 0.2s ease;
+}
+
+.admin-auth-card input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.admin-auth-card input:disabled {
+  background: #f3f4f6;
+  cursor: not-allowed;
+  color: var(--text-muted);
+}
+
+.admin-auth-card button {
+  width: 100%;
+  padding: 12px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  font-size: 14px;
+}
+
+.admin-auth-card button:hover:not(:disabled) {
+  background: #6b5dfe;
+}
+
+.admin-auth-card button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.error-text {
+  color: var(--danger);
+  font-size: 13px;
+  margin-bottom: 16px;
+  padding: 10px;
+  background: #fee2e2;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.otp-info {
+  font-size: 13px;
+  margin-bottom: 16px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.step-indicator {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-bottom: 16px;
+  font-weight: 500;
+}

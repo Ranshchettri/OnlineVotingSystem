@@ -9,14 +9,8 @@
   --border-soft: #e5e7eb;
   --danger: #ef4444;
   --success: #22c55e;
-  --warning: #f59e0b;
-  --info: #3b82f6;
   --radius: 16px;
-  --radius-sm: 10px;
-  --radius-md: 12px;
   --shadow-soft: 0 10px 25px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 5px 15px rgba(0, 0, 0, 0.08);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 * {

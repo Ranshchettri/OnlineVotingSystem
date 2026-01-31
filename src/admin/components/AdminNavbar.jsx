@@ -1,11 +1,16 @@
-import { logout } from "../../hooks/useAuth";
-import "../styles/dashboard.css";
+import "../styles/adminNav.css";
 
 export default function AdminNavbar() {
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    window.location.href = "/admin/login";
+  };
+
   return (
-    <nav className="nav">
-      <div className="nav-brand">OVS Admin</div>
-      <button className="logout-btn" onClick={logout}>
+    <nav className="admin-nav">
+      <div className="admin-nav-brand">OVS Admin</div>
+      <button className="admin-logout-btn" onClick={handleLogout}>
         Logout
       </button>
     </nav>
