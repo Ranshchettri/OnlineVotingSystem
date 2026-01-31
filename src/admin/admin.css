@@ -2,75 +2,87 @@
 
 .admin-root {
   display: flex;
+  flex-direction: column;
   height: 100vh;
-  background: #0b1220;
+  background: #ffffff;
   color: var(--text-main);
 }
 
 .sidebar {
-  width: 260px;
-  background: #061024;
-  padding: 24px 16px;
-  color: #9aa7bd;
-}
-
-.sidebar .logo {
-  color: var(--primary);
-  font-weight: 700;
-  margin-bottom: 18px;
-}
-
-.sidebar nav a {
-  display: block;
-  color: #94a3b8;
-  padding: 10px 12px;
-  margin-bottom: 6px;
-  text-decoration: none;
-  border-radius: 8px;
-}
-
-.sidebar nav a.active {
-  background: linear-gradient(90deg, var(--primary), #6366f1);
-  color: white;
+  display: none; /* completely removed */
 }
 
 .admin-main {
   flex: 1;
   display: flex;
   flex-direction: column;
+  width: 100%;
 }
 
 .topbar {
-  height: 64px;
-  background: rgba(2, 6, 23, 0.6);
+  height: 72px;
+  background: #2563eb;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+  padding: 0 32px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  color: white;
+}
+
+.topbar .logo {
+  font-weight: 800;
+  color: white;
+  font-size: 22px;
+  margin-right: 32px;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.top-nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.top-nav a {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.top-nav a:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.top-nav a.active {
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
 }
 
 .topbar-right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
 
 .topbar-user {
-  color: #cbd5e1;
+  color: rgba(255, 255, 255, 0.9);
   font-weight: 600;
-}
-
-.topbar-logout {
-  padding: 8px 12px;
-  background: var(--primary);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
+  font-size: 14px;
 }
 
 .admin-content {
-  padding: 24px;
+  padding: 28px 32px;
   overflow-y: auto;
+  background: #ffffff;
+  flex: 1;
 }

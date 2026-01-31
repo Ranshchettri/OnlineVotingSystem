@@ -1,8 +1,9 @@
 import { NavLink } from "react-router-dom";
 
 const Sidebar = () => {
+  // Sidebar is kept for accessibility but hidden in the pastel top-layout.
   return (
-    <aside className="sidebar">
+    <aside className="sidebar" aria-hidden="true">
       <h2 className="logo">OVS Admin</h2>
 
       <nav>

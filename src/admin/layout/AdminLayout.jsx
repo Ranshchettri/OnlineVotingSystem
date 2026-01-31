@@ -1,5 +1,4 @@
 import { Navigate } from "react-router-dom";
-import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import "../admin.css";
 import { getToken, decodeToken } from "../../utils/auth";
@@ -12,7 +11,6 @@ const AdminLayout = ({ children }) => {
   ) {
     return (
       <div className="admin-root">
-        <Sidebar />
         <div className="admin-main">
           <Topbar />
           <div className="admin-content">{children}</div>
@@ -55,7 +53,6 @@ const AdminLayout = ({ children }) => {
 
   return (
     <div className="admin-root">
-      <Sidebar />
       <div className="admin-main">
         <Topbar />
         <div className="admin-content">{children}</div>
