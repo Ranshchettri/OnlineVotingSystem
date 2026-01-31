@@ -1,10 +1,11 @@
 import { NavLink } from "react-router-dom";
 
 const Topbar = () => {
-  const user =
-    typeof window !== "undefined"
-      ? JSON.parse(localStorage.getItem("user") || "null")
-      : null;
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    window.location.href = "/admin/login";
+  };
 
   return (
     <header className="topbar">
@@ -21,7 +22,9 @@ const Topbar = () => {
       </div>
 
       <div className="topbar-right">
-        {user && <span className="topbar-user">{user.email}</span>}
+        <button className="logout-btn" onClick={handleLogout}>
+          Logout
+        </button>
       </div>
     </header>
   );

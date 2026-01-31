@@ -20,21 +20,22 @@
 }
 
 .topbar {
-  height: 72px;
-  background: #2563eb;
+  height: 64px;
+  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 32px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  color: white;
+  border-bottom: 1px solid #e5e7eb;
+  color: var(--text-main);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .topbar .logo {
   font-weight: 800;
-  color: white;
-  font-size: 22px;
-  margin-right: 32px;
+  color: var(--primary);
+  font-size: 20px;
+  margin-right: 48px;
 }
 
 .topbar-left {
@@ -46,26 +47,26 @@
 .top-nav {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 32px;
 }
 
 .top-nav a {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-main);
   text-decoration: none;
-  padding: 8px 12px;
+  padding: 8px 16px;
   border-radius: 8px;
   font-weight: 500;
   transition: all 0.2s ease;
 }
 
 .top-nav a:hover {
-  background: rgba(255, 255, 255, 0.15);
-  color: white;
+  background: #f3f4f6;
+  color: var(--primary);
 }
 
 .top-nav a.active {
-  background: rgba(255, 255, 255, 0.25);
-  color: white;
+  background: #e0e7ff;
+  color: var(--primary);
 }
 
 .topbar-right {
@@ -74,10 +75,20 @@
   gap: 16px;
 }
 
-.topbar-user {
-  color: rgba(255, 255, 255, 0.9);
+.logout-btn {
+  padding: 10px 20px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 8px;
   font-weight: 600;
   font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.logout-btn:hover {
+  background: #dc2626;
 }
 
 .admin-content {
