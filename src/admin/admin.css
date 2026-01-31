@@ -26,9 +26,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 32px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 3px solid #2563eb;
   color: var(--text-main);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .topbar .logo {
@@ -70,7 +69,7 @@
   display: flex;
   align-items: center;
   padding: 0 32px;
-  border-bottom: 4px solid var(--primary);
+  border-bottom: 3px solid #facc15;
   gap: 32px;
 }
 
@@ -82,7 +81,6 @@
   font-weight: 500;
   font-size: 15px;
   transition: all 0.2s ease;
-  position: relative;
 }
 
 .secondary-nav a:hover {
@@ -91,10 +89,8 @@
 }
 
 .secondary-nav a.active {
+  background: #e0e7ff;
   color: var(--primary);
-  font-weight: 600;
-  border-bottom: 3px solid var(--primary);
-  padding-bottom: 5px;
 }
 
 .admin-content {
