@@ -1,22 +1,11 @@
 import api from "./api";
+import { logout } from "../hooks/useAuth";
 
-export const adminLogin = (data) =>
-  api.post("/auth/login", data);
+export const adminLogin = (data) => api.post("/auth/login", data);
 
-export const verifyAdminOTP = (data) =>
-  api.post("/auth/verify-otp", data);
+export const verifyAdminOTP = (data) => api.post("/auth/verify-otp", data);
 
-// Check if User is Admin
-export const isAdmin = () => {
-  return localStorage.getItem("role") === "ADMIN";
-};
-
-// Check if Authenticated
-export const isAuthenticated = () => {
-  return !!localStorage.getItem("token");
-};
-
-// Verify Token
+// Verify Token with backend
 export const verifyToken = async () => {
   try {
     const res = await api.post("/auth/verify");
@@ -26,5 +15,3 @@ export const verifyToken = async () => {
     throw error;
   }
 };
-
-export const verifyVoteOtp = (data) => api.post("/auth/verify-vote-otp", data);
