@@ -1,0 +1,145 @@
+{
+  "info": {
+    "name": "Admin 2FA OTP Login",
+    "description": "Test collection for admin OTP login flow",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Step 1 - Admin Login (Send OTP)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('OTP Required is true', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.otpRequired).to.eql(true);",
+              "});",
+              "",
+              "pm.test('Admin ID exists', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.adminId).to.exist;",
+              "});",
+              "",
+              "// Save adminId for next request",
+              "var jsonData = pm.response.json();",
+              "pm.environment.set('adminId', jsonData.adminId);",
+              "",
+              "console.log('✅ OTP sent to admin email');",
+              "console.log('📧 Check your email inbox for OTP');",
+              "console.log('🔑 Admin ID saved:', jsonData.adminId);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"ranshsunar@gmail.com\",\n  \"password\": \"Admin@123456\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Step 2 - Verify OTP (Get JWT)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('JWT token received', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.token).to.exist;",
+              "});",
+              "",
+              "pm.test('User role is admin', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.user.role).to.eql('admin');",
+              "});",
+              "",
+              "// Save token for authenticated requests",
+              "var jsonData = pm.response.json();",
+              "pm.environment.set('authToken', jsonData.token);",
+              "",
+              "console.log('✅ Admin login successful');",
+              "console.log('🔐 JWT Token:', jsonData.token.substring(0, 20) + '...');",
+              "console.log('👤 User:', jsonData.user.email);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"adminId\": \"{{adminId}}\",\n  \"otp\": \"123456\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/admin/verify-otp",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "admin",
+            "verify-otp"
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "adminId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
