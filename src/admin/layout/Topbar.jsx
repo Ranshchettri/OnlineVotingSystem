@@ -8,25 +8,36 @@ const Topbar = () => {
   };
 
   return (
-    <header className="topbar">
-      <div className="topbar-left">
-        <div className="logo">OVS Admin</div>
-        <nav className="top-nav">
+    <>
+      {/* Top navbar - white with logo, search, logout */}
+      <header className="topbar-top">
+        <div className="topbar-top-left">
+          <div className="logo">OVS Admin</div>
+        </div>
+
+        <div className="topbar-top-middle">
+          <input type="text" placeholder="Search..." className="search-input" />
+        </div>
+
+        <div className="topbar-top-right">
+          <button className="logout-btn" onClick={handleLogout}>
+            Logout
+          </button>
+        </div>
+      </header>
+
+      {/* Bottom navbar - blue with nav links */}
+      <nav className="topbar-bottom">
+        <div className="nav-links">
           <NavLink to="/admin/dashboard">Dashboard</NavLink>
           <NavLink to="/admin/voters">Voters</NavLink>
           <NavLink to="/admin/parties">Parties</NavLink>
           <NavLink to="/admin/elections">Elections</NavLink>
           <NavLink to="/admin/results">Results</NavLink>
           <NavLink to="/admin/notifications">Notifications</NavLink>
-        </nav>
-      </div>
-
-      <div className="topbar-right">
-        <button className="logout-btn" onClick={handleLogout}>
-          Logout
-        </button>
-      </div>
-    </header>
+        </div>
+      </nav>
+    </>
   );
 };
 
