@@ -1,7 +1,12 @@
-import { useAuthContext } from "../contexts/AuthContext";
+export const saveToken = (token) =>
+  localStorage.setItem("token", token);
 
-const useAuth = () => {
-  return useAuthContext();
+export const isLoggedIn = () =>
+  !!localStorage.getItem("token");
+
+export const logout = () => {
+  localStorage.clear();
+  window.location.href = "/";
 };
 
-export default useAuth;
+
