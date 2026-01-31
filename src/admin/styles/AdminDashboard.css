@@ -1,15 +1,7 @@
 @import "../../styles/theme.css";
 
-.admin-dashboard-wrapper {
-  min-height: 100vh;
-  background: var(--bg-main);
-  display: flex;
-  flex-direction: column;
-}
-
 .admin-dashboard {
   padding: 30px;
-  flex: 1;
 }
 
 .admin-dashboard h1 {
