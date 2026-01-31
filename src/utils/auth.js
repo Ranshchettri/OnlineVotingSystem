@@ -8,7 +8,12 @@ export const logout = () => {
 
 export const decodeToken = (token) => {
   try {
-    return JSON.parse(atob(token.split(".")[1]));
+    const payload = token.split(".")[1];
+    const b64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const pad = b64.length % 4;
+    const padded = pad ? b64 + "=".repeat(4 - pad) : b64;
+    const json = atob(padded);
+    return JSON.parse(json);
   } catch {
     return null;
   }
