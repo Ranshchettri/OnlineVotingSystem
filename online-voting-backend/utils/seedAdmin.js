@@ -25,8 +25,10 @@ const seedAdmin = async () => {
       email: adminEmail,
       password: hashedPassword,
       role: "admin",
+      voterIdNumber: "ADMIN-0001",
       verified: true,
       verificationStatus: "auto-approved",
+      isEmailVerified: true,
     });
 
     console.log(" Admin account seeded successfully");
