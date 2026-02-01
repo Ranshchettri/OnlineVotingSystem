@@ -26,7 +26,6 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 32px;
-  border-bottom: 3px solid #2563eb;
   color: var(--text-main);
 }
 
@@ -45,6 +44,69 @@
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+.profile-wrapper {
+  position: relative;
+}
+
+.profile-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-dropdown {
+  position: absolute;
+  right: 0;
+  top: 48px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  min-width: 220px;
+  z-index: 60;
+  padding: 12px;
+}
+
+.profile-info {
+  padding: 8px 4px;
+  border-bottom: 1px solid #f3f4f6;
+  margin-bottom: 8px;
+}
+
+.profile-name {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.profile-email {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.profile-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.btn-logout {
+  padding: 8px 12px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .logout-btn {
@@ -69,7 +131,6 @@
   display: flex;
   align-items: center;
   padding: 0 32px;
-  border-bottom: 3px solid #facc15;
   gap: 32px;
 }
 

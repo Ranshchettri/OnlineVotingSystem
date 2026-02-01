@@ -2,6 +2,8 @@ import { Routes, Route } from "react-router-dom";
 import AdminLayout from "./admin/layout/AdminLayout";
 import AdminLogin from "./admin/pages/adminLogin";
 import AdminDashboard from "./admin/pages/AdminDashboard";
+import CreateElection from "./admin/pages/CreateElection";
+import ElectionResults from "./admin/pages/ElectionResults";
 import Voters from "./admin/pages/Voters";
 import Parties from "./admin/pages/Parties";
 import Elections from "./admin/pages/Elections";
@@ -19,6 +21,11 @@ export default function AppRoutes() {
           <AdminLayout>
             <Routes>
               <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="elections/create" element={<CreateElection />} />
+              <Route
+                path="elections/results/:electionId"
+                element={<ElectionResults />}
+              />
               <Route path="voters" element={<Voters />} />
               <Route path="parties" element={<Parties />} />
               <Route path="elections" element={<Elections />} />
