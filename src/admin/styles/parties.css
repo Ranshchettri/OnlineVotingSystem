@@ -1,0 +1,72 @@
+@import "../../styles/theme.css";
+
+.party-card {
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.party-card.active {
+  border-color: var(--primary);
+  background: #f0f9ff;
+  box-shadow: 0 4px 12px rgba(124, 124, 255, 0.15);
+}
+
+.party-card.inactive {
+  opacity: 0.7;
+}
+
+.party-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.party-card h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.party-card p {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.party-card-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.party-card-actions button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-toggle-party {
+  background: var(--primary);
+  color: white;
+}
+
+.btn-toggle-party:hover {
+  background: #6b6bff;
+}
+
+.btn-delete-party {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.btn-delete-party:hover {
+  background: #fecaca;
+}
