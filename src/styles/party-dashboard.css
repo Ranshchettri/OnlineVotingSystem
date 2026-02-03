@@ -1,0 +1,11 @@
+/* Party Dashboard Styles */
+.party-dashboard {
+  display: grid;
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .party-dashboard {
+    gap: 16px;
+  }
+}

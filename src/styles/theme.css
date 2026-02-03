@@ -99,3 +99,423 @@ h3 {
 p {
   margin: 0;
 }
+
+/* Party Portal Theme */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.card {
+  background: white;
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.06);
+}
+
+.card.highlight {
+  background: #fff7cc;
+}
+
+.card h4 {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.card h2 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.card p {
+  margin: 12px 0;
+  color: #4b5563;
+  font-size: 14px;
+}
+
+.result-box {
+  margin-top: 20px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #e9f7ef;
+  font-weight: bold;
+  text-align: center;
+  color: #065f46;
+}
+/* Voter Auth */
+.voter-auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 1rem;
+}
+
+.auth-card {
+  background: white;
+  padding: 2rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  width: 100%;
+  max-width: 400px;
+}
+
+.auth-card h2 {
+  font-size: 24px;
+  margin-bottom: 0.5rem;
+  color: var(--text-main);
+}
+
+.card.highlight {
+  background: #fff7cc;
+}
+.subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+/* Shared UI */
+.card-wrapper {
+  background: var(--bg-card);
+  padding: 1rem;
+  border-radius: 14px;
+  box-shadow: var(--shadow-soft);
+}
+
+.btn {
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+}
+.btn-secondary {
+  background: #eef2ff;
+  color: var(--text-main);
+}
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+}
+
+.badge {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 700;
+}
+.badge-default {
+  background: #eef2ff;
+  color: var(--primary);
+}
+.badge-success {
+  background: #ecfdf5;
+  color: var(--success);
+}
+.badge-warning {
+  background: #fff7ed;
+  color: #f59e0b;
+}
+.badge-danger {
+  background: #fee2e2;
+  color: var(--danger);
+}
+
+.stat-card .stat-content {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+.stat-icon {
+  font-size: 28px;
+}
+.stat-title {
+  color: var(--text-muted);
+  margin: 0;
+}
+.stat-value {
+  margin: 0;
+  font-size: 20px;
+}
+
+.chart-container {
+  display: flex;
+  gap: 8px;
+  align-items: end;
+  height: 160px;
+}
+.chart-bar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.bar {
+  width: 60%;
+  background: linear-gradient(180deg, #a78bfa, #7c7cff);
+  border-radius: 8px;
+}
+.bar-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+.election-card .election-meta {
+  display: flex;
+  gap: 1rem;
+}
+.party-card {
+  cursor: pointer;
+}
+.party-card.selected {
+  border: 2px solid var(--primary);
+  box-shadow: 0 6px 18px rgba(124, 124, 255, 0.12);
+}
+.party-logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+  margin-right: 0.75rem;
+}
+.result-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0;
+}
+.result-rank {
+  width: 56px;
+  text-align: center;
+  font-weight: 700;
+}
+.result-party img {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  margin-right: 0.5rem;
+}
+
+.timeline-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+}
+.timeline-date {
+  font-size: 12px;
+  color: var(--text-muted);
+  width: 100px;
+}
+
+.page-content {
+  padding: 1rem;
+}
+.page-header {
+  margin-bottom: 1rem;
+}
+.text-muted {
+  color: var(--text-muted);
+}
+
+.form-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text-main);
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border 0.2s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.otp-input {
+  letter-spacing: 10px;
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.btn {
+  width: 100%;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--border-soft);
+  color: var(--text-main);
+}
+
+.btn:hover:not(:disabled) {
+  background: #d1d5db;
+}
+
+.btn.btn-primary {
+  background: var(--primary);
+  color: white;
+}
+
+.btn.btn-primary:hover:not(:disabled) {
+  background: #6564cc;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.alert {
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.alert-error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+.loading,
+.error {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-muted);
+}
+
+.error {
+  color: var(--danger);
+}
+
+/* Voter Navbar */
+.voter-navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: white;
+  box-shadow: var(--shadow-soft);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.navbar-left h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.navbar-right {
+  display: flex;
+  gap: 1rem;
+}
+
+.profile-wrapper {
+  position: relative;
+}
+
+.profile-btn {
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--border-soft);
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+  font-size: 20px;
+  transition: all 0.2s;
+}
+
+.profile-btn:hover {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.profile-dropdown {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  background: white;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  box-shadow: var(--shadow-soft);
+  min-width: 150px;
+  z-index: 20;
+}
+
+.profile-dropdown button {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-main);
+  transition: background 0.2s;
+}
+
+.profile-dropdown button:hover {
+  background: var(--primary-soft);
+}
+
+.page-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.votes-count {
+  font-size: 12px;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.card.selected {
+  border: 3px solid var(--primary);
+}
