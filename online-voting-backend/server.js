@@ -60,6 +60,11 @@ const resultRoutes = require("./routes/result");
 app.use("/api/auth", authRoutes);
 app.use("/api/elections", electionRoutes);
 app.use("/api/candidates", candidateRoutes);
+// Debug logging for incoming parties requests
+app.use("/api/parties", (req, res, next) => {
+  console.log("[DEBUG] Incoming /api/parties", req.method, req.path, req.query);
+  next();
+});
 app.use("/api/parties", partyRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/votes", voteRoutes);

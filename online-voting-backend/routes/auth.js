@@ -7,6 +7,8 @@ const {
   verifyAdminOtp,
   forgotPassword,
   resetPassword,
+  partyLogin,
+  verifyPartyOtp,
 } = require("../controllers/authController");
 const {
   validateRegister,
@@ -24,5 +26,9 @@ router.post("/verify-email", validateVerifyEmail, verifyEmail);
 router.post("/forgot-password", validateForgotPassword, forgotPassword);
 router.post("/reset-password", validateResetPassword, resetPassword);
 router.post("/admin/verify-otp", verifyAdminOtp);
+
+// 🔴 PARTY LOGIN ROUTES
+router.post("/party-login", partyLogin);
+router.post("/party/verify-otp", verifyPartyOtp);
 
 module.exports = router;

@@ -20,8 +20,14 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["admin", "voter"],
+      enum: ["admin", "voter", "party"],
       default: "voter",
+    },
+
+    partyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Party",
+      default: null,
     },
 
     isStudent: {

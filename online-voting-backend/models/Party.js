@@ -49,6 +49,25 @@ const partySchema = new mongoose.Schema(
       type: String,
     },
 
+    // Frontend-friendly fields
+    symbol: {
+      type: String,
+    },
+
+    description: {
+      type: String,
+    },
+
+    color: {
+      type: String,
+      default: "#7c7cff",
+    },
+
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+
     currentVotes: {
       type: Number,
       default: 0,

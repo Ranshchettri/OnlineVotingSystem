@@ -13,8 +13,13 @@ const validateParty = (req, res, next) => {
     errors.push("Election type must be one of: National, Student, Local");
   }
 
-  if (!electionId) {
-    errors.push("Election ID is required");
+  // electionId is optional; frontend may not send it for general parties
+  // if provided, it should be a non-empty string
+  if (
+    electionId !== undefined &&
+    (typeof electionId !== "string" || electionId.trim() === "")
+  ) {
+    errors.push("Election ID, if provided, must be a valid ID");
   }
 
   if (errors.length > 0) {

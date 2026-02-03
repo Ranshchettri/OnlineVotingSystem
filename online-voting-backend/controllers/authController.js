@@ -284,6 +284,109 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// 🔴 PARTY OTP LOGIN
+const partyLogin = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const user = await User.findOne({ email, role: "party" });
+
+    if (!user) {
+      return res.status(404).json({ message: "Party account not found" });
+    }
+
+    if (!user.isEmailVerified) {
+      return res.status(403).json({ message: "Party not activated by admin" });
+    }
+
+    // Generate OTP
+    const otp = crypto.randomInt(100000, 999999).toString();
+
+    user.otp = otp;
+    user.otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+    await user.save();
+
+    // Send OTP email
+    try {
+      await sendEmail({
+        to: user.email,
+        subject: "Party Login OTP",
+        html: `
+          <h2>Party Login Verification</h2>
+          <p>Your OTP is:</p>
+          <h1>${otp}</h1>
+          <p>This OTP expires in 5 minutes.</p>
+          <p>Do not share this OTP with anyone.</p>
+        `,
+      });
+    } catch (emailErr) {
+      console.error("Failed to send party OTP email:", emailErr.message);
+    }
+
+    res.json({
+      message: "OTP sent",
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// 🔴 VERIFY PARTY OTP
+const verifyPartyOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({ message: "Email and OTP required" });
+    }
+
+    const party = await User.findOne({ email, role: "party" });
+
+    if (!party) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    if (
+      !party.otp ||
+      party.otp !== otp ||
+      !party.otpExpiry ||
+      party.otpExpiry < new Date()
+    ) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    // Invalidate OTP
+    party.otp = undefined;
+    party.otpExpiry = undefined;
+    await party.save();
+
+    // Generate JWT
+    const token = jwt.sign(
+      {
+        id: party._id,
+        role: party.role,
+        partyId: party.partyId,
+        email: party.email,
+      },
+      process.env.JWT_SECRET,
+    );
+
+    res.json({
+      token,
+      user: {
+        name: party.fullName,
+        email: party.email,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
@@ -291,4 +394,6 @@ module.exports = {
   forgotPassword,
   resetPassword,
   verifyAdminOtp,
+  partyLogin,
+  verifyPartyOtp,
 };
