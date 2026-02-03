@@ -1,12 +1,43 @@
-import { voterHome } from "../mock/voter.mock";
+import { useState, useEffect } from "react";
 import ElectionCard from "../components/ElectionCard";
-import Card from "../../../shared/ui/Card";
-import Button from "../../../shared/ui/Button";
+import Card from "../../shared/ui/Card";
+import Button from "../../shared/ui/Button";
 import { useNavigate } from "react-router-dom";
+import { getVoterDashboard } from "../../services/voterService";
 
 export default function Home() {
-  const { activeElection, stats } = voterHome;
+  const [activeElection, setActiveElection] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
   const nav = useNavigate();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await getVoterDashboard();
+        setActiveElection(res.data?.activeElection || null);
+        setStats(res.data?.stats || null);
+      } catch (err) {
+        console.error("Failed to fetch voter dashboard:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (loading)
+    return (
+      <div className="page-content">
+        <p>Loading...</p>
+      </div>
+    );
+  if (!activeElection || !stats)
+    return (
+      <div className="page-content">
+        <p>No election data</p>
+      </div>
+    );
 
   return (
     <div className="page-content">

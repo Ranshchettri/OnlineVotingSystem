@@ -1,26 +1,55 @@
-import { useState } from "react";
-import { parties } from "../mock/voter.mock";
+import { useState, useEffect } from "react";
 import PartyCard from "../components/PartyCard";
-import Card from "../../../shared/ui/Card";
-import Button from "../../../shared/ui/Button";
+import Card from "../../shared/ui/Card";
+import Button from "../../shared/ui/Button";
+import { getAllParties, submitVote } from "../../services/voterService";
 
 export default function Vote() {
+  const [parties, setParties] = useState([]);
   const [selected, setSelected] = useState(null);
   const [showOTP, setShowOTP] = useState(false);
   const [otp, setOtp] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchParties = async () => {
+      try {
+        const res = await getAllParties();
+        setParties(res.data?.parties || []);
+      } catch (err) {
+        console.error("Failed to fetch parties:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchParties();
+  }, []);
 
   const handleConfirmVote = () => {
     if (!selected) return alert("Select a party first");
     setShowOTP(true);
   };
 
-  const handleSubmitVote = () => {
+  const handleSubmitVote = async () => {
     if (!otp || otp.length !== 6) return alert("Enter 6-digit OTP");
-    alert(
-      `Vote submitted for: ${parties.find((p) => p.id === selected)?.name} (mock)`,
-    );
-    setShowOTP(false);
+    try {
+      await submitVote({ partyId: selected, otp });
+      alert("Vote submitted successfully!");
+      setShowOTP(false);
+    } catch (err) {
+      alert(
+        "Failed to submit vote: " +
+          (err.response?.data?.message || err.message),
+      );
+    }
   };
+
+  if (loading)
+    return (
+      <div className="page-content">
+        <p>Loading parties...</p>
+      </div>
+    );
 
   if (showOTP) {
     return (

@@ -1,8 +1,38 @@
-import { partyAnalytics } from "../mock/party.mock";
-import Card from "../../../shared/ui/Card";
-import Badge from "../../../shared/ui/Badge";
+import { useState, useEffect } from "react";
+import Card from "../../shared/ui/Card";
+import Badge from "../../shared/ui/Badge";
+import { getPartyAnalytics } from "../../services/partyService";
 
 export default function Analytics() {
+  const [partyAnalytics, setPartyAnalytics] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await getPartyAnalytics();
+        setPartyAnalytics(res.data);
+      } catch (err) {
+        console.error("Failed to fetch analytics:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (loading)
+    return (
+      <div className="page-content">
+        <p>Loading...</p>
+      </div>
+    );
+  if (!partyAnalytics)
+    return (
+      <div className="page-content">
+        <p>No analytics data</p>
+      </div>
+    );
   return (
     <div className="page-content">
       <div className="page-header">

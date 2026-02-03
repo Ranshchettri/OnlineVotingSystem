@@ -1,7 +1,36 @@
-import { partyDashboardData } from "../services/partyFakeData";
+import { useState, useEffect } from "react";
+import { getPartyDashboard } from "../services/partyService";
 
 export default function PartyDashboard() {
-  const d = partyDashboardData;
+  const [d, setD] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await getPartyDashboard();
+        setD(res.data);
+      } catch (err) {
+        console.error("Failed to fetch dashboard:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (loading)
+    return (
+      <div>
+        <p>Loading...</p>
+      </div>
+    );
+  if (!d)
+    return (
+      <div>
+        <p>No data</p>
+      </div>
+    );
 
   return (
     <div>
