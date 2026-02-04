@@ -54,14 +54,27 @@ export default function Profile() {
     <div>
       <h2>Party Profile</h2>
 
-      <p>{partyProfileData.description}</p>
+      <p>{profile?.description}</p>
 
       <h3>Manifesto</h3>
       <ul>
-        {partyProfileData.manifesto.map((m, i) => (
-          <li key={i}>{m}</li>
-        ))}
+        {Array.isArray(profile?.manifesto) &&
+          profile.manifesto.map((m, i) => <li key={i}>{m}</li>)}
       </ul>
+
+      <button onClick={() => setEditing(true)}>Edit Profile</button>
+
+      {editing && (
+        <div>
+          <textarea
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+            placeholder="Description"
+          />
+          <button onClick={handleSave}>Save</button>
+          <button onClick={() => setEditing(false)}>Cancel</button>
+        </div>
+      )}
 
       <p className="note">⚠ Core details controlled by Election Commission</p>
     </div>

@@ -1,7 +1,6 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import api from "../services/api";
-
-const AuthContext = createContext();
+import { AuthContext } from "./createAuthContext";
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -24,7 +23,7 @@ export const AuthProvider = ({ children }) => {
     const res = await api.post("/auth/login", { email, password });
     const token = res.data.token;
     const userData = res.data.user || { email, id: res.data.adminId };
-    
+
     localStorage.setItem("token", token);
     localStorage.setItem("user", JSON.stringify(userData));
     setUser(userData);
@@ -41,12 +40,4 @@ export const AuthProvider = ({ children }) => {
       {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within AuthProvider");
-  }
-  return context;
 };

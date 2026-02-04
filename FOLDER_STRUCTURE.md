@@ -194,7 +194,7 @@ OnlineVotingSystem-Frontend/
 
 | Module           | Pages  | Components | Services | Styles | Mock Data | Total   |
 | ---------------- | ------ | ---------- | -------- | ------ | --------- | ------- |
-| Admin            | 12     | 1          | 1        | 12     | 0         | **26**  |
+| Admin            | 12     | 1          | 1        | 12     | 0         |  **26**  |
 | Party (features) | 3      | 3          | 0        | 0      | 1         | **7**   |
 | Party (old)      | 5      | 0          | 1        | 0      | 1         | **7**   |
 | Voter (features) | 4      | 4          | 0        | 0      | 1         | **9**   |
