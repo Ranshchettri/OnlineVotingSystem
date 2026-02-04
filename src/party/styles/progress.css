@@ -1,0 +1,133 @@
+.progress-warning {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  color: #c2410c;
+  font-size: 12px;
+}
+
+.progress-warning p {
+  margin-top: 4px;
+  font-size: 11px;
+}
+
+.progress-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.progress-card {
+  border-radius: 16px;
+  border: 1px solid var(--gray-200);
+  background: #fff;
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.progress-card h3 {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.progress-ring {
+  --size: 120px;
+  --thickness: 10px;
+  width: var(--size);
+  height: var(--size);
+  border-radius: 999px;
+  background: conic-gradient(
+    var(--ring-color) calc(var(--percent) * 1%),
+    #e2e8f0 0
+  );
+  position: relative;
+  margin: 14px auto 0;
+}
+
+.progress-ring::after {
+  content: "";
+  position: absolute;
+  inset: var(--thickness);
+  background: #fff;
+  border-radius: 999px;
+}
+
+.progress-ring-inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  z-index: 1;
+}
+
+.progress-ring-value {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.progress-ring-label {
+  font-size: 11px;
+  color: var(--gray-500);
+}
+
+.progress-bars {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.progress-bar-row {
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 11px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.progress-bar-row.success {
+  background: var(--green-50);
+  color: var(--green-700);
+}
+
+.progress-bar-row.danger {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.progress-card.full {
+}
+
+.work-analysis {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  text-align: center;
+}
+
+.work-analysis p {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--gray-500);
+}
+
+.progress-note {
+  margin-top: 12px;
+  font-size: 11px;
+  color: var(--gray-500);
+  background: var(--gray-50);
+  padding: 10px;
+  border-radius: 10px;
+}
+
+@media (max-width: 1100px) {
+  .progress-grid {
+    grid-template-columns: 1fr;
+  }
+  .work-analysis {
+    grid-template-columns: 1fr;
+  }
+}

@@ -147,32 +147,36 @@ export const profileDetails = {
 
 export const votingHistory = [
   {
+    id: "local-2024",
+    title: "Local Election 2024",
+    year: "2024",
+    votedFor: "Nepali Congress",
+    winner: "Nepali Congress",
+    won: true,
+  },
+  {
+    id: "prov-2023",
+    title: "Provincial Election 2023",
     year: "2023",
-    election: "Provincial Election 2023",
-    votedParty: "CPN (UML)",
+    votedFor: "CPN (UML)",
     winner: "CPN (UML)",
     won: true,
   },
   {
+    id: "national-2022",
+    title: "National Election 2022",
     year: "2022",
-    election: "National Election 2022",
-    votedParty: "Nepali Congress",
+    votedFor: "Nepali Congress",
     winner: "CPN (Maoist)",
     won: false,
   },
   {
+    id: "local-2021",
+    title: "Local Election 2021",
     year: "2021",
-    election: "Local Election 2021",
-    votedParty: "CPN (UML)",
+    votedFor: "CPN (UML)",
     winner: "Nepali Congress",
     won: false,
-  },
-  {
-    year: "2020",
-    election: "Provincial Election 2020",
-    votedParty: "Rastriya Swatantra Party",
-    winner: "Rastriya Swatantra Party",
-    won: true,
   },
 ];
 

@@ -16,6 +16,14 @@ import Timeline from "../voter/pages/Timeline";
 import VoterResults from "../voter/pages/Results";
 import Rules from "../voter/pages/Rules";
 import PartyProfile from "../voter/pages/PartyProfile";
+import PartyLayout from "../party/layout/PartyLayout";
+import PartyHome from "../party/pages/PartyHome";
+import PartyAbout from "../party/pages/PartyAbout";
+import PartyProgress from "../party/pages/PartyProgress";
+import PartyPerformance from "../party/pages/PartyPerformance";
+import PartyStats from "../party/pages/PartyStats";
+import PartyNotifications from "../party/pages/PartyNotifications";
+import PartyRules from "../party/pages/PartyRules";
 
 export default function AppRouter() {
   return (
@@ -53,6 +61,18 @@ export default function AppRouter() {
         <Route path="results" element={<VoterResults />} />
         <Route path="timeline" element={<Timeline />} />
         <Route path="rules" element={<Rules />} />
+      </Route>
+
+      {/* Party Routes */}
+      <Route path="/party" element={<PartyLayout />}>
+        <Route index element={<Navigate to="home" replace />} />
+        <Route path="home" element={<PartyHome />} />
+        <Route path="about" element={<PartyAbout />} />
+        <Route path="progress" element={<PartyProgress />} />
+        <Route path="performance" element={<PartyPerformance />} />
+        <Route path="stats" element={<PartyStats />} />
+        <Route path="notifications" element={<PartyNotifications />} />
+        <Route path="rules" element={<PartyRules />} />
       </Route>
 
       {/* Default Route */}
