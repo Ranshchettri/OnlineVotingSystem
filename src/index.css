@@ -1,10 +1,6 @@
-body {
-  font-family: 'Poppins', sans-serif;
-  margin: 0;
-  padding: 0;
-  background-color: #f8f9fa;
-}
+@import "tailwindcss";
 
-a {
-  text-decoration: none !important;
-}
+/* Tailwind v4 uses the PostCSS plugin @tailwindcss/postcss.
+   Keep `src/index.css` minimal for v4: only import Tailwind. */
+
+@import "tailwindcss";
