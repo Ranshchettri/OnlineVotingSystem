@@ -1,6 +1,26 @@
 @import "tailwindcss";
+@config "../tailwind.config.js";
 
-/* Tailwind v4 uses the PostCSS plugin @tailwindcss/postcss.
-   Keep `src/index.css` minimal for v4: only import Tailwind. */
+/* Tailwind v4 uses @import "tailwindcss" with PostCSS plugin @tailwindcss/postcss */
 
-@import "tailwindcss";
+/* Keep custom utilities below */
+
+@layer base {
+  body {
+    @apply bg-bg text-dark font-sans antialiased;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-4 py-2 bg-primary text-white rounded-lg font-semibold hover:opacity-90 transition-all;
+  }
+
+  .btn-secondary {
+    @apply px-4 py-2 bg-gray-200 text-dark rounded-lg font-semibold hover:bg-gray-300 transition-all;
+  }
+
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6;
+  }
+}

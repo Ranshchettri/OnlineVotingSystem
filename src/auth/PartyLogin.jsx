@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { partyLogin } from "../api/partyApi";
-import "../styles/party-auth.css";
+import "../party/styles/party-auth.css";
 
 export default function PartyLogin({ onNext }) {
   const [email, setEmail] = useState("");

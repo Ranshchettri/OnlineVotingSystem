@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { verifyPartyOTP } from "../api/partyApi";
-import "../styles/party-auth.css";
+import "../party/styles/party-auth.css";
 
 export default function PartyOTP({ email, onBack }) {
   const [otp, setOtp] = useState("");

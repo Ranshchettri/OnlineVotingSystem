@@ -1,0 +1,227 @@
+.voter-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.voter-main {
+  flex: 1;
+  min-width: 0;
+  background: var(--gray-50);
+}
+
+.voter-content {
+  padding: 28px 32px 48px;
+}
+
+.voter-sidebar {
+  width: 280px;
+  background: #fff;
+  border-right: 1px solid var(--gray-200);
+  display: flex;
+  flex-direction: column;
+}
+
+.voter-sidebar-header {
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.voter-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: var(--green-50);
+  color: var(--green-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.voter-profile-name {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.voter-profile-id {
+  font-size: 12px;
+  color: var(--gray-500);
+}
+
+.voter-nav {
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.voter-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  color: var(--gray-900);
+  border: 1px solid transparent;
+  transition: 0.2s ease;
+  font-weight: 500;
+}
+
+.voter-nav-link:hover {
+  background: var(--gray-100);
+}
+
+.voter-nav-link.is-active {
+  background: var(--green-50);
+  border-color: var(--green-200);
+  color: var(--green-700);
+}
+
+.voter-nav-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: 1px solid var(--gray-200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+}
+
+.voter-nav-link.is-active .voter-nav-icon {
+  border-color: var(--green-200);
+}
+
+.voter-nav-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.voter-nav-svg {
+  color: var(--gray-500);
+}
+
+.voter-nav-link.is-active .voter-nav-icon svg {
+  color: var(--green-600);
+}
+
+.voter-status-card {
+  margin: 0 16px 20px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--green-50);
+  border: 1px solid var(--green-200);
+}
+
+.voter-status-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: var(--green-700);
+}
+
+.voter-status-title span {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--green-600);
+}
+
+.voter-status-text {
+  font-size: 12px;
+  color: var(--gray-600);
+  margin-top: 8px;
+}
+
+.voter-status-time {
+  font-size: 12px;
+  color: var(--green-700);
+  margin-top: 10px;
+}
+
+.voter-topbar {
+  background: #fff;
+  border-bottom: 1px solid var(--gray-200);
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.voter-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.voter-brand-logo {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.voter-brand-logo svg {
+  width: 44px;
+  height: 44px;
+}
+
+.voter-brand-title {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.voter-brand-subtitle {
+  font-size: 12px;
+  color: var(--gray-500);
+}
+
+.voter-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.voter-badge {
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--green-50);
+  color: var(--green-700);
+  font-weight: 600;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.voter-badge svg,
+.voter-logout svg {
+  width: 16px;
+  height: 16px;
+}
+
+.voter-logout {
+  border: 1px solid var(--gray-200);
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  color: var(--gray-700);
+  transition: 0.2s ease;
+}
+
+.voter-logout:hover {
+  background: var(--gray-100);
+}

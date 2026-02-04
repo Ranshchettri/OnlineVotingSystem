@@ -29,25 +29,101 @@ export default function VoteOTP() {
   };
 
   return (
-    <div className="auth-card">
-      <h2>OTP Verification</h2>
+    <div>
+      <h1>Verify Your Vote</h1>
 
-      <input
-        placeholder="Enter OTP"
-        value={otp}
-        onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-        maxLength={6}
-        className="otp-input"
-      />
-
-      <button
-        onClick={confirmVote}
-        className="btn btn-primary"
-        disabled={loading}
-        style={{ marginTop: "1rem" }}
+      <div
+        style={{
+          maxWidth: "500px",
+          margin: "2rem auto",
+          padding: "2rem",
+          backgroundColor: "#f9f9f9",
+          borderRadius: "8px",
+          border: "1px solid #ddd",
+        }}
       >
-        {loading ? "Submitting..." : "Submit Vote"}
-      </button>
+        <p style={{ color: "#666", textAlign: "center", marginBottom: "2rem" }}>
+          We sent a 6-digit OTP code to your registered email address. Enter the
+          code below to confirm your vote.
+        </p>
+
+        <div style={{ marginBottom: "2rem" }}>
+          <label
+            style={{
+              display: "block",
+              marginBottom: "0.8rem",
+              fontWeight: "600",
+              color: "#333",
+            }}
+          >
+            Enter OTP Code
+          </label>
+          <input
+            type="text"
+            placeholder="000000"
+            value={otp}
+            onChange={(e) =>
+              setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+            }
+            maxLength={6}
+            style={{
+              width: "100%",
+              padding: "1rem",
+              fontSize: "2rem",
+              textAlign: "center",
+              letterSpacing: "0.5rem",
+              border: "2px solid #ddd",
+              borderRadius: "6px",
+              fontWeight: "bold",
+            }}
+          />
+          <p
+            style={{ margin: "0.5rem 0 0", fontSize: "0.85rem", color: "#999" }}
+          >
+            {otp.length}/6
+          </p>
+        </div>
+
+        <button
+          onClick={confirmVote}
+          disabled={!otp || otp.length !== 6 || loading}
+          style={{
+            width: "100%",
+            padding: "1rem",
+            backgroundColor: otp.length === 6 && !loading ? "#22b14c" : "#ccc",
+            color: "white",
+            border: "none",
+            borderRadius: "6px",
+            fontSize: "1rem",
+            fontWeight: "600",
+            cursor: otp.length === 6 && !loading ? "pointer" : "not-allowed",
+          }}
+        >
+          {loading ? "Verifying..." : "Confirm Vote"}
+        </button>
+
+        <button
+          onClick={() => nav("/voter/vote")}
+          style={{
+            width: "100%",
+            marginTop: "1rem",
+            padding: "1rem",
+            backgroundColor: "white",
+            color: "#22b14c",
+            border: "2px solid #22b14c",
+            borderRadius: "6px",
+            fontSize: "1rem",
+            fontWeight: "600",
+            cursor: "pointer",
+          }}
+        >
+          Back to Vote Selection
+        </button>
+      </div>
+
+      <p style={{ textAlign: "center", color: "#999", fontSize: "0.9rem" }}>
+        Didn't receive the code? Check your spam folder or contact support.
+      </p>
     </div>
   );
 }
