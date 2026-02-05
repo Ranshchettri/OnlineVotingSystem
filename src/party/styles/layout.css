@@ -4,7 +4,7 @@
 }
 
 .party-sidebar {
-  width: 230px;
+  width: 216px;
   background: #fff;
   border-right: 1px solid var(--gray-200);
   display: flex;
@@ -15,7 +15,7 @@
 }
 
 .party-sidebar-head {
-  padding: 16px 18px;
+  padding: 14px 14px;
   border-bottom: 1px solid var(--gray-200);
   display: flex;
   align-items: center;
@@ -23,8 +23,8 @@
 }
 
 .party-logo-mini {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 10px;
   background: var(--red-600);
   display: flex;
@@ -46,9 +46,9 @@
 }
 
 .party-nav {
-  padding: 16px 12px;
+  padding: 12px 12px;
   display: grid;
-  gap: 8px;
+  gap: 12px;
   flex: 1;
 }
 
@@ -56,10 +56,11 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  font-size: 13px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  font-size: 12px;
   color: var(--gray-700);
+  border: 1px solid transparent;
   transition: 0.2s ease;
 }
 
@@ -70,6 +71,7 @@
 .party-nav-link.is-active {
   background: var(--red-50);
   color: var(--red-700);
+  border-color: var(--red-200);
 }
 
 .party-nav-link.is-active .party-nav-icon {
@@ -78,8 +80,8 @@
 }
 
 .party-nav-icon {
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   border-radius: 8px;
   border: 1px solid var(--gray-200);
   display: flex;
@@ -129,16 +131,17 @@
 }
 
 .party-brand-logo {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.party-brand-logo svg {
-  width: 30px;
-  height: 30px;
+.party-brand-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .party-brand-title {
@@ -151,32 +154,6 @@
   color: var(--gray-500);
 }
 
-.party-switcher {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.party-switcher button {
-  border: none;
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  background: var(--gray-100);
-  color: var(--gray-600);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-}
-
-.party-switcher button.active {
-  background: var(--red-600);
-  color: #fff;
-}
-
-.party-switcher button svg,
 .party-badge svg,
 .party-logout svg {
   width: 14px;
@@ -215,7 +192,7 @@
 }
 
 .party-content {
-  padding: 20px 24px 40px;
+  padding: 18px 22px 32px;
   overflow-y: auto;
   flex: 1;
 }

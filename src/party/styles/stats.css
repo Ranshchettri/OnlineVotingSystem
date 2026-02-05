@@ -35,7 +35,27 @@
   margin-top: 4px;
 }
 
-.stats-hero-header span:last-child {
+.stats-hero-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.stats-hero-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.stats-hero-title span {
   display: block;
   font-size: 11px;
   opacity: 0.9;
@@ -46,9 +66,15 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.12);
   border-radius: 12px;
   padding: 12px;
+}
+
+.stats-hero-grid > div {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 8px 10px;
 }
 
 .stats-hero-grid span {
@@ -67,7 +93,7 @@
   border-radius: 16px;
   border: 1px solid var(--gray-200);
   background: #fff;
-  padding: 14px;
+  padding: 16px;
   box-shadow: var(--shadow-sm);
 }
 
@@ -102,7 +128,7 @@
 .stats-rank-item {
   border: 1px solid var(--gray-200);
   border-radius: 12px;
-  padding: 10px 12px;
+  padding: 12px 14px;
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 8px 12px;
@@ -125,6 +151,7 @@
   height: 26px;
   border-radius: 999px;
   background: var(--gray-100);
+  border: 1px solid var(--gray-200);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -133,16 +160,32 @@
   color: var(--gray-600);
 }
 
+.stats-rank-number.rank-1 {
+  background: #facc15;
+  color: #7c5d00;
+}
+
+.stats-rank-number.rank-2 {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.stats-rank-number.rank-3 {
+  background: #fed7aa;
+  color: #9a3412;
+}
+
 .stats-rank-logo {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
   color: #fff;
   font-size: 11px;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.8);
 }
 
 .stats-rank-name {
@@ -208,7 +251,7 @@
   border-radius: 16px;
   border: 1px solid var(--gray-200);
   background: #fff;
-  padding: 14px;
+  padding: 16px;
   box-shadow: var(--shadow-sm);
 }
 
@@ -229,9 +272,78 @@
   padding: 8px 10px;
   border-radius: 10px;
   background: var(--gray-50);
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
   font-size: 11px;
+}
+
+.stats-compare-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stats-compare-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--gray-400);
+}
+
+.stats-compare-item.highlight {
+  background: var(--green-50);
+  color: var(--green-700);
+  border: 1px solid var(--green-200);
+}
+
+.stats-compare-item.highlight .stats-compare-dot {
+  background: var(--green-600);
+}
+
+.stats-compare-item.highlight strong {
+  color: var(--green-700);
+}
+
+.stats-timeline-item {
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+}
+
+.stats-timeline-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--green-50);
+  border: 1px solid var(--green-200);
+  color: var(--green-700);
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stats-timeline-icon.progress {
+  background: #fef9c3;
+  border-color: #fde047;
+  color: #ca8a04;
+}
+
+.stats-timeline-icon.end {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+.stats-timeline-icon.result {
+  background: #dbeafe;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.stats-timeline-icon svg {
+  width: 12px;
+  height: 12px;
 }
 
 .stats-compare-item strong,
@@ -248,8 +360,25 @@
   color: var(--green-700);
 }
 
-.stats-info p {
-  margin-top: 6px;
+.stats-info-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.stats-info-head span {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: #d1fae5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.stats-info-head p {
+  margin-top: 4px;
   color: var(--green-700);
 }
 

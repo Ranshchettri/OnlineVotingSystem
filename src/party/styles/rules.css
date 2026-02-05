@@ -1,5 +1,5 @@
 .rules-card {
-  padding: 16px;
+  padding: 18px;
 }
 
 .rules-card-head {
@@ -18,6 +18,14 @@
   align-items: center;
   justify-content: center;
   font-weight: 700;
+}
+
+.rules-card-icon svg,
+.rules-best-icon svg,
+.rules-restrict-icon svg,
+.rules-help-icon svg {
+  width: 18px;
+  height: 18px;
 }
 
 .rules-card-head h3 {
@@ -41,10 +49,10 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border-radius: 10px;
   background: var(--gray-50);
-  font-size: 12px;
+  font-size: 12.5px;
   color: var(--gray-700);
 }
 
@@ -62,7 +70,7 @@
 }
 
 .rules-best {
-  padding: 16px;
+  padding: 18px;
 }
 
 .rules-best-head {
@@ -93,10 +101,9 @@
   color: var(--gray-500);
 }
 
-.rules-best-grid {
+.rules-best-list {
   margin-top: 12px;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -107,15 +114,40 @@
 
 .rules-best-section ul {
   margin: 8px 0 0;
-  padding-left: 16px;
+  padding-left: 0;
   display: grid;
   gap: 6px;
   font-size: 11px;
   color: var(--gray-600);
+  list-style: none;
+}
+
+.rules-best-section li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rules-best-section li span {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--green-50);
+  border: 1px solid var(--green-200);
+  color: var(--green-700);
+  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rules-best-section li span svg {
+  width: 10px;
+  height: 10px;
 }
 
 .rules-restrict {
-  padding: 16px;
+  padding: 18px;
   border: 1px solid #fdba74;
   background: var(--orange-50);
 }
@@ -151,15 +183,39 @@
 
 .rules-restrict ul {
   margin-top: 10px;
-  padding-left: 16px;
+  padding-left: 0;
   display: grid;
   gap: 6px;
   font-size: 11px;
   color: #c2410c;
+  list-style: none;
+}
+
+.rules-restrict li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rules-restrict li span {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: #fed7aa;
+  color: #c2410c;
+  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rules-restrict li span svg {
+  width: 10px;
+  height: 10px;
 }
 
 .rules-help {
-  padding: 16px;
+  padding: 18px;
   border: 1px solid var(--blue-200);
   background: var(--blue-50);
 }
@@ -200,8 +256,16 @@
   color: var(--blue-700);
 }
 
+.rules-help-list span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rules-help-list svg {
+  width: 14px;
+  height: 14px;
+}
+
 @media (max-width: 1100px) {
-  .rules-best-grid {
-    grid-template-columns: 1fr;
-  }
 }

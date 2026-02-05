@@ -1,7 +1,7 @@
 .party-page {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
 }
 
 .party-page-header {
@@ -12,7 +12,7 @@
 }
 
 .party-page-header h1 {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 700;
 }
 
@@ -59,6 +59,15 @@
   border: 1px solid var(--green-200);
 }
 
+.party-pill.green::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--green-600);
+  display: inline-block;
+}
+
 .party-pill.red {
   background: var(--red-50);
   color: var(--red-700);
@@ -68,4 +77,41 @@
 .party-section-title {
   font-size: 14px;
   font-weight: 600;
+}
+
+.party-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.party-btn {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.party-btn.primary {
+  background: var(--green-600);
+  color: #fff;
+}
+
+.party-btn.ghost {
+  background: #fff;
+  color: var(--gray-600);
+  border-color: var(--gray-200);
+}
+
+.party-btn.outline {
+  background: #fff;
+  border: 1px solid var(--gray-200);
+  color: var(--gray-700);
+}
+
+.party-btn.danger {
+  background: var(--red-50);
+  color: var(--red-700);
+  border: 1px solid var(--red-200);
 }

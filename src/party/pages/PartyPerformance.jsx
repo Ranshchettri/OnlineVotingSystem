@@ -29,6 +29,11 @@ const StatIcon = ({ type }) => {
 };
 
 export default function PartyPerformance() {
+  const statTones = [
+    { bg: "#dcfce7", color: "#16a34a" },
+    { bg: "#dbeafe", color: "#2563eb" },
+    { bg: "#ffedd5", color: "#ea580c" },
+  ];
   return (
     <div className="party-page">
       <div className="party-page-header">
@@ -39,9 +44,15 @@ export default function PartyPerformance() {
       </div>
 
       <div className="performance-stats">
-        {partyPerformance.stats.map((stat) => (
+        {partyPerformance.stats.map((stat, index) => (
           <div key={stat.label} className="performance-stat">
-            <div className="performance-stat-icon">
+            <div
+              className="performance-stat-icon"
+              style={{
+                background: statTones[index]?.bg || "#f1f5f9",
+                color: statTones[index]?.color || "#475569",
+              }}
+            >
               <StatIcon type={stat.icon} />
             </div>
             <div>
@@ -59,31 +70,43 @@ export default function PartyPerformance() {
         <div className="performance-history-list">
           {partyPerformance.history.map((item) => (
             <div key={item.id} className="performance-history-item">
-              <div>
-                <h4>{item.title}</h4>
-                <span>Year: {item.year}</span>
-              </div>
-              <div className="performance-history-grid">
+              <div className="performance-history-head">
                 <div>
+                  <h4>{item.title}</h4>
+                  <span>Year: {item.year}</span>
+                </div>
+                <span
+                  className={`performance-badge ${
+                    item.badge === "Winner" ? "success" : "neutral"
+                  }`}
+                >
+                  {item.badge === "Winner" ? (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M8 21h8" />
+                      <path d="M12 17v4" />
+                      <path d="M7 4h10v4H7z" />
+                      <path d="M6 8h12l-1 5H7z" />
+                    </svg>
+                  ) : null}
+                  {item.badge}
+                </span>
+              </div>
+              <div className="performance-history-boxes">
+                <div className="performance-box">
                   <span>Votes Received</span>
                   <strong>{item.votes}</strong>
                 </div>
-                <div>
+                <div className="performance-box">
                   <span>Position</span>
                   <strong>{item.position}</strong>
                 </div>
-                <div>
+                <div className="performance-box">
                   <span>Result</span>
-                  <strong>{item.result}</strong>
+                  <strong className={item.result === "Won" ? "good" : "bad"}>
+                    {item.result}
+                  </strong>
                 </div>
               </div>
-              <span
-                className={`performance-badge ${
-                  item.badge === "Winner" ? "success" : "neutral"
-                }`}
-              >
-                {item.badge}
-              </span>
             </div>
           ))}
         </div>
