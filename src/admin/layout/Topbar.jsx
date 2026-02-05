@@ -1,21 +1,15 @@
-import { NavLink } from "react-router-dom";
-import { useState } from "react";
+import { useMemo } from "react";
+import emblem from "../../assets/nepal-emblem.svg";
 
 const Topbar = () => {
-  const [open, setOpen] = useState(false);
   const userJson = localStorage.getItem("user");
-  let user = null;
-  try {
-    user = userJson ? JSON.parse(userJson) : null;
-  } catch (e) {
-    user = null;
-  }
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    window.location.href = "/admin/login";
-  };
+  const user = useMemo(() => {
+    try {
+      return userJson ? JSON.parse(userJson) : null;
+    } catch {
+      return null;
+    }
+  }, [userJson]);
 
   const initials = user?.fullName
     ? user.fullName
@@ -28,52 +22,57 @@ const Topbar = () => {
       : "A";
 
   return (
-    <>
-      <header className="topbar">
-        <div className="topbar-left">
-          <div className="logo">OVS Admin</div>
-        </div>
-
-        <div className="topbar-right">
-          <div className="profile-wrapper">
-            <button
-              className="profile-btn"
-              onClick={() => setOpen((v) => !v)}
-              aria-expanded={open}
-            >
-              {initials}
-            </button>
-
-            {open && (
-              <div className="profile-dropdown">
-                <div className="profile-info">
-                  <div className="profile-name">
-                    {user?.fullName || "Admin"}
-                  </div>
-                  <div className="profile-email">
-                    {user?.email || "admin@example.com"}
-                  </div>
-                </div>
-                <div className="profile-actions">
-                  <button className="btn-logout" onClick={handleLogout}>
-                    Logout
-                  </button>
-                </div>
-              </div>
-            )}
+    <header className="admin-topbar">
+      <div className="admin-topbar__left">
+        <img className="admin-topbar__logo" src={emblem} alt="Nepal emblem" />
+        <div className="admin-topbar__titles">
+          <div className="admin-topbar__title">Admin Control Tower</div>
+          <div className="admin-topbar__subtitle">
+            Master Brain - Full System Control
           </div>
         </div>
-      </header>
+      </div>
 
-      <nav className="secondary-nav">
-        <NavLink to="/admin/dashboard">Dashboard</NavLink>
-        <NavLink to="/admin/elections/create">Create Election</NavLink>
-        <NavLink to="/admin/voters">Voters</NavLink>
-        <NavLink to="/admin/parties">Parties</NavLink>
-        <NavLink to="/admin/elections">Elections</NavLink>
-        <NavLink to="/admin/results">Results</NavLink>
-      </nav>
-    </>
+      <div className="admin-topbar__right">
+        <button className="admin-topbar__icon-btn" aria-label="Notifications">
+          <span className="admin-topbar__badge" />
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </svg>
+        </button>
+
+        <div className="admin-topbar__profile">
+          <div className="admin-topbar__avatar">{initials}</div>
+          <div className="admin-topbar__profile-text">
+            <div className="admin-topbar__profile-name">
+              {user?.fullName || "Admin"}
+            </div>
+            <div className="admin-topbar__profile-role">Super Admin</div>
+          </div>
+          <svg
+            className="admin-topbar__chev"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </div>
+      </div>
+    </header>
   );
 };
 

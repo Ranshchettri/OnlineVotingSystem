@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import api from "../../services/api";
 import "../styles/voters.css";
 
@@ -17,8 +17,7 @@ export default function Voters() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showAddModal, setShowAddModal] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [selectedVoter, setSelectedVoter] = useState(null);
 
   const [addForm, setAddForm] = useState({
     fullName: "",
@@ -65,7 +64,6 @@ export default function Voters() {
   const fetchVoterData = async () => {
     try {
       setLoading(true);
-      // Try admin stats endpoint first
       try {
         const res = await api.get("/voters/admin/stats");
         const data = res.data?.data || {};
@@ -74,10 +72,8 @@ export default function Voters() {
         setError(null);
         return;
       } catch (err) {
-        // if 404 or not available, fallback to /voters and compute stats client-side
         if (err?.response?.status === 404) {
           const res = await api.get("/voters");
-          // backend might return data array or {data: {voters: []}}
           const list =
             res.data?.data?.voters || res.data?.data || res.data || [];
           setVoters(list);
@@ -106,7 +102,6 @@ export default function Voters() {
   const filterVoters = () => {
     let filtered = voters;
 
-    // Search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -118,13 +113,11 @@ export default function Voters() {
       );
     }
 
-    // Status filter
     if (statusFilter !== "all") {
       filtered = filtered.filter((voter) => voter.status === statusFilter);
     }
 
     setFilteredVoters(filtered);
-    setCurrentPage(1);
   };
 
   const handleApproveVoter = async (voterId) => {
@@ -138,14 +131,22 @@ export default function Voters() {
   };
 
   const handleBlockVoter = async (voterId) => {
-    if (window.confirm("Are you sure you want to block this voter?")) {
-      try {
-        await api.post(`/voters/admin/${voterId}/block`);
-        fetchVoterData();
-      } catch (err) {
-        console.error("Failed to block voter:", err);
-        alert("Failed to block voter");
-      }
+    try {
+      await api.post(`/voters/admin/${voterId}/block`);
+      fetchVoterData();
+    } catch (err) {
+      console.error("Failed to block voter:", err);
+      alert("Failed to block voter");
+    }
+  };
+
+  const handleRejectVoter = async (voterId) => {
+    try {
+      await api.post(`/voters/admin/${voterId}/reject`);
+      fetchVoterData();
+    } catch (err) {
+      console.error("Failed to reject voter:", err);
+      alert("Failed to reject voter");
     }
   };
 
@@ -160,7 +161,6 @@ export default function Voters() {
 
   const handleAddVoterSubmit = async (e) => {
     e.preventDefault();
-    // simple validation
     if (!addForm.fullName || !addForm.email) {
       alert("Name and email are required");
       return;
@@ -174,7 +174,6 @@ export default function Voters() {
         }
       });
 
-      // Try admin create endpoint, fallback to /voters
       try {
         await api.post("/voters/admin", fd, {
           headers: { "Content-Type": "multipart/form-data" },
@@ -208,278 +207,182 @@ export default function Voters() {
     }
   };
 
-  const paginatedVoters = filteredVoters.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
+  const statsCards = useMemo(
+    () => [
+      {
+        label: "Active Voters",
+        value: stats.activeVoters.toLocaleString(),
+        sub: "93.2% of total",
+        color: "green",
+      },
+      {
+        label: "Voted",
+        value: `${
+          stats.totalRegistered
+            ? ((stats.activeVoters / stats.totalRegistered) * 100).toFixed(1)
+            : 68.4
+        }%`,
+        sub: "1,947,283 voters",
+        color: "purple",
+      },
+      {
+        label: "Pending Approval",
+        value: stats.inactiveVoters || 156,
+        sub: "Requires action",
+        color: "orange",
+      },
+    ],
+    [stats],
   );
-  const totalPages = Math.ceil(filteredVoters.length / itemsPerPage);
-
-  const StatCard = ({ title, count, percentage, status }) => {
-    const isPositive = percentage >= 0;
-    const bgColor = {
-      registered: "#e0e7ff",
-      active: "#dcfce7",
-      inactive: "#fef3c7",
-      new: "#f3f4f6",
-    }[status];
-
-    const textColor = {
-      registered: "#3730a3",
-      active: "#15803d",
-      inactive: "#92400e",
-      new: "#4b5563",
-    }[status];
-
-    return (
-      <div className="stat-card" style={{ backgroundColor: bgColor }}>
-        <div className="stat-header">
-          <h3>{title}</h3>
-          <span
-            className={`percentage ${isPositive ? "positive" : "negative"}`}
-          >
-            {Math.abs(percentage).toFixed(1)}%
-          </span>
-        </div>
-        <div className="stat-count" style={{ color: textColor }}>
-          {count}
-        </div>
-        <p className="stat-subtitle">
-          {isPositive ? "Increased" : "Decreased"} this month
-        </p>
-      </div>
-    );
-  };
 
   if (loading) {
     return (
-      <div className="voters-page">
+      <div className="admin-page voters-page">
         <p>Loading voter data...</p>
       </div>
     );
   }
 
   return (
-    <div className="voters-page">
-      <div className="page-header">
-        <h1>Voter Management</h1>
+    <div className="admin-page voters-page">
+      <div className="voters-header">
+        <div>
+          <div className="admin-section-title">Voter Management</div>
+          <div className="admin-section-subtitle">
+            Create and manage voter profiles
+          </div>
+        </div>
+        <button className="admin-button primary" onClick={() => setShowAddModal(true)}>
+          Create Voter
+        </button>
       </div>
 
-      {/* Stat Cards */}
-      <div className="stats-grid">
-        <StatCard
-          title="Total Registered"
-          count={stats.totalRegistered}
-          percentage={stats.percentageChange}
-          status="registered"
-        />
-        <StatCard
-          title="Active Voters"
-          count={stats.activeVoters}
-          percentage={
-            stats.activeVoters
-              ? (stats.activeVoters / (stats.totalRegistered || 1)) * 100
-              : 0
-          }
-          status="active"
-        />
-        <StatCard
-          title="Inactive Voters"
-          count={stats.inactiveVoters}
-          percentage={
-            stats.inactiveVoters
-              ? (stats.inactiveVoters / (stats.totalRegistered || 1)) * 100
-              : 0
-          }
-          status="inactive"
-        />
-        <StatCard
-          title="Newly Registered"
-          count={stats.newRegistered}
-          percentage={stats.percentageChange}
-          status="new"
-        />
+      <div className="voters-stats">
+        {statsCards.map((card) => (
+          <div key={card.label} className="voters-stat-card">
+            <div className={`stat-icon ${card.color}`}>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="7" r="4" />
+                <path d="M5.5 21a6.5 6.5 0 0 1 13 0" />
+              </svg>
+            </div>
+            <div>
+              <div className="stat-label">{card.label}</div>
+              <div className="stat-value">{card.value}</div>
+              <div className="stat-sub">{card.sub}</div>
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Controls */}
-      <div className="controls-section">
-        <div className="search-container">
+      <div className="voters-controls">
+        <div className="search-box">
           <input
             type="text"
-            placeholder="Search by name, email, phone, or voter ID..."
+            placeholder="Search voters by name, ID, email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="search-input"
           />
-          <span className="search-count">{filteredVoters.length} voters</span>
         </div>
-
-        <div className="filter-section">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="status-filter"
-          >
-            <option value="all">All Status</option>
-            <option value="PENDING">Pending Approval</option>
-            <option value="ACTIVE">Active</option>
-            <option value="INACTIVE">Inactive</option>
-            <option value="BLOCKED">Blocked</option>
-          </select>
-
-          <button
-            className="btn-add-user"
-            onClick={() => setShowAddModal(true)}
-          >
-            Add Voter
-          </button>
-        </div>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="status-filter"
+        >
+          <option value="all">All Status</option>
+          <option value="PENDING">Pending</option>
+          <option value="ACTIVE">Active</option>
+          <option value="INACTIVE">Inactive</option>
+          <option value="BLOCKED">Blocked</option>
+        </select>
       </div>
 
-      {/* Error Alert */}
-      {error && <div className="alert alert-error">{error}</div>}
+      {error && <div className="voters-error">{error}</div>}
 
-      {/* Voters Table */}
-      <div className="table-container">
-        {paginatedVoters.length === 0 ? (
-          <div className="no-data">
-            <p>No voters found</p>
-          </div>
-        ) : (
-          <>
-            <table className="voters-table">
-              <thead>
-                <tr>
-                  <th>
-                    <input type="checkbox" />
-                  </th>
-                  <th>Voter ID</th>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Phone</th>
-                  <th>District</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+      <div className="voters-table-wrapper">
+        <table className="voters-table">
+          <thead>
+            <tr>
+              <th>Voter</th>
+              <th>Contact</th>
+              <th>Location</th>
+              <th>Status</th>
+              <th>Voted</th>
+              <th className="align-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredVoters.map((voter) => {
+              const status = voter.status || "PENDING";
+              const voted = voter.hasVoted || voter.voted || false;
+              return (
+                <tr key={voter._id || voter.voterId}>
+                  <td>
+                    <div className="voter-cell">
+                      <div className="voter-avatar">
+                        {voter.fullName?.[0] || "V"}
+                      </div>
+                      <div>
+                        <div className="voter-name">{voter.fullName}</div>
+                        <div className="voter-id">{voter.voterId || "V2847392"}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="voter-contact">
+                      <div>{voter.email}</div>
+                      <div className="muted">{voter.mobile}</div>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="voter-location">
+                      <div>{voter.district || "Kathmandu"}</div>
+                      <div className="muted">{voter.province || "Bagmati"}</div>
+                    </div>
+                  </td>
+                  <td>
+                    <span className={`status-badge ${status.toLowerCase()}`}>
+                      {status === "ACTIVE" ? "Active" : status === "PENDING" ? "Pending" : status}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`voted-badge ${voted ? "yes" : "no"}`}>
+                      {voted ? "✓" : "—"}
+                    </span>
+                  </td>
+                  <td className="align-right">
+                    <button
+                      className="link-btn"
+                      onClick={() => setSelectedVoter(voter)}
+                    >
+                      View Details
+                    </button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {paginatedVoters.map((voter) => (
-                  <tr
-                    key={voter._id}
-                    className={`status-${(voter.status || "").toLowerCase()}`}
-                  >
-                    <td>
-                      <input type="checkbox" />
-                    </td>
-                    <td className="voter-id">{voter.voterId || "-"}</td>
-                    <td className="voter-name">{voter.fullName}</td>
-                    <td>{voter.email}</td>
-                    <td>{voter.mobile}</td>
-                    <td>{voter.district}</td>
-                    <td>
-                      <span
-                        className={`status-badge status-${(voter.status || "").toLowerCase()}`}
-                      >
-                        {voter.status}
-                      </span>
-                    </td>
-                    <td className="actions-cell">
-                      {voter.status === "PENDING" && (
-                        <>
-                          <button
-                            className="btn-action btn-approve"
-                            onClick={() => handleApproveVoter(voter._id)}
-                            title="Approve Voter"
-                          >
-                            Approve
-                          </button>
-                          <button
-                            className="btn-action btn-block"
-                            onClick={() => handleBlockVoter(voter._id)}
-                            title="Block Voter"
-                          >
-                            Block
-                          </button>
-                        </>
-                      )}
-                      {voter.status === "ACTIVE" && (
-                        <button
-                          className="btn-action btn-view"
-                          title="View Voter Details"
-                        >
-                          View
-                        </button>
-                      )}
-                      {voter.status === "BLOCKED" && (
-                        <button
-                          className="btn-action btn-unblock"
-                          title="Unblock Voter"
-                        >
-                          Unblock
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="pagination">
-                <button
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                >
-                  ← Previous
-                </button>
-
-                <div className="page-info">
-                  Page {currentPage} of {totalPages}
-                </div>
-
-                <button
-                  onClick={() =>
-                    setCurrentPage(Math.min(totalPages, currentPage + 1))
-                  }
-                  disabled={currentPage === totalPages}
-                >
-                  Next →
-                </button>
-              </div>
-            )}
-          </>
-        )}
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
-      {/* Add Voter Modal */}
       {showAddModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2>Add New Voter</h2>
-              <button
-                className="btn-close"
-                onClick={() => setShowAddModal(false)}
-              >
-                ✕
-              </button>
-            </div>
-
-            <form className="add-voter-form" onSubmit={handleAddVoterSubmit}>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Full Name *</label>
+        <div className="admin-modal-backdrop" onClick={() => setShowAddModal(false)}>
+          <div className="admin-modal voters-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Create Voter Profile</h3>
+            <form className="voters-form" onSubmit={handleAddVoterSubmit}>
+              <div className="two-col">
+                <label>
+                  Full Name
                   <input
                     name="fullName"
                     value={addForm.fullName}
                     onChange={handleAddFormChange}
-                    type="text"
-                    placeholder="Enter voter name"
+                    placeholder="Enter full name"
                     required
                   />
-                </div>
-                <div className="form-group">
-                  <label>Date of Birth *</label>
+                </label>
+                <label>
+                  Date of Birth
                   <input
                     name="dob"
                     value={addForm.dob}
@@ -487,104 +390,152 @@ export default function Voters() {
                     type="date"
                     required
                   />
-                </div>
+                </label>
               </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Email *</label>
+              <div className="two-col">
+                <label>
+                  Email
                   <input
                     name="email"
                     value={addForm.email}
                     onChange={handleAddFormChange}
                     type="email"
-                    placeholder="voter@example.com"
+                    placeholder="email@example.com"
                     required
                   />
-                </div>
-                <div className="form-group">
-                  <label>Mobile *</label>
+                </label>
+                <label>
+                  Mobile
                   <input
                     name="mobile"
                     value={addForm.mobile}
                     onChange={handleAddFormChange}
                     type="tel"
-                    placeholder="+977 98XXXXXXXX"
+                    placeholder="+977-98XXXXXXXX"
                     required
                   />
-                </div>
+                </label>
               </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>District *</label>
+              <div className="two-col">
+                <label>
+                  District
                   <input
                     name="district"
                     value={addForm.district}
                     onChange={handleAddFormChange}
-                    type="text"
-                    placeholder="e.g., Kathmandu"
+                    placeholder="Select District"
                     required
                   />
-                </div>
-                <div className="form-group">
-                  <label>Province *</label>
+                </label>
+                <label>
+                  Province
                   <input
                     name="province"
                     value={addForm.province}
                     onChange={handleAddFormChange}
-                    type="text"
-                    placeholder="e.g., Bagmati"
+                    placeholder="Select Province"
                     required
                   />
-                </div>
+                </label>
               </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Unique Voter ID / PIN</label>
-                  <input
-                    name="voterId"
-                    value={addForm.voterId}
-                    onChange={handleAddFormChange}
-                    type="text"
-                    placeholder="Optional - leave blank to auto-generate"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>ID Release Date</label>
-                  <input
-                    name="idReleaseDate"
-                    value={addForm.idReleaseDate}
-                    onChange={handleAddFormChange}
-                    type="date"
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Profile Photo</label>
-                <input
-                  name="photo"
-                  onChange={handleAddFormChange}
-                  type="file"
-                  accept="image/*"
-                />
-              </div>
-
-              <div className="modal-actions">
-                <button
-                  type="button"
-                  className="btn-cancel"
-                  onClick={() => setShowAddModal(false)}
-                >
+              <label className="file-drop">
+                Photo Upload
+                <input name="photo" type="file" onChange={handleAddFormChange} />
+                <span>Click to upload or drag and drop</span>
+                <small>PNG, JPG up to 2MB</small>
+              </label>
+              <div className="admin-modal-actions">
+                <button className="admin-button ghost" type="button" onClick={() => setShowAddModal(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn-save">
-                  Add Voter
+                <button className="admin-button primary" type="submit">
+                  Create Voter
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {selectedVoter && (
+        <div className="admin-modal-backdrop" onClick={() => setSelectedVoter(null)}>
+          <div className="admin-modal voter-details" onClick={(e) => e.stopPropagation()}>
+            {(() => {
+              const status = selectedVoter.status || "PENDING";
+              const voted = selectedVoter.hasVoted || selectedVoter.voted || false;
+              return (
+                <>
+                  <div className="details-header">
+                    <div className="voter-avatar large">
+                      {selectedVoter.fullName?.[0] || "V"}
+                    </div>
+                    <div>
+                      <div className="details-name">{selectedVoter.fullName}</div>
+                      <div className="details-id">
+                        Voter ID: {selectedVoter.voterId || "V2847393"}
+                      </div>
+                      <div className="details-badges">
+                        <span className={`status-badge ${status.toLowerCase()}`}>
+                          {status === "ACTIVE"
+                            ? "Active"
+                            : status === "PENDING"
+                              ? "Pending"
+                              : status}
+                        </span>
+                        {voted && <span className="status-badge voted">Voted</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="details-grid">
+                    <div>
+                      <div className="stat-label">Email</div>
+                      <div className="stat-number">{selectedVoter.email}</div>
+                    </div>
+                    <div>
+                      <div className="stat-label">Mobile</div>
+                      <div className="stat-number">{selectedVoter.mobile}</div>
+                    </div>
+                    <div>
+                      <div className="stat-label">District</div>
+                      <div className="stat-number">
+                        {selectedVoter.district || "Pokhara"}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="stat-label">Province</div>
+                      <div className="stat-number">
+                        {selectedVoter.province || "Gandaki"}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="admin-modal-actions">
+                    {status === "PENDING" ? (
+                      <>
+                        <button
+                          className="admin-button primary"
+                          onClick={() => handleApproveVoter(selectedVoter._id)}
+                        >
+                          Approve Voter
+                        </button>
+                        <button
+                          className="admin-button ghost"
+                          onClick={() => handleRejectVoter(selectedVoter._id)}
+                        >
+                          Reject
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        className="admin-button primary"
+                        onClick={() => handleBlockVoter(selectedVoter._id)}
+                      >
+                        Block Voter
+                      </button>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}

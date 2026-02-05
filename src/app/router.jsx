@@ -9,6 +9,7 @@ import Parties from "../admin/pages/Parties";
 import Elections from "../admin/pages/Elections";
 import Results from "../admin/pages/Results";
 import Notifications from "../admin/pages/Notifications";
+import Analytics from "../admin/pages/Analytics";
 import VoterLayout from "../voter/layout/VoterLayout";
 import Overview from "../voter/pages/Overview";
 import Profile from "../voter/pages/Profile";
@@ -45,6 +46,7 @@ export default function AppRouter() {
               <Route path="voters" element={<Voters />} />
               <Route path="parties" element={<Parties />} />
               <Route path="elections" element={<Elections />} />
+              <Route path="analytics" element={<Analytics />} />
               <Route path="results" element={<Results />} />
               <Route path="notifications" element={<Notifications />} />
             </Routes>

@@ -2,27 +2,35 @@
 
 .admin-auth-container {
   min-height: 100vh;
-  background: var(--bg-main);
+  background: #f8fafc;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: "Poppins", system-ui, sans-serif;
 }
 
 .admin-auth-card {
-  background: var(--bg-card);
+  background: #ffffff;
   width: 360px;
   padding: 32px;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-soft);
+  border-radius: 16px;
+  box-shadow: 0 20px 35px rgba(15, 23, 42, 0.12);
+  border: 1px solid #e2e8f0;
 }
 
 .admin-auth-card h2 {
   text-align: center;
-  margin-bottom: 24px;
-  color: var(--text-main);
-  font-size: 24px;
-  font-weight: 600;
+  margin-bottom: 12px;
+  color: #0f172a;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.admin-auth-subtitle {
+  text-align: center;
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 20px;
 }
 
 .admin-auth-card input {
@@ -48,10 +56,11 @@
   color: var(--text-muted);
 }
 
-.admin-auth-card button {
+.admin-auth-card button,
+.admin-auth-btn {
   width: 100%;
   padding: 12px;
-  background: var(--primary);
+  background: #dc2626;
   color: white;
   border: none;
   border-radius: 12px;
@@ -62,7 +71,7 @@
 }
 
 .admin-auth-card button:hover:not(:disabled) {
-  background: #6b5dfe;
+  background: #b91c1c;
 }
 
 .admin-auth-card button:disabled {

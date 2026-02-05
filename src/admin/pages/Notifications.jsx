@@ -1,8 +1,12 @@
 export default function Notifications() {
   return (
-    <div>
-      <h2>Notifications</h2>
-      <p>Notifications will appear here.</p>
+    <div className="admin-page">
+      <div className="admin-card">
+        <div className="admin-section-title">Notifications</div>
+        <div className="admin-section-subtitle">
+          Notifications module coming soon.
+        </div>
+      </div>
     </div>
   );
 }

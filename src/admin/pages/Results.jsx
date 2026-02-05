@@ -1,8 +1,12 @@
 export default function Results() {
   return (
-    <div>
-      <h2>Results</h2>
-      <p>Results module coming soon.</p>
+    <div className="admin-page">
+      <div className="admin-card">
+        <div className="admin-section-title">Results</div>
+        <div className="admin-section-subtitle">
+          Results module coming soon.
+        </div>
+      </div>
     </div>
   );
 }
