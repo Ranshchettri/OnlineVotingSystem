@@ -10,6 +10,26 @@
   align-items: center;
 }
 
+.create-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  box-shadow: 0 8px 18px rgba(220, 38, 38, 0.25);
+}
+
+.btn-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 16px;
+  line-height: 1;
+}
+
 .admin-elections__list {
   display: flex;
   flex-direction: column;
@@ -34,6 +54,13 @@
   gap: 12px;
 }
 
+.election-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .election-title {
   font-size: 16px;
   font-weight: 700;
@@ -42,12 +69,52 @@
 .election-tags {
   display: flex;
   gap: 8px;
-  margin-top: 6px;
+  align-items: center;
 }
 
 .election-actions {
   display: flex;
   gap: 8px;
+}
+
+.election-actions .admin-button {
+  height: auto;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.btn-outline {
+  border: 1px solid #e5e7eb;
+  color: #374151;
+  background: #fff;
+}
+
+.btn-outline:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+}
+
+.btn-danger {
+  background: #dc2626;
+  color: #fff;
+}
+
+.btn-danger:hover {
+  background: #b91c1c;
+}
+
+.icon-eye,
+.icon-stop {
+  font-size: 18px;
+  margin-right: 6px;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .admin-elections__card-dates {
@@ -61,6 +128,24 @@
   font-weight: 600;
   color: var(--admin-text);
   margin-right: 6px;
+}
+
+.date-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-calendar {
+  font-size: 14px;
+  color: #6b7280;
+  display: inline-flex;
+  align-items: center;
+}
+
+.election-divider {
+  height: 1px;
+  background: #e5e7eb;
 }
 
 .admin-elections__stats {
@@ -81,15 +166,28 @@
   color: var(--admin-text);
 }
 
+.admin-elections__stats .stat-number.success {
+  color: #16a34a;
+  font-weight: 700;
+}
+
 .admin-elections__form {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
+.admin-elections__modal h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #111827;
+}
+
 .admin-elections__form label {
   font-size: 12px;
-  color: var(--admin-muted);
+  color: #374151;
+  font-weight: 600;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -97,15 +195,122 @@
 
 .admin-elections__form input,
 .admin-elections__form select {
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--admin-border);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  font-size: 12px;
+  font-family: inherit;
+  color: #111827;
+  transition: all 0.2s ease;
+  height: 36px;
+}
+
+.admin-elections__form input:focus,
+.admin-elections__form select:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.admin-elections__form .select-input {
+  background-image: none;
+  padding-right: 12px;
+  cursor: pointer;
+}
+
+.admin-elections__form input::placeholder {
+  color: #9ca3af;
+}
+
+.admin-elections__form .two-col {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-elections__form .date-input {
+  padding-right: 38px;
+}
+
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  font-size: 12px;
+  color: #374151;
+}
+
+.checkbox-grid label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.checkbox-grid input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #2563eb;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.admin-modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.admin-modal-actions .wide {
+  flex: 1;
+  padding: 8px 16px !important;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 12px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-modal-actions .admin-button.ghost {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.admin-modal-actions .admin-button.ghost:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.admin-modal-actions .admin-button.primary {
+  background: #dc2626;
+  color: #fff;
+}
+
+.admin-modal-actions .admin-button.primary:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.admin-modal-actions .admin-button.primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-elections__form input::placeholder {
+  color: #94a3b8;
 }
 
 .admin-elections__form .two-col {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+.admin-elections__form .date-input {
+  padding-right: 38px;
 }
 
 .checkbox-grid {
@@ -122,15 +327,55 @@
   gap: 8px;
 }
 
-.admin-elections__preview .preview-header {
+.checkbox-grid input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #2563eb;
+}
+
+.admin-modal-actions .wide {
+  flex: 1;
+}
+
+.preview-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.preview-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.preview-close {
+  border: none;
+  background: transparent;
+  font-size: 20px;
+  color: #94a3b8;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-close:hover {
+  background: transparent;
+  color: #94a3b8;
+}
+
+.preview-hero {
+  background: #f7f7fb;
+  border-radius: 12px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--admin-border);
+  margin-bottom: 14px;
 }
 
-.admin-elections__preview .preview-title {
+.preview-name {
   font-size: 18px;
   font-weight: 700;
 }
@@ -144,7 +389,25 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
-  padding: 16px 0;
+  padding: 0 0 16px;
+}
+
+.preview-grid > div {
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.preview-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 8px 0 12px;
+}
+
+.preview-settings-title {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 8px;
 }
 
 .preview-grid .stat-label {
@@ -171,6 +434,11 @@
   justify-content: space-between;
   font-weight: 600;
   color: var(--admin-text);
+}
+
+.preview-setting span:last-child {
+  color: #16a34a;
+  font-weight: 700;
 }
 
 @media (max-width: 1100px) {

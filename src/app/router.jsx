@@ -25,6 +25,7 @@ import PartyPerformance from "../party/pages/PartyPerformance";
 import PartyStats from "../party/pages/PartyStats";
 import PartyNotifications from "../party/pages/PartyNotifications";
 import PartyRules from "../party/pages/PartyRules";
+import NotFound from "../shared/NotFound";
 
 export default function AppRouter() {
   return (
@@ -79,6 +80,7 @@ export default function AppRouter() {
 
       {/* Default Route */}
       <Route path="/" element={<AdminLogin />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

@@ -98,19 +98,39 @@ export default function Analytics() {
 
       <div className="analytics-stats">
         <div className="analytics-stat-card">
-          <div className="stat-label">Total Candidates</div>
+          <div className="stat-top">
+            <div className="stat-label">Total Candidates</div>
+            <span className="stat-icon teal" aria-hidden="true">
+              <i className="ri-user-line" />
+            </span>
+          </div>
           <div className="stat-value">{stats.total}</div>
         </div>
         <div className="analytics-stat-card">
-          <div className="stat-label">Avg Development</div>
+          <div className="stat-top">
+            <div className="stat-label">Avg Development</div>
+            <span className="stat-icon green" aria-hidden="true">
+              <i className="ri-bar-chart-box-line" />
+            </span>
+          </div>
           <div className="stat-value">{stats.avgDev}%</div>
         </div>
         <div className="analytics-stat-card">
-          <div className="stat-label">Avg Good Work</div>
+          <div className="stat-top">
+            <div className="stat-label">Avg Good Work</div>
+            <span className="stat-icon teal" aria-hidden="true">
+              <i className="ri-thumb-up-line" />
+            </span>
+          </div>
           <div className="stat-value">{stats.avgGood}%</div>
         </div>
         <div className="analytics-stat-card">
-          <div className="stat-label">Avg Bad Work</div>
+          <div className="stat-top">
+            <div className="stat-label">Avg Bad Work</div>
+            <span className="stat-icon red" aria-hidden="true">
+              <i className="ri-thumb-down-line" />
+            </span>
+          </div>
           <div className="stat-value">{stats.avgBad}%</div>
         </div>
       </div>
@@ -151,9 +171,18 @@ export default function Analytics() {
                 </ul>
               </div>
               <div className="analytics-actions">
-                <button className="admin-button ghost">View Full Report</button>
-                <button className="admin-button ghost">Historical Data</button>
-                <button className="admin-button primary">Update Analytics</button>
+                <button className="admin-button ghost">
+                  <i className="ri-file-chart-line" aria-hidden="true" />
+                  View Full Report
+                </button>
+                <button className="admin-button ghost">
+                  <i className="ri-history-line" aria-hidden="true" />
+                  Historical Data
+                </button>
+                <button className="admin-button primary">
+                  <i className="ri-edit-line" aria-hidden="true" />
+                  Update Analytics
+                </button>
               </div>
             </div>
 

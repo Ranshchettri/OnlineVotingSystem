@@ -10,6 +10,17 @@
   align-items: center;
 }
 
+.create-voter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.create-voter-btn i {
+  font-size: 16px;
+  line-height: 1;
+}
+
 .voters-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -40,11 +51,11 @@
 .voters-stat-card .stat-icon svg {
   width: 18px;
   height: 18px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+}
+
+.voters-stat-card .stat-icon i {
+  font-size: 18px;
+  line-height: 1;
 }
 
 .voters-stat-card .stat-icon.green {
@@ -63,9 +74,11 @@
 }
 
 .voters-stat-card .stat-label {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--admin-muted);
   font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .voters-stat-card .stat-value {
@@ -86,20 +99,42 @@
 
 .voters-controls .search-box {
   flex: 1;
+  position: relative;
 }
 
 .voters-controls input {
   width: 100%;
-  padding: 10px 12px;
+  padding: 12px 14px 12px 40px;
   border-radius: 10px;
   border: 1px solid var(--admin-border);
+  font-size: 13px;
+  color: var(--admin-text);
+  background: #fff;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: #94a3b8;
+  display: grid;
+  place-items: center;
+}
+
+.search-icon i {
+  font-size: 18px;
 }
 
 .voters-controls .status-filter {
-  padding: 10px 12px;
+  padding: 12px 14px;
   border-radius: 10px;
   border: 1px solid var(--admin-border);
   background: #fff;
+  font-size: 13px;
+  min-width: 110px;
 }
 
 .voters-error {
@@ -114,7 +149,7 @@
   background: var(--admin-card);
   border: 1px solid var(--admin-border);
   border-radius: 14px;
-  padding: 12px;
+  padding: 6px 12px 4px;
   box-shadow: var(--admin-shadow);
 }
 
@@ -128,11 +163,13 @@
   font-size: 12px;
   color: var(--admin-muted);
   font-weight: 600;
-  padding-bottom: 10px;
+  padding: 14px 0 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .voters-table td {
-  padding: 12px 0;
+  padding: 16px 0;
   border-top: 1px solid #eef2f7;
   font-size: 13px;
   color: var(--admin-text);
@@ -155,10 +192,15 @@
   font-weight: 600;
 }
 
+.voter-avatar.photo {
+  object-fit: cover;
+  border-radius: 50%;
+}
+
 .voter-avatar.large {
   width: 54px;
   height: 54px;
-  border-radius: 16px;
+  border-radius: 50%;
   font-size: 20px;
 }
 
@@ -211,18 +253,28 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   font-weight: 700;
-  font-size: 12px;
+  font-size: 11px;
   background: #e2e8f0;
   color: #64748b;
+}
+
+.voted-badge i {
+  font-size: 12px;
+  line-height: 1;
 }
 
 .voted-badge.yes {
   background: #dcfce7;
   color: #15803d;
+}
+
+.voted-badge.no {
+  background: #e2e8f0;
+  color: #94a3b8;
 }
 
 .link-btn {
@@ -235,6 +287,17 @@
 
 .align-right {
   text-align: right;
+}
+
+.voters-table th.align-right,
+.voters-table td.align-right {
+  text-align: right;
+}
+
+.link-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .voters-modal label,
@@ -252,6 +315,19 @@
   border: 1px solid var(--admin-border);
 }
 
+.voters-form select {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--admin-border);
+  background: #fff;
+  font-size: 13px;
+}
+
+.date-input {
+  padding-right: 12px;
+  background-image: none;
+}
+
 .voters-form .two-col {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -259,16 +335,46 @@
 }
 
 .file-drop {
-  border: 1px dashed #cbd5f5;
-  border-radius: 12px;
-  padding: 16px;
-  text-align: center;
-  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   color: var(--admin-muted);
 }
 
 .file-drop input {
   display: none;
+}
+
+.file-drop-label {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.file-drop-box {
+  border: 1px dashed #cbd5f5;
+  border-radius: 12px;
+  padding: 18px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--admin-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+.file-drop-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  display: grid;
+  place-items: center;
+  color: #94a3b8;
+}
+
+.file-drop-icon i {
+  font-size: 18px;
 }
 
 .details-header {
@@ -299,6 +405,16 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+.voter-details .admin-modal-actions {
+  justify-content: flex-start;
+}
+
+.danger-full {
+  width: 100%;
+  background: #dc2626;
+  color: #fff;
 }
 
 @media (max-width: 1100px) {

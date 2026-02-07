@@ -126,6 +126,32 @@
   gap: 16px;
 }
 
+.admin-dashboard__emergency-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.emergency-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #fee2e2;
+  color: #dc2626;
+  display: grid;
+  place-items: center;
+}
+
+.emergency-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .admin-dashboard__emergency-title {
   font-weight: 700;
 }
@@ -149,6 +175,20 @@
   font-weight: 600;
   color: var(--admin-text);
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.admin-dashboard__emergency-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .admin-dashboard__emergency-btn.warning {
@@ -185,45 +225,65 @@
 .timeline-list {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 0;
 }
 
 .activity-item,
 .timeline-item {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f5f9;
 }
 
-.activity-dot,
-.timeline-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  margin-top: 6px;
-  background: #94a3b8;
+.activity-item:last-child,
+.timeline-item:last-child {
+  border-bottom: none;
 }
 
-.activity-dot.green,
-.timeline-dot.green {
-  background: #22c55e;
+.activity-icon,
+.timeline-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: #f8fafc;
+  color: #64748b;
 }
 
-.activity-dot.blue,
-.timeline-dot.blue {
-  background: #3b82f6;
+.activity-icon svg,
+.timeline-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.activity-dot.purple {
-  background: #8b5cf6;
+.activity-icon.green,
+.timeline-icon.green {
+  background: #dcfce7;
+  color: #16a34a;
 }
 
-.activity-dot.teal {
-  background: #14b8a6;
+.activity-icon.blue,
+.timeline-icon.blue {
+  background: #dbeafe;
+  color: #2563eb;
 }
 
-.timeline-dot.gray {
-  background: #94a3b8;
+.activity-icon.purple {
+  background: #ede9fe;
+  color: #7c3aed;
+}
+
+.timeline-icon.gray {
+  background: #f1f5f9;
+  color: #64748b;
 }
 
 .activity-title,
@@ -253,6 +313,41 @@
 .admin-dashboard__confirm .confirm-text {
   font-size: 13px;
   color: var(--admin-muted);
+}
+
+.confirm-head {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.confirm-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+}
+
+.confirm-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.confirm-icon.orange {
+  background: #ffedd5;
+  color: #ea580c;
+}
+
+.confirm-icon.red {
+  background: #fee2e2;
+  color: #dc2626;
 }
 
 @media (max-width: 1100px) {

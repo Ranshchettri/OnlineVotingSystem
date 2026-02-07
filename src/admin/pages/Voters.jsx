@@ -18,6 +18,44 @@ export default function Voters() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedVoter, setSelectedVoter] = useState(null);
+  const demoVoters = [
+    {
+      _id: "demo-1",
+      fullName: "Ram Bahadur Thapa",
+      voterId: "V2847392",
+      email: "ram.thapa@email.com",
+      mobile: "+977-9841234567",
+      district: "Kathmandu",
+      province: "Bagmati",
+      status: "ACTIVE",
+      voted: true,
+      avatar: "https://i.pravatar.cc/100?img=12",
+    },
+    {
+      _id: "demo-2",
+      fullName: "Sita Kumari Sharma",
+      voterId: "V2847393",
+      email: "sita.sharma@email.com",
+      mobile: "+977-9851234568",
+      district: "Pokhara",
+      province: "Gandaki",
+      status: "ACTIVE",
+      voted: true,
+      avatar: "https://i.pravatar.cc/100?img=47",
+    },
+    {
+      _id: "demo-3",
+      fullName: "Krishna Prasad Adhikari",
+      voterId: "V2847394",
+      email: "krishna.adhikari@email.com",
+      mobile: "+977-9861234569",
+      district: "Lalitpur",
+      province: "Bagmati",
+      status: "PENDING",
+      voted: false,
+      avatar: "https://i.pravatar.cc/100?img=32",
+    },
+  ];
 
   const [addForm, setAddForm] = useState({
     fullName: "",
@@ -214,6 +252,7 @@ export default function Voters() {
         value: stats.activeVoters.toLocaleString(),
         sub: "93.2% of total",
         color: "green",
+        icon: "ri-user-3-line",
       },
       {
         label: "Voted",
@@ -224,15 +263,21 @@ export default function Voters() {
         }%`,
         sub: "1,947,283 voters",
         color: "purple",
+        icon: "ri-checkbox-circle-line",
       },
       {
         label: "Pending Approval",
         value: stats.inactiveVoters || 156,
         sub: "Requires action",
         color: "orange",
+        icon: "ri-time-line",
       },
     ],
     [stats],
+  );
+  const displayVoters = useMemo(
+    () => (filteredVoters.length ? filteredVoters : demoVoters),
+    [filteredVoters],
   );
 
   if (loading) {
@@ -252,7 +297,8 @@ export default function Voters() {
             Create and manage voter profiles
           </div>
         </div>
-        <button className="admin-button primary" onClick={() => setShowAddModal(true)}>
+        <button className="admin-button primary create-voter-btn" onClick={() => setShowAddModal(true)}>
+          <i className="ri-user-add-line" aria-hidden="true" />
           Create Voter
         </button>
       </div>
@@ -261,10 +307,7 @@ export default function Voters() {
         {statsCards.map((card) => (
           <div key={card.label} className="voters-stat-card">
             <div className={`stat-icon ${card.color}`}>
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="12" cy="7" r="4" />
-                <path d="M5.5 21a6.5 6.5 0 0 1 13 0" />
-              </svg>
+              <i className={card.icon} aria-hidden="true" />
             </div>
             <div>
               <div className="stat-label">{card.label}</div>
@@ -277,6 +320,9 @@ export default function Voters() {
 
       <div className="voters-controls">
         <div className="search-box">
+          <span className="search-icon" aria-hidden="true">
+            <i className="ri-search-line" />
+          </span>
           <input
             type="text"
             placeholder="Search voters by name, ID, email..."
@@ -312,16 +358,21 @@ export default function Voters() {
             </tr>
           </thead>
           <tbody>
-            {filteredVoters.map((voter) => {
+            {displayVoters.map((voter) => {
               const status = voter.status || "PENDING";
               const voted = voter.hasVoted || voter.voted || false;
+              const avatarUrl = voter.avatar || voter.photoUrl || voter.photo;
               return (
                 <tr key={voter._id || voter.voterId}>
                   <td>
                     <div className="voter-cell">
-                      <div className="voter-avatar">
-                        {voter.fullName?.[0] || "V"}
-                      </div>
+                      {avatarUrl ? (
+                        <img className="voter-avatar photo" src={avatarUrl} alt={voter.fullName} />
+                      ) : (
+                        <div className="voter-avatar">
+                          {voter.fullName?.[0] || "V"}
+                        </div>
+                      )}
                       <div>
                         <div className="voter-name">{voter.fullName}</div>
                         <div className="voter-id">{voter.voterId || "V2847392"}</div>
@@ -347,7 +398,10 @@ export default function Voters() {
                   </td>
                   <td>
                     <span className={`voted-badge ${voted ? "yes" : "no"}`}>
-                      {voted ? "✓" : "—"}
+                      <i
+                        className={voted ? "ri-check-line" : "ri-close-line"}
+                        aria-hidden="true"
+                      />
                     </span>
                   </td>
                   <td className="align-right">
@@ -388,6 +442,7 @@ export default function Voters() {
                     value={addForm.dob}
                     onChange={handleAddFormChange}
                     type="date"
+                    className="date-input"
                     required
                   />
                 </label>
@@ -419,30 +474,42 @@ export default function Voters() {
               <div className="two-col">
                 <label>
                   District
-                  <input
+                  <select
                     name="district"
                     value={addForm.district}
                     onChange={handleAddFormChange}
-                    placeholder="Select District"
                     required
-                  />
+                  >
+                    <option value="">Select District</option>
+                    <option value="Kathmandu">Kathmandu</option>
+                    <option value="Pokhara">Pokhara</option>
+                    <option value="Lalitpur">Lalitpur</option>
+                  </select>
                 </label>
                 <label>
                   Province
-                  <input
+                  <select
                     name="province"
                     value={addForm.province}
                     onChange={handleAddFormChange}
-                    placeholder="Select Province"
                     required
-                  />
+                  >
+                    <option value="">Select Province</option>
+                    <option value="Bagmati">Bagmati</option>
+                    <option value="Gandaki">Gandaki</option>
+                  </select>
                 </label>
               </div>
               <label className="file-drop">
-                Photo Upload
                 <input name="photo" type="file" onChange={handleAddFormChange} />
-                <span>Click to upload or drag and drop</span>
-                <small>PNG, JPG up to 2MB</small>
+                <span className="file-drop-label">Photo Upload</span>
+                <div className="file-drop-box">
+                  <span className="file-drop-icon" aria-hidden="true">
+                    <i className="ri-upload-cloud-line" />
+                  </span>
+                  <span>Click to upload or drag and drop</span>
+                  <small>PNG, JPG up to 2MB</small>
+                </div>
               </label>
               <div className="admin-modal-actions">
                 <button className="admin-button ghost" type="button" onClick={() => setShowAddModal(false)}>
@@ -466,9 +533,23 @@ export default function Voters() {
               return (
                 <>
                   <div className="details-header">
-                    <div className="voter-avatar large">
-                      {selectedVoter.fullName?.[0] || "V"}
-                    </div>
+                    {(() => {
+                      const avatarUrl =
+                        selectedVoter.avatar ||
+                        selectedVoter.photoUrl ||
+                        selectedVoter.photo;
+                      return avatarUrl ? (
+                        <img
+                          className="voter-avatar large photo"
+                          src={avatarUrl}
+                          alt={selectedVoter.fullName}
+                        />
+                      ) : (
+                        <div className="voter-avatar large">
+                          {selectedVoter.fullName?.[0] || "V"}
+                        </div>
+                      );
+                    })()}
                     <div>
                       <div className="details-name">{selectedVoter.fullName}</div>
                       <div className="details-id">
@@ -526,7 +607,7 @@ export default function Voters() {
                       </>
                     ) : (
                       <button
-                        className="admin-button primary"
+                        className="admin-button primary danger-full"
                         onClick={() => handleBlockVoter(selectedVoter._id)}
                       >
                         Block Voter

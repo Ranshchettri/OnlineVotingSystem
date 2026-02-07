@@ -125,8 +125,9 @@ export default function Elections() {
             Create and manage elections
           </div>
         </div>
-        <button className="admin-button primary" onClick={() => setShowCreate(true)}>
-          + Create Election
+        <button className="admin-button primary create-btn" onClick={() => setShowCreate(true)}>
+          <i className="ri-add-line btn-icon" aria-hidden="true" />
+          Create Election
         </button>
       </div>
 
@@ -134,7 +135,7 @@ export default function Elections() {
         {elections.map((election) => (
           <div key={election.id} className="admin-elections__card">
             <div className="admin-elections__card-header">
-              <div>
+              <div className="election-title-row">
                 <div className="election-title">{election.title}</div>
                 <div className="election-tags">
                   <span
@@ -153,25 +154,33 @@ export default function Elections() {
               </div>
               <div className="election-actions">
                 <button
-                  className="admin-button ghost"
+                  className="admin-button ghost btn-outline"
                   onClick={() => setPreview(election)}
                 >
+                  <i className="ri-eye-line icon-eye" aria-hidden="true" />
                   Preview
                 </button>
                 {election.status?.toLowerCase() === "running" && (
-                  <button className="admin-button primary">Stop</button>
+                  <button className="admin-button primary btn-danger">
+                    <i className="ri-stop-circle-line icon-stop" aria-hidden="true" />
+                    Stop
+                  </button>
                 )}
               </div>
             </div>
 
             <div className="admin-elections__card-dates">
-              <div>
-                <span>Start:</span> {formatDate(election.startDate)}
+              <div className="date-item">
+                <i className="ri-calendar-line icon-calendar" aria-hidden="true" />
+                <span>Start: {formatDate(election.startDate)}</span>
               </div>
-              <div>
-                <span>End:</span> {formatDate(election.endDate)}
+              <div className="date-item">
+                <i className="ri-calendar-line icon-calendar" aria-hidden="true" />
+                <span>End: {formatDate(election.endDate)}</span>
               </div>
             </div>
+
+            <div className="election-divider" />
 
             <div className="admin-elections__stats">
               <div>
@@ -184,13 +193,13 @@ export default function Elections() {
               </div>
               <div>
                 <div className="stat-label">Auto Close</div>
-                <div className="stat-number">
+                <div className="stat-number success">
                   {election.autoClose ? "Enabled" : "Disabled"}
                 </div>
               </div>
               <div>
                 <div className="stat-label">Auto Results</div>
-                <div className="stat-number">
+                <div className="stat-number success">
                   {election.autoResults ? "Enabled" : "Disabled"}
                 </div>
               </div>
@@ -213,21 +222,23 @@ export default function Elections() {
                   required
                 />
               </label>
-              <label>
-                Election Type
-                <select
-                  value={form.type}
-                  onChange={(e) => setForm({ ...form, type: e.target.value })}
-                >
-                  <option>Political</option>
-                  <option>Student</option>
-                </select>
-              </label>
+                <label>
+                  Election Type
+                  <select
+                    value={form.type}
+                    onChange={(e) => setForm({ ...form, type: e.target.value })}
+                    className="select-input"
+                  >
+                    <option>Political</option>
+                    <option>Student</option>
+                  </select>
+                </label>
               <div className="two-col">
                 <label>
                   Start Date & Time
                   <input
                     type="datetime-local"
+                    className="date-input"
                     value={form.startDate}
                     onChange={(e) => setForm({ ...form, startDate: e.target.value })}
                     required
@@ -237,6 +248,7 @@ export default function Elections() {
                   End Date & Time
                   <input
                     type="datetime-local"
+                    className="date-input"
                     value={form.endDate}
                     onChange={(e) => setForm({ ...form, endDate: e.target.value })}
                     required
@@ -282,12 +294,12 @@ export default function Elections() {
               <div className="admin-modal-actions">
                 <button
                   type="button"
-                  className="admin-button ghost"
+                  className="admin-button ghost wide"
                   onClick={() => setShowCreate(false)}
                 >
                   Cancel
                 </button>
-                <button className="admin-button primary" type="submit" disabled={loading}>
+                <button className="admin-button primary wide" type="submit" disabled={loading}>
                   Create Election
                 </button>
               </div>
@@ -299,8 +311,14 @@ export default function Elections() {
       {preview && (
         <div className="admin-modal-backdrop" onClick={() => setPreview(null)}>
           <div className="admin-modal admin-elections__preview" onClick={(e) => e.stopPropagation()}>
-            <div className="preview-header">
-              <div className="preview-title">{preview.title}</div>
+            <div className="preview-top">
+              <div className="preview-title">Election Preview</div>
+              <button className="preview-close" onClick={() => setPreview(null)}>
+                <i className="ri-close-line" aria-hidden="true" />
+              </button>
+            </div>
+            <div className="preview-hero">
+              <div className="preview-name">{preview.title}</div>
               <div className="preview-tags">
                 <span className="admin-pill green">{preview.status}</span>
                 <span className="admin-pill purple">{preview.type}</span>
@@ -324,6 +342,8 @@ export default function Elections() {
                 <div className="stat-number">{preview.turnout}</div>
               </div>
             </div>
+            <div className="preview-divider" />
+            <div className="preview-settings-title">Election Settings</div>
             <div className="preview-settings">
               <div className="preview-setting">
                 <span>Auto-close on end date</span>

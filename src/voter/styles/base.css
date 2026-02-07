@@ -31,7 +31,10 @@
   --radius-sm: 10px;
   --ring: 0 0 0 3px rgba(34, 197, 94, 0.2);
 
-  font-family: "Poppins", "Segoe UI", "Roboto", system-ui, sans-serif;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+    "Noto Color Emoji";
   background: var(--gray-50);
   color: var(--gray-900);
   min-height: 100vh;

@@ -18,6 +18,41 @@
   box-shadow: var(--admin-shadow);
 }
 
+.analytics-stat-card .stat-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.analytics-stat-card .stat-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: #0f172a;
+}
+
+.analytics-stat-card .stat-icon i {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.analytics-stat-card .stat-icon.green {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.analytics-stat-card .stat-icon.teal {
+  background: #ccfbf1;
+  color: #0f766e;
+}
+
+.analytics-stat-card .stat-icon.red {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
 .analytics-stat-card .stat-label {
   font-size: 12px;
   color: var(--admin-muted);
@@ -131,6 +166,12 @@
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.analytics-actions .admin-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .analytics-card__right {

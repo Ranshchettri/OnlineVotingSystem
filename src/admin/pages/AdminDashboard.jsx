@@ -27,97 +27,57 @@ export default function AdminDashboard() {
       value: "2,847,392",
       delta: "+12.5% vs last election",
       color: "blue",
-      icon: (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-        </svg>
-      ),
+      icon: "ri-user-line",
     },
     {
       title: "Active Voters",
       value: "2,654,128",
       delta: "+8.3% vs last election",
       color: "green",
-      icon: (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="7" r="4" />
-          <path d="M5.5 21a6.5 6.5 0 0 1 13 0" />
-          <path d="M18 13l2 2 4-4" />
-        </svg>
-      ),
+      icon: "ri-user-star-line",
     },
     {
       title: "Voted",
       value: "68.4%",
       delta: "+15.2% vs last election",
       color: "purple",
-      icon: (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="4" y="3" width="16" height="18" rx="2" />
-          <path d="M9 12l2 2 4-4" />
-        </svg>
-      ),
+      icon: "ri-checkbox-circle-line",
     },
     {
       title: "Total Parties",
       value: "47",
       delta: "+3 vs last election",
       color: "amber",
-      icon: (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 4h12l4 4v12H4z" />
-          <path d="M8 12h8M8 16h8" />
-        </svg>
-      ),
+      icon: "ri-flag-line",
     },
     {
       title: "Active Parties",
       value: "42",
       delta: "+2 vs last election",
       color: "teal",
-      icon: (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 2l3 7h7l-5.5 4.5L18 22l-6-4-6 4 1.5-8.5L2 9h7z" />
-        </svg>
-      ),
+      icon: "ri-shield-check-line",
     },
     {
       title: "Pending Approvals",
       value: "156",
       delta: "-24 vs last election",
       color: "red",
-      icon: (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r="9" />
-          <path d="M12 7v5l3 3" />
-        </svg>
-      ),
+      icon: "ri-time-line",
     },
   ];
 
   const analyticsCount = analytics.length;
   const activities = [
-    ...(analyticsCount
-      ? [
-          {
-            title: "Analytics synced",
-            meta: `${analyticsCount} candidates`,
-            time: "just now",
-            color: "blue",
-          },
-        ]
-      : []),
-    { title: "New voter registered", meta: "Ram Bahadur Thapa", time: "2 mins ago", color: "green" },
-    { title: "Party verified", meta: "Nepal Communist Party", time: "15 mins ago", color: "blue" },
-    { title: "Vote cast", meta: "Voter #284739", time: "23 mins ago", color: "purple" },
-    { title: "Voter approved", meta: "Sita Kumari Sharma", time: "1 hour ago", color: "teal" },
+    { title: "New voter registered", meta: "Ram Bahadur Thapa", time: "2 mins ago", color: "green", icon: "ri-user-add-line" },
+    { title: "Party verified", meta: "Nepal Communist Party", time: "15 mins ago", color: "blue", icon: "ri-shield-check-line" },
+    { title: "Vote cast", meta: "Voter #284739", time: "23 mins ago", color: "purple", icon: "ri-checkbox-circle-line" },
+    { title: "Voter approved", meta: "Sita Kumari Sharma", time: "1 hour ago", color: "green", icon: "ri-user-line" },
   ];
 
   const timeline = [
-    { title: "Election Started", meta: "March 15, 2025 - 07:00 AM", color: "green" },
-    { title: "Current Status", meta: "Voting in progress - 6 hours remaining", color: "blue" },
-    { title: "Election Ends", meta: "March 15, 2025 - 05:00 PM", color: "gray" },
+    { title: "Election Started", meta: "March 15, 2025 - 07:00 AM", color: "green", icon: "ri-play-circle-line" },
+    { title: "Current Status", meta: "Voting in progress - 6 hours remaining", color: "blue", icon: "ri-time-line" },
+    { title: "Election Ends", meta: "March 15, 2025 - 05:00 PM", color: "gray", icon: "ri-stop-circle-line" },
   ];
 
   return (
@@ -137,7 +97,9 @@ export default function AdminDashboard() {
       <div className="admin-dashboard__stats">
         {stats.map((stat) => (
           <div key={stat.title} className="admin-dashboard__stat-card">
-            <div className={`stat-icon ${stat.color}`}>{stat.icon}</div>
+            <div className={`stat-icon ${stat.color}`}>
+              <i className={stat.icon} aria-hidden="true" />
+            </div>
             <div className="stat-meta">
               <div className="stat-title">{stat.title}</div>
               <div className="stat-value">{stat.value}</div>
@@ -153,11 +115,16 @@ export default function AdminDashboard() {
 
       <div className="admin-dashboard__emergency">
         <div className="admin-dashboard__emergency-header">
-          <div className="admin-dashboard__emergency-title">
-            Live Emergency Controls
+          <div className="emergency-icon">
+            <i className="ri-alarm-warning-line" aria-hidden="true" />
           </div>
-          <div className="admin-dashboard__emergency-subtitle">
-            Critical system operations - use with caution
+          <div>
+            <div className="admin-dashboard__emergency-title">
+              Live Emergency Controls
+            </div>
+            <div className="admin-dashboard__emergency-subtitle">
+              Critical system operations - use with caution
+            </div>
           </div>
         </div>
         <div className="admin-dashboard__emergency-actions">
@@ -165,16 +132,19 @@ export default function AdminDashboard() {
             className="admin-dashboard__emergency-btn warning"
             onClick={() => setShowShutdown(true)}
           >
-            <span>Emergency Shutdown</span>
+            <i className="ri-shut-down-line" aria-hidden="true" />
+            Emergency Shutdown
           </button>
           <button
             className="admin-dashboard__emergency-btn amber"
             onClick={() => setShowForceLogout(true)}
           >
-            <span>Force Logout All</span>
+            <i className="ri-logout-box-line" aria-hidden="true" />
+            Force Logout All
           </button>
           <button className="admin-dashboard__emergency-btn success">
-            <span>Trigger Results</span>
+            <i className="ri-trophy-line" aria-hidden="true" />
+            Trigger Results
           </button>
         </div>
       </div>
@@ -185,7 +155,9 @@ export default function AdminDashboard() {
           <div className="activity-list">
             {activities.map((item) => (
               <div key={item.title} className="activity-item">
-                <span className={`activity-dot ${item.color}`} />
+                <span className={`activity-icon ${item.color}`}>
+                  <i className={item.icon} aria-hidden="true" />
+                </span>
                 <div>
                   <div className="activity-title">{item.title}</div>
                   <div className="activity-meta">{item.meta}</div>
@@ -200,7 +172,9 @@ export default function AdminDashboard() {
           <div className="timeline-list">
             {timeline.map((item) => (
               <div key={item.title} className="timeline-item">
-                <span className={`timeline-dot ${item.color}`} />
+                <span className={`timeline-icon ${item.color}`}>
+                  <i className={item.icon} aria-hidden="true" />
+                </span>
                 <div>
                   <div className="timeline-title">{item.title}</div>
                   <div className="timeline-meta">{item.meta}</div>
@@ -214,10 +188,17 @@ export default function AdminDashboard() {
       {showForceLogout && (
         <div className="admin-modal-backdrop" onClick={() => setShowForceLogout(false)}>
           <div className="admin-modal admin-dashboard__confirm" onClick={(e) => e.stopPropagation()}>
-            <div className="confirm-title">Force Logout All Users</div>
-            <div className="confirm-text">
-              This will immediately log out all voters and party members from the
-              system. Use only in emergency situations.
+            <div className="confirm-head">
+              <span className="confirm-icon orange">
+                <i className="ri-logout-circle-line" aria-hidden="true" />
+              </span>
+              <div>
+                <div className="confirm-title">Force Logout All Users</div>
+                <div className="confirm-text">
+                  This will immediately log out all voters and party members from
+                  the system. Use only in emergency situations.
+                </div>
+              </div>
             </div>
             <div className="admin-modal-actions">
               <button className="admin-button ghost" onClick={() => setShowForceLogout(false)}>
@@ -232,10 +213,17 @@ export default function AdminDashboard() {
       {showShutdown && (
         <div className="admin-modal-backdrop" onClick={() => setShowShutdown(false)}>
           <div className="admin-modal admin-dashboard__confirm" onClick={(e) => e.stopPropagation()}>
-            <div className="confirm-title">Emergency Shutdown</div>
-            <div className="confirm-text">
-              This will immediately stop the election and prevent all voting.
-              This action cannot be undone. Are you sure?
+            <div className="confirm-head">
+              <span className="confirm-icon red">
+                <i className="ri-alarm-warning-line" aria-hidden="true" />
+              </span>
+              <div>
+                <div className="confirm-title">Emergency Shutdown</div>
+                <div className="confirm-text">
+                  This will immediately stop the election and prevent all voting.
+                  This action cannot be undone. Are you sure?
+                </div>
+              </div>
             </div>
             <div className="admin-modal-actions">
               <button className="admin-button ghost" onClick={() => setShowShutdown(false)}>

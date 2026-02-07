@@ -74,4 +74,6 @@ node_modules/
 .Trashes
 ehthumbs.db
 Thumbs.db
->>>>>>> voting-system/main
+# Ignore backend folder (not to be pushed)
+backend/
+

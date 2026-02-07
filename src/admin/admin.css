@@ -19,10 +19,26 @@
   --admin-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
   --admin-radius: 12px;
 
-  font-family: "Poppins", "Segoe UI", system-ui, sans-serif;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    "Noto Sans",
+    sans-serif,
+    "Apple Color Emoji",
+    "Segoe UI Emoji",
+    "Segoe UI Symbol",
+    "Noto Color Emoji";
   color: var(--admin-text);
   background: var(--admin-bg);
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 .admin-shell {
@@ -107,6 +123,11 @@
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.admin-sidebar__icon i {
+  font-size: 16px;
+  line-height: 1;
 }
 
 .admin-sidebar__link.is-active {
@@ -225,6 +246,11 @@
   stroke: currentColor;
 }
 
+.admin-topbar__icon-btn i {
+  font-size: 18px;
+  line-height: 1;
+}
+
 .admin-topbar__badge {
   position: absolute;
   width: 8px;
@@ -280,11 +306,18 @@
   color: #94a3b8;
 }
 
+.admin-topbar__chev i {
+  font-size: 16px;
+  line-height: 1;
+}
+
 .admin-content {
   flex: 1;
   padding: 24px 26px 40px;
   background: var(--admin-bg);
   overflow-y: auto;
+  display: flex;
+  justify-content: center;
 }
 
 .admin-page {
@@ -325,6 +358,14 @@
   font-weight: 600;
   font-size: 13px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-button i {
+  font-size: 16px;
+  line-height: 1;
 }
 
 .admin-button.primary {
@@ -347,15 +388,15 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
+  padding: 6px 14px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
 }
 
 .admin-pill.green {
-  background: var(--admin-green-100);
-  color: var(--admin-green);
+  background: #d1fae5;
+  color: #0b0f0e;
 }
 
 .admin-pill.purple {
@@ -364,43 +405,47 @@
 }
 
 .admin-pill.red {
-  background: var(--admin-red-100);
-  color: var(--admin-red);
+  background: #fee2e2;
+  color: #dc2626;
 }
 
 .admin-pill.blue {
-  background: var(--admin-blue-100);
-  color: var(--admin-blue);
+  background: #dbeafe;
+  color: #2563eb;
 }
 
 .admin-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.45);
+  background: rgba(15, 23, 42, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
   z-index: 50;
+  backdrop-filter: blur(4px);
 }
 
 .admin-modal {
-  width: min(640px, 96vw);
+  width: min(520px, 90vw);
   background: #fff;
-  border-radius: 16px;
-  border: 1px solid var(--admin-border);
-  padding: 22px;
-  box-shadow: 0 25px 50px rgba(15, 23, 42, 0.2);
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 20px;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.15);
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .admin-modal h3 {
-  margin: 0 0 8px;
-  font-size: 18px;
+  margin: 0 0 16px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
 }
 
 .admin-modal .admin-modal-actions {
   display: flex;
-  justify-content: flex-end;
   gap: 12px;
   margin-top: 18px;
 }

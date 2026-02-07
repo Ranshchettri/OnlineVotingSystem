@@ -36,18 +36,7 @@ const Topbar = () => {
       <div className="admin-topbar__right">
         <button className="admin-topbar__icon-btn" aria-label="Notifications">
           <span className="admin-topbar__badge" />
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7" />
-            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-          </svg>
+          <i className="ri-notification-3-line" aria-hidden="true" />
         </button>
 
         <div className="admin-topbar__profile">
@@ -58,18 +47,9 @@ const Topbar = () => {
             </div>
             <div className="admin-topbar__profile-role">Super Admin</div>
           </div>
-          <svg
-            className="admin-topbar__chev"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
+          <span className="admin-topbar__chev">
+            <i className="ri-arrow-down-s-line" aria-hidden="true" />
+          </span>
         </div>
       </div>
     </header>
