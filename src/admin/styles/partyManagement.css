@@ -106,7 +106,7 @@
   border-radius: 14px;
   padding: 16px;
   display: grid;
-  grid-template-columns: 220px 1fr auto;
+  grid-template-columns: 220px 1fr;
   gap: 18px;
   align-items: center;
   box-shadow: var(--admin-shadow);
@@ -117,6 +117,8 @@
   display: flex;
   gap: 12px;
   align-items: center;
+  grid-column: 1;
+  grid-row: 1 / span 2;
 }
 
 .party-logo {
@@ -140,6 +142,34 @@
   color: var(--admin-muted);
 }
 
+.party-meta.line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.party-meta.line .label {
+  min-width: 52px;
+  color: #64748b;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.party-meta.line .value {
+  color: #0f172a;
+  font-weight: 500;
+}
+
+.party-meta.line .label::after {
+  content: "";
+  width: 1px;
+  height: 12px;
+  background: #e2e8f0;
+  display: inline-block;
+}
+
 .party-meta.muted {
   color: #94a3b8;
 }
@@ -149,6 +179,8 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
   align-items: center;
+  grid-column: 2;
+  grid-row: 1;
 }
 
 .metric-label {
@@ -191,6 +223,8 @@
   flex-direction: column;
   gap: 8px;
   align-items: flex-start;
+  grid-column: 2;
+  grid-row: 2;
 }
 
 .party-status {
@@ -203,6 +237,11 @@
   display: flex;
   gap: 10px;
   align-items: center;
+  margin-top: 4px;
+}
+
+.party-actions-row .admin-button {
+  font-weight: 500;
 }
 
 .party-status {
@@ -224,14 +263,17 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 12px;
-  color: var(--admin-muted);
+  font-size: 13px;
+  color: #111827;
+  font-weight: 500;
 }
 
 .party-form input {
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--admin-border);
+  font-size: 13px;
+  font-family: inherit;
 }
 
 .party-form .two-col {
@@ -291,6 +333,181 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+
+.party-docs-modal,
+.party-edit-modal,
+.party-confirm-modal {
+  width: min(640px, 96vw);
+}
+
+.party-docs-modal .admin-button,
+.party-edit-modal .admin-button,
+.party-confirm-modal .admin-button {
+  font-weight: 500;
+}
+
+.party-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.party-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.party-modal-title .party-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.party-modal-name {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.party-modal-sub {
+  font-size: 12px;
+  color: var(--admin-muted);
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 18px;
+  cursor: pointer;
+  outline: none;
+  box-shadow: none;
+}
+
+.modal-close:focus,
+.modal-close:active {
+  outline: none;
+  box-shadow: none;
+}
+
+.docs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.doc-item {
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.doc-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.doc-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #fee2e2;
+  color: #dc2626;
+  display: grid;
+  place-items: center;
+}
+
+.doc-title {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.doc-meta {
+  font-size: 11px;
+  color: var(--admin-muted);
+}
+
+.doc-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.doc-status {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.doc-status.pending {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.doc-btn {
+  padding: 6px 10px;
+  font-weight: 500;
+}
+
+.modal-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+}
+
+.modal-icon.amber {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.modal-icon.red {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.modal-icon.green {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--admin-text);
+}
+
+.slider-group input[type="range"] {
+  width: 100%;
+}
+
+.info-callout {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 12px;
+  margin-top: 8px;
 }
 
 .register-btn svg {

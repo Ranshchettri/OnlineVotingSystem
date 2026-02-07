@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import api from "../../services/api";
 import "../styles/partyManagement.css";
 
@@ -45,6 +45,7 @@ export default function Parties() {
   const [showDocs, setShowDocs] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showBlock, setShowBlock] = useState(false);
+  const [toast, setToast] = useState(null);
   const [editValues, setEditValues] = useState({
     development: 72,
     goodWork: 85,
@@ -134,6 +135,45 @@ export default function Parties() {
     setShowBlock(true);
   };
 
+  const showToast = (message) => {
+    setToast(message);
+    setTimeout(() => setToast(null), 2000);
+  };
+
+  const saveEdit = () => {
+    setParties((prev) =>
+      prev.map((p) =>
+        p.id === activeParty.id
+          ? {
+              ...p,
+              development: editValues.development,
+              goodWork: editValues.goodWork,
+              badWork: editValues.badWork,
+            }
+          : p,
+      ),
+    );
+    setShowEdit(false);
+    showToast(`${activeParty.name} analytics updated successfully!`);
+  };
+
+  const confirmBlock = () => {
+    const isBlocked = activeParty.status !== "Active";
+    setParties((prev) =>
+      prev.map((p) =>
+        p.id === activeParty.id
+          ? { ...p, status: isBlocked ? "Active" : "Blocked" }
+          : p,
+      ),
+    );
+    setShowBlock(false);
+    showToast(
+      isBlocked
+        ? `${activeParty.name} has been activated successfully!`
+        : `${activeParty.name} has been blocked successfully!`,
+    );
+  };
+
   return (
     <div className="admin-page parties-page">
       <div className="parties-header">
@@ -189,7 +229,10 @@ export default function Parties() {
               <div className="party-logo">{party.logo}</div>
               <div>
                 <div className="party-name">{party.name}</div>
-                <div className="party-meta">Leader: {party.leader}</div>
+                <div className="party-meta line">
+                  <span className="label">Leader:</span>
+                  <span className="value">{party.leader}</span>
+                </div>
                 <div className="party-meta muted">{party.email}</div>
               </div>
             </div>
@@ -230,8 +273,15 @@ export default function Parties() {
                   Edit Analytics
                 </button>
                 <button className="admin-button primary" onClick={() => openBlock(party)}>
-                  <i className="ri-forbid-2-line" aria-hidden="true" />
-                  Block Party
+                  <i
+                    className={
+                      party.status === "Active"
+                        ? "ri-forbid-2-line"
+                        : "ri-checkbox-circle-line"
+                    }
+                    aria-hidden="true"
+                  />
+                  {party.status === "Active" ? "Block Party" : "Activate Party"}
                 </button>
               </div>
             </div>
@@ -315,6 +365,13 @@ export default function Parties() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {toast && (
+        <div className="admin-toast success">
+          <i className="ri-checkbox-circle-line" aria-hidden="true" />
+          {toast}
         </div>
       )}
 
@@ -428,7 +485,7 @@ export default function Parties() {
               <button className="admin-button ghost wide" onClick={() => setShowEdit(false)}>
                 Cancel
               </button>
-              <button className="admin-button success wide" onClick={() => setShowEdit(false)}>
+              <button className="admin-button success wide" onClick={saveEdit}>
                 Save Changes
               </button>
             </div>
@@ -441,14 +498,24 @@ export default function Parties() {
           <div className="admin-modal party-confirm-modal" onClick={(e) => e.stopPropagation()}>
             <div className="party-modal-head">
               <div className="party-modal-title">
-                <span className="modal-icon red">
-                  <i className="ri-forbid-2-line" aria-hidden="true" />
+                <span className={`modal-icon ${activeParty.status === "Active" ? "red" : "green"}`}>
+                  <i
+                    className={
+                      activeParty.status === "Active"
+                        ? "ri-forbid-2-line"
+                        : "ri-checkbox-circle-line"
+                    }
+                    aria-hidden="true"
+                  />
                 </span>
                 <div>
-                  <div className="party-modal-name">Block Party</div>
+                  <div className="party-modal-name">
+                    {activeParty.status === "Active" ? "Block Party" : "Activate Party"}
+                  </div>
                   <div className="party-modal-sub">
-                    Are you sure you want to block “{activeParty.name}”? This will
-                    prevent them from participating in the election.
+                    {activeParty.status === "Active"
+                      ? `Are you sure you want to block "${activeParty.name}"? This will prevent them from participating in the election.`
+                      : `Are you sure you want to activate "${activeParty.name}"? This will allow them to participate in the election.`}
                   </div>
                 </div>
               </div>
@@ -457,8 +524,13 @@ export default function Parties() {
               <button className="admin-button ghost wide" onClick={() => setShowBlock(false)}>
                 Cancel
               </button>
-              <button className="admin-button primary wide" onClick={() => setShowBlock(false)}>
-                Block Party
+              <button
+                className={`admin-button wide ${
+                  activeParty.status === "Active" ? "primary" : "success"
+                }`}
+                onClick={confirmBlock}
+              >
+                {activeParty.status === "Active" ? "Block Party" : "Activate Party"}
               </button>
             </div>
           </div>

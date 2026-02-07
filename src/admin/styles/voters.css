@@ -305,14 +305,17 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 12px;
-  color: var(--admin-muted);
+  font-size: 13px;
+  color: #111827;
+  font-weight: 500;
 }
 
 .voters-form input {
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--admin-border);
+  font-size: 13px;
+  font-family: inherit;
 }
 
 .voters-form select {
@@ -321,6 +324,7 @@
   border: 1px solid var(--admin-border);
   background: #fff;
   font-size: 13px;
+  font-family: inherit;
 }
 
 .date-input {
