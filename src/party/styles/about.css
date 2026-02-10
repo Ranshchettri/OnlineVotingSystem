@@ -1,3 +1,64 @@
+.party-header-compact {
+  padding: 12px 0 16px 0 !important;
+}
+
+.about-section {
+  display: grid;
+  gap: 20px;
+}
+
+.about-description {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid var(--gray-200);
+}
+
+.about-description h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  color: var(--dark);
+}
+
+.about-description p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--gray-700);
+  margin: 0;
+}
+
+.about-plans-sidebar {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid var(--gray-200);
+}
+
+.plans-heading {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--gray-100);
+}
+
+.plans-heading h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 6px 0;
+  color: var(--dark);
+}
+
+.plans-count {
+  font-size: 12px;
+  color: var(--gray-600);
+  display: block;
+}
+
+.add-plan-btn {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
 .about-card {
   border-radius: 16px;
   border: 1px solid var(--gray-200);
@@ -13,8 +74,8 @@
 }
 
 .about-header h3 {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 500;
 }
 
 .about-header span {

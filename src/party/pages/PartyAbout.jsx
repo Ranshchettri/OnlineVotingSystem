@@ -29,7 +29,9 @@ export default function PartyAbout() {
   };
 
   const updatePlan = (index, value) => {
-    setDraftPlans((prev) => prev.map((item, idx) => (idx === index ? value : item)));
+    setDraftPlans((prev) =>
+      prev.map((item, idx) => (idx === index ? value : item)),
+    );
   };
 
   const removePlan = (index) => {
@@ -38,17 +40,25 @@ export default function PartyAbout() {
 
   return (
     <div className="party-page">
-      <div className="party-page-header">
+      <div className="party-page-header party-header-compact">
         <div>
           <h1>{partyAbout.title}</h1>
           <p>{partyAbout.subtitle}</p>
         </div>
         {isEditing ? (
           <div className="party-header-actions">
-            <button type="button" className="party-btn ghost" onClick={cancelEdit}>
+            <button
+              type="button"
+              className="party-btn ghost"
+              onClick={cancelEdit}
+            >
               Cancel
             </button>
-            <button type="button" className="party-btn primary" onClick={saveEdit}>
+            <button
+              type="button"
+              className="party-btn primary"
+              onClick={saveEdit}
+            >
               Save Changes
             </button>
           </div>
@@ -60,46 +70,52 @@ export default function PartyAbout() {
         )}
       </div>
 
-      <div className="about-card party-card">
-        <div className="about-header">
-          <div>
+      <div className="about-section">
+        <div className="about-plans-sidebar">
+          <div className="plans-heading">
             <h3>Future Plans</h3>
-            <span>
-              {(isEditing ? draftPlans.length : savedPlans.length)} of 50 plans
+            <span className="plans-count">
+              {isEditing ? draftPlans.length : savedPlans.length} of 50 plans
               added
             </span>
           </div>
           {isEditing ? (
-            <button type="button" className="party-btn outline" onClick={addPlan}>
+            <button
+              type="button"
+              className="party-btn outline add-plan-btn"
+              onClick={addPlan}
+            >
               <i className="ri-add-line" aria-hidden="true" />
               Add Plan
             </button>
           ) : null}
-        </div>
-        <div className="about-list">
-          {(isEditing ? draftPlans : savedPlans).map((plan, index) => (
-            <div key={`${index}-${plan}`} className="about-item">
-              <span>{index + 1}</span>
-              {isEditing ? (
-                <>
-                  <input
-                    value={plan}
-                    placeholder="Enter future plan..."
-                    onChange={(event) => updatePlan(index, event.target.value)}
-                  />
-                  <button
-                    type="button"
-                    className="about-remove"
-                    onClick={() => removePlan(index)}
-                  >
-                    <i className="ri-delete-bin-line" aria-hidden="true" />
-                  </button>
-                </>
-              ) : (
-                <p>{plan}</p>
-              )}
-            </div>
-          ))}
+          <div className="about-list">
+            {(isEditing ? draftPlans : savedPlans).map((plan, index) => (
+              <div key={`${index}-${plan}`} className="about-item">
+                <span>{index + 1}</span>
+                {isEditing ? (
+                  <>
+                    <input
+                      value={plan}
+                      placeholder="Enter future plan..."
+                      onChange={(event) =>
+                        updatePlan(index, event.target.value)
+                      }
+                    />
+                    <button
+                      type="button"
+                      className="about-remove"
+                      onClick={() => removePlan(index)}
+                    >
+                      <i className="ri-delete-bin-line" aria-hidden="true" />
+                    </button>
+                  </>
+                ) : (
+                  <p>{plan}</p>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -108,7 +124,7 @@ export default function PartyAbout() {
           <span>
             <i className="ri-information-line" aria-hidden="true" />
           </span>
-          Guidelines
+          <b>Guidelines</b>
         </div>
         <ul>
           {partyAbout.guidelines.map((item) => (
