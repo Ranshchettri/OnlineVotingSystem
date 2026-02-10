@@ -136,7 +136,7 @@
 .party-topbar {
   background: #fff;
   border-bottom: 1px solid var(--gray-200);
-  padding: 12px 20px;
+  padding: 8px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -211,7 +211,7 @@
 }
 
 .party-content {
-  padding: 18px 22px 32px;
+  padding: 14px 18px 24px;
   overflow-y: auto;
   flex: 1;
 }

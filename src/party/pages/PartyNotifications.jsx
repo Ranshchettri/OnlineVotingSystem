@@ -20,13 +20,15 @@ export default function PartyNotifications() {
           <h1>{partyNotifications.title}</h1>
           <p>{partyNotifications.subtitle}</p>
         </div>
-        <button className="notif-mark" type="button">
-          Mark all as read
-        </button>
       </div>
 
       <div className="notif-card party-card">
-        <div className="notif-card-title">Recent Notifications</div>
+        <div className="notif-card-head">
+          <div className="notif-card-title">Recent Notifications</div>
+          <button className="notif-mark" type="button">
+            Mark all as read
+          </button>
+        </div>
         <div className="notif-list">
           {partyNotifications.items.map((item) => (
             <div key={item.id} className={`notif-item ${item.type}`}>
