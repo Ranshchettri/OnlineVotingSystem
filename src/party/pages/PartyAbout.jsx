@@ -73,22 +73,24 @@ export default function PartyAbout() {
       <div className="about-section">
         <div className="about-plans-sidebar">
           <div className="plans-heading">
-            <h3>Future Plans</h3>
-            <span className="plans-count">
-              {isEditing ? draftPlans.length : savedPlans.length} of 50 plans
-              added
-            </span>
+            <div>
+              <h3>Future Plans</h3>
+              <span className="plans-count">
+                {isEditing ? draftPlans.length : savedPlans.length} of 50 plans
+                added
+              </span>
+            </div>
+            {isEditing ? (
+              <button
+                type="button"
+                className="party-btn outline add-plan-btn"
+                onClick={addPlan}
+              >
+                <i className="ri-add-line" aria-hidden="true" />
+                Add Plan
+              </button>
+            ) : null}
           </div>
-          {isEditing ? (
-            <button
-              type="button"
-              className="party-btn outline add-plan-btn"
-              onClick={addPlan}
-            >
-              <i className="ri-add-line" aria-hidden="true" />
-              Add Plan
-            </button>
-          ) : null}
           <div className="about-list">
             {(isEditing ? draftPlans : savedPlans).map((plan, index) => (
               <div key={`${index}-${plan}`} className="about-item">
