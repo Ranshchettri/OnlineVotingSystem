@@ -2,75 +2,14 @@ import { partyNotifications } from "../data/fakePartyData";
 import "../styles/notifications.css";
 
 const Icon = ({ id, type }) => {
-  if (id === "start") {
-    return (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M6 8a6 6 0 0 1 12 0v4l2 2H4l2-2z" />
-        <path d="M9 18h6" />
-      </svg>
-    );
-  }
-  if (id === "deadline") {
-    return (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M12 9v4" />
-        <circle cx="12" cy="17" r="1" />
-        <path d="M10 3h4l7 14H3z" />
-      </svg>
-    );
-  }
-  if (id === "milestone") {
-    return (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M8 21h8" />
-        <path d="M12 17v4" />
-        <path d="M7 4h10v4H7z" />
-        <path d="M6 8h12l-1 5H7z" />
-      </svg>
-    );
-  }
-  if (id === "maintenance") {
-    return (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M14 7l3 3-7 7-3-3z" />
-        <path d="M7 7l3 3" />
-        <path d="M17 17l3 3" />
-      </svg>
-    );
-  }
-  if (id === "results") {
-    return (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="4" y="4" width="16" height="16" rx="2" />
-        <path d="M8 8h8" />
-        <path d="M8 12h8" />
-        <path d="M8 16h6" />
-      </svg>
-    );
-  }
-  if (type === "warning") {
-    return (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M12 9v4" />
-        <circle cx="12" cy="17" r="1" />
-        <path d="M10 3h4l7 14H3z" />
-      </svg>
-    );
-  }
-  if (type === "info") {
-    return (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <circle cx="12" cy="12" r="9" />
-        <path d="M12 10v6" />
-        <path d="M12 7h.01" />
-      </svg>
-    );
-  }
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M20 6l-8 8-4-4" />
-    </svg>
-  );
+  if (id === "start") return <i className="ri-notification-3-line" aria-hidden="true" />;
+  if (id === "deadline") return <i className="ri-error-warning-line" aria-hidden="true" />;
+  if (id === "milestone") return <i className="ri-trophy-line" aria-hidden="true" />;
+  if (id === "maintenance") return <i className="ri-tools-line" aria-hidden="true" />;
+  if (id === "results") return <i className="ri-file-list-line" aria-hidden="true" />;
+  if (type === "warning") return <i className="ri-error-warning-line" aria-hidden="true" />;
+  if (type === "info") return <i className="ri-information-line" aria-hidden="true" />;
+  return <i className="ri-checkbox-circle-line" aria-hidden="true" />;
 };
 
 export default function PartyNotifications() {
@@ -107,10 +46,7 @@ export default function PartyNotifications() {
       <div className="notif-email">
         <div className="notif-email-title">
           <span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M4 6h16v12H4z" />
-              <path d="M4 7l8 6 8-6" />
-            </svg>
+            <i className="ri-mail-line" aria-hidden="true" />
           </span>
           <div>
             <strong>Email Notifications</strong>

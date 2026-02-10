@@ -4,6 +4,11 @@
   gap: 18px;
 }
 
+.party-page--stats {
+  gap: 14px;
+  margin-top: -6px;
+}
+
 .party-page-header {
   display: flex;
   align-items: center;
@@ -12,13 +17,13 @@
 }
 
 .party-page-header h1 {
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 700;
 }
 
 .party-page-header p {
   margin-top: 4px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--gray-500);
 }
 
@@ -34,6 +39,11 @@
   align-items: center;
   gap: 6px;
   cursor: pointer;
+}
+
+.party-edit-btn i {
+  font-size: 14px;
+  line-height: 1;
 }
 
 .party-card {
@@ -87,10 +97,18 @@
 .party-btn {
   border-radius: 8px;
   border: 1px solid transparent;
-  padding: 6px 12px;
-  font-size: 11px;
+  padding: 8px 12px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.party-btn i {
+  font-size: 14px;
+  line-height: 1;
 }
 
 .party-btn.primary {

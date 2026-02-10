@@ -4,7 +4,7 @@
 }
 
 .party-sidebar {
-  width: 216px;
+  width: 220px;
   background: #fff;
   border-right: 1px solid var(--gray-200);
   display: flex;
@@ -23,9 +23,9 @@
 }
 
 .party-logo-mini {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
   background: var(--red-600);
   display: flex;
   align-items: center;
@@ -36,29 +36,30 @@
 }
 
 .party-sidebar-title {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
 }
 
 .party-sidebar-sub {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--gray-500);
 }
 
 .party-nav {
   padding: 12px 12px;
-  display: grid;
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   flex: 1;
 }
 
 .party-nav-link {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 9px 12px;
-  border-radius: 12px;
-  font-size: 12px;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
   color: var(--gray-700);
   border: 1px solid transparent;
   transition: 0.2s ease;
@@ -71,28 +72,25 @@
 .party-nav-link.is-active {
   background: var(--red-50);
   color: var(--red-700);
-  border-color: var(--red-200);
+  border-color: transparent;
 }
 
 .party-nav-link.is-active .party-nav-icon {
-  border-color: var(--red-200);
   color: var(--red-600);
 }
 
 .party-nav-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 8px;
-  border: 1px solid var(--gray-200);
-  display: flex;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
+  color: var(--gray-500);
 }
 
-.party-nav-icon svg {
-  width: 14px;
-  height: 14px;
+.party-nav-icon i {
+  font-size: 18px;
+  line-height: 1;
 }
 
 .party-deadline {
@@ -103,6 +101,27 @@
   border: 1px solid #fdba74;
   font-size: 11px;
   color: #c2410c;
+}
+
+.party-deadline-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.party-deadline-title i,
+.party-deadline-time i {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.party-deadline-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
 }
 
 .party-main {
@@ -154,10 +173,10 @@
   color: var(--gray-500);
 }
 
-.party-badge svg,
-.party-logout svg {
-  width: 14px;
-  height: 14px;
+.party-badge i,
+.party-logout i {
+  font-size: 14px;
+  line-height: 1;
 }
 
 .party-top-actions {

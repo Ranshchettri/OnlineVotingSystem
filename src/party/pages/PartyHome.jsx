@@ -9,6 +9,7 @@ export default function PartyHome() {
     name: partyHome.name,
     leader: partyHome.leader,
     vision: partyHome.vision,
+    logoImage: partyHome.logoImage || "",
     team: partyHome.team.map((member, index) => ({
       ...member,
       id: `${member.name}-${index}`,
@@ -35,6 +36,12 @@ export default function PartyHome() {
 
   const updateField = (field, value) => {
     setDraft((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleLogo = (file) => {
+    if (!file) return;
+    const preview = URL.createObjectURL(file);
+    updateField("logoImage", preview);
   };
 
   const updateMember = (id, field, value) => {
@@ -94,6 +101,7 @@ export default function PartyHome() {
           </div>
         ) : (
           <button className="party-edit-btn" type="button" onClick={startEdit}>
+            <i className="ri-edit-line" aria-hidden="true" />
             Edit Profile
           </button>
         )}
@@ -105,7 +113,28 @@ export default function PartyHome() {
             className="party-profile-logo"
             style={{ background: partyHome.logoBg }}
           >
-            <span>{partyHome.logoText}</span>
+            {isEditing ? (
+              <>
+                {draft.logoImage ? (
+                  <img src={draft.logoImage} alt="Party logo" />
+                ) : (
+                  <span>{partyHome.logoText}</span>
+                )}
+                <label className="party-logo-upload">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => handleLogo(event.target.files[0])}
+                  />
+                  <i className="ri-upload-cloud-line" aria-hidden="true" />
+                  Upload Logo
+                </label>
+              </>
+            ) : saved.logoImage ? (
+              <img src={saved.logoImage} alt="Party logo" />
+            ) : (
+              <span>{partyHome.logoText}</span>
+            )}
           </div>
           <div className="party-profile-info">
             {isEditing ? (
@@ -128,9 +157,7 @@ export default function PartyHome() {
               </>
             )}
             <span className="party-profile-badge">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M20 6l-8 8-4-4" />
-              </svg>
+              <i className="ri-checkbox-circle-line" aria-hidden="true" />
               Verified Party
             </span>
           </div>
@@ -153,7 +180,8 @@ export default function PartyHome() {
           <h3>Team Members</h3>
           {isEditing ? (
             <button type="button" className="party-btn outline" onClick={addMember}>
-              + Add Member
+              <i className="ri-add-line" aria-hidden="true" />
+              Add Member
             </button>
           ) : null}
         </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { partyAbout } from "../data/fakePartyData";
 import "../styles/about.css";
 
@@ -54,6 +54,7 @@ export default function PartyAbout() {
           </div>
         ) : (
           <button className="party-edit-btn" type="button" onClick={startEdit}>
+            <i className="ri-edit-line" aria-hidden="true" />
             Edit Plans
           </button>
         )}
@@ -70,7 +71,8 @@ export default function PartyAbout() {
           </div>
           {isEditing ? (
             <button type="button" className="party-btn outline" onClick={addPlan}>
-              + Add Plan
+              <i className="ri-add-line" aria-hidden="true" />
+              Add Plan
             </button>
           ) : null}
         </div>
@@ -90,7 +92,7 @@ export default function PartyAbout() {
                     className="about-remove"
                     onClick={() => removePlan(index)}
                   >
-                    ✕
+                    <i className="ri-delete-bin-line" aria-hidden="true" />
                   </button>
                 </>
               ) : (
@@ -103,7 +105,9 @@ export default function PartyAbout() {
 
       <div className="about-guidelines">
         <div className="about-guidelines-title">
-          <span>i</span>
+          <span>
+            <i className="ri-information-line" aria-hidden="true" />
+          </span>
           Guidelines
         </div>
         <ul>

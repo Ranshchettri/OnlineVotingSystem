@@ -1,7 +1,7 @@
 .stats-hero {
   border-radius: 16px;
   background: linear-gradient(90deg, #16a34a 0%, #15803d 100%);
-  padding: 20px 20px;
+  padding: 18px 20px;
   color: #fff;
   display: grid;
   gap: 16px;
@@ -30,7 +30,7 @@
 
 .stats-hero-header strong {
   display: block;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   margin-top: 4px;
 }
@@ -99,13 +99,13 @@
 
 .stats-section-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
 }
 
 .stats-section-head h3 {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
 }
 
 .stats-section-head p {
@@ -308,6 +308,7 @@
 .stats-timeline-item {
   grid-template-columns: auto 1fr auto;
   align-items: center;
+  gap: 10px;
 }
 
 .stats-timeline-item span:not(.stats-timeline-icon) {
@@ -346,9 +347,9 @@
   color: #1d4ed8;
 }
 
-.stats-timeline-icon svg {
-  width: 14px;
-  height: 14px;
+.stats-timeline-icon i {
+  font-size: 14px;
+  line-height: 1;
 }
 
 .stats-compare-item strong,

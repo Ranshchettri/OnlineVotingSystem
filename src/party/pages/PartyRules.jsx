@@ -1,66 +1,14 @@
 import { partyRules } from "../data/fakePartyData";
 import "../styles/rules.css";
 
-const IconDoc = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <rect x="5" y="3" width="14" height="18" rx="2" />
-    <path d="M8 8h8" />
-    <path d="M8 12h8" />
-    <path d="M8 16h6" />
-  </svg>
-);
-
-const IconBulb = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M9 18h6" />
-    <path d="M10 22h4" />
-    <path d="M12 2a7 7 0 0 1 4 12c-1 1-1 2-1 3H9c0-1 0-2-1-3a7 7 0 0 1 4-12z" />
-  </svg>
-);
-
-const IconWarn = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M12 9v4" />
-    <circle cx="12" cy="17" r="1" />
-    <path d="M10 3h4l7 14H3z" />
-  </svg>
-);
-
-const IconHelp = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M4 12a8 8 0 0 1 16 0" />
-    <path d="M18 12v5a2 2 0 0 1-2 2h-1" />
-    <path d="M6 12v5a2 2 0 0 0 2 2h1" />
-    <circle cx="9" cy="18" r="1" />
-    <circle cx="15" cy="18" r="1" />
-  </svg>
-);
-
-const IconCheck = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M20 6l-8 8-4-4" />
-  </svg>
-);
-
-const IconClose = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M6 6l12 12" />
-    <path d="M18 6l-12 12" />
-  </svg>
-);
-
-const IconPhone = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.08 4.18 2 2 0 0 1 4.06 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.77.62 2.6a2 2 0 0 1-.45 2.11L8.1 9.9a16 16 0 0 0 6 6l1.47-1.13a2 2 0 0 1 2.11-.45c.83.29 1.7.5 2.6.62a2 2 0 0 1 1.72 1.98z" />
-  </svg>
-);
-
-const IconMail = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M4 6h16v12H4z" />
-    <path d="M4 7l8 6 8-6" />
-  </svg>
-);
+const IconDoc = () => <i className="ri-file-list-line" aria-hidden="true" />;
+const IconBulb = () => <i className="ri-lightbulb-line" aria-hidden="true" />;
+const IconWarn = () => <i className="ri-alert-line" aria-hidden="true" />;
+const IconHelp = () => <i className="ri-customer-service-2-line" aria-hidden="true" />;
+const IconCheck = () => <i className="ri-check-line" aria-hidden="true" />;
+const IconClose = () => <i className="ri-close-line" aria-hidden="true" />;
+const IconPhone = () => <i className="ri-phone-line" aria-hidden="true" />;
+const IconMail = () => <i className="ri-mail-line" aria-hidden="true" />;
 
 export default function PartyRules() {
   return (

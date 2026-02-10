@@ -2,30 +2,13 @@ import { partyPerformance } from "../data/fakePartyData";
 import "../styles/performance.css";
 
 const StatIcon = ({ type }) => {
-  if (type === "trophy") {
-    return (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M8 21h8" />
-        <path d="M12 17v4" />
-        <path d="M7 4h10v4H7z" />
-        <path d="M6 8h12l-1 5H7z" />
-      </svg>
-    );
-  }
-  if (type === "votes") {
-    return (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M4 20h16" />
-        <rect x="6" y="10" width="4" height="6" />
-        <rect x="14" y="6" width="4" height="10" />
-      </svg>
-    );
-  }
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M4 12h6l2 3 4-7 4 9" />
-    </svg>
-  );
+  const icon =
+    type === "trophy"
+      ? "ri-trophy-line"
+      : type === "votes"
+      ? "ri-bar-chart-box-line"
+      : "ri-line-chart-line";
+  return <i className={icon} aria-hidden="true" />;
 };
 
 export default function PartyPerformance() {
@@ -81,12 +64,7 @@ export default function PartyPerformance() {
                   }`}
                 >
                   {item.badge === "Winner" ? (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M8 21h8" />
-                      <path d="M12 17v4" />
-                      <path d="M7 4h10v4H7z" />
-                      <path d="M6 8h12l-1 5H7z" />
-                    </svg>
+                    <i className="ri-trophy-line" aria-hidden="true" />
                   ) : null}
                   {item.badge}
                 </span>
