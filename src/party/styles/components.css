@@ -1,7 +1,7 @@
 .party-page {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
 }
 
 .party-page--stats {
@@ -23,7 +23,7 @@
 }
 
 .party-page-header p {
-  margin: 4px 0 0;
+  margin: 0px 0 0;
   font-size: 13px;
   color: var(--gray-500);
 }
@@ -48,7 +48,7 @@
 }
 
 .party-card {
-  border-radius: 16px;
+  border-radius: 15px;
   border: 1px solid var(--gray-200);
   background: #fff;
   box-shadow: var(--shadow-sm);

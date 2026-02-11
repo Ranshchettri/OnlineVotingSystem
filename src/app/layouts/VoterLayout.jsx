@@ -11,7 +11,7 @@ export default function VoterLayout() {
   return (
     <div className="app-layout">
       <nav className="app-nav">
-        <h2>🗳️ Voter Portal</h2>
+        <h2> Voter Portal</h2>
         <div className="nav-links">
           <a href="/features/voter/pages">Home</a>
           <a href="/features/voter/vote">Vote</a>
