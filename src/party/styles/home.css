@@ -9,7 +9,7 @@
 .party-profile-hero {
   background: linear-gradient(90deg, #dc2626 0%, #b91c1c 100%);
   color: #fff;
-  padding: 30px 22px;
+  padding: 35px 22px;
   display: flex;
   align-items: center;
   gap: 18px;
@@ -20,7 +20,7 @@
   height: 120px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.2);
-  /* border: 2px solid rgba(3, 3, 3, 0.9); */
+  border: 1px dotted rgba(101, 101, 101, 0.9);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -163,7 +163,7 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
-  margin-top: 12px;
+  margin-top: 59px;
 }
 
 .party-team-card {

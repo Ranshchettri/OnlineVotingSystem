@@ -96,7 +96,7 @@
 .party-deadline {
   margin: 12px;
   padding: 12px;
-  border-radius: 12px;
+  border-radius: 8px;
   background: var(--orange-50);
   border: 1px solid #fdba74;
   font-size: 11px;
@@ -107,8 +107,8 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 550;
 }
 
 .party-deadline-title i,
@@ -194,7 +194,7 @@
   background: var(--red-50);
   color: var(--red-700);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 550;
 }
 
 .party-logout {

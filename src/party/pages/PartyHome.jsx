@@ -48,7 +48,7 @@ export default function PartyHome() {
     setDraft((prev) => ({
       ...prev,
       team: prev.team.map((member) =>
-        member.id === id ? { ...member, [field]: value } : member
+        member.id === id ? { ...member, [field]: value } : member,
       ),
     }));
   };
@@ -92,10 +92,18 @@ export default function PartyHome() {
         </div>
         {isEditing ? (
           <div className="party-header-actions">
-            <button type="button" className="party-btn ghost" onClick={cancelEdit}>
+            <button
+              type="button"
+              className="party-btn ghost"
+              onClick={cancelEdit}
+            >
               Cancel
             </button>
-            <button type="button" className="party-btn primary" onClick={saveEdit}>
+            <button
+              type="button"
+              className="party-btn primary"
+              onClick={saveEdit}
+            >
               Save Changes
             </button>
           </div>
@@ -146,7 +154,9 @@ export default function PartyHome() {
                 />
                 <input
                   value={draft.leader}
-                  onChange={(event) => updateField("leader", event.target.value)}
+                  onChange={(event) =>
+                    updateField("leader", event.target.value)
+                  }
                   placeholder="Leader Name"
                 />
               </div>
@@ -179,7 +189,11 @@ export default function PartyHome() {
         <div className="party-team-head">
           <h3>Team Members</h3>
           {isEditing ? (
-            <button type="button" className="party-btn outline" onClick={addMember}>
+            <button
+              type="button"
+              className="party-btn outline"
+              onClick={addMember}
+            >
               <i className="ri-add-line" aria-hidden="true" />
               Add Member
             </button>
@@ -199,7 +213,9 @@ export default function PartyHome() {
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={(event) => handlePhoto(member.id, event.target.files[0])}
+                      onChange={(event) =>
+                        handlePhoto(member.id, event.target.files[0])
+                      }
                     />
                     Upload
                   </label>

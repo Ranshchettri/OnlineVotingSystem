@@ -1,10 +1,10 @@
 .stats-hero {
-  border-radius: 16px;
+  border-radius: 11px;
   background: linear-gradient(90deg, #16a34a 0%, #15803d 100%);
-  padding: 18px 20px;
+  padding: 28px 20px;
   color: #fff;
   display: grid;
-  gap: 16px;
+  gap: 36px;
   box-shadow: var(--shadow-sm);
 }
 
@@ -24,13 +24,13 @@
 }
 
 .stats-hero-label {
-  font-size: 11px;
-  opacity: 0.9;
+  font-size: 15px;
+  opacity: 0.8;
 }
 
 .stats-hero-header strong {
   display: block;
-  font-size: 17px;
+  font-size: 27px;
   font-weight: 700;
   margin-top: 4px;
 }
@@ -39,13 +39,13 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: 6px;
+  margin-top: 16px;
 }
 
 .stats-hero-logo {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
+  width: 94px;
+  height: 94px;
+  border-radius: 8px;
   background: #dc2626;
   display: flex;
   align-items: center;
@@ -57,7 +57,7 @@
 
 .stats-hero-title span {
   display: block;
-  font-size: 11px;
+  font-size: 16px;
   opacity: 0.9;
   margin-top: 2px;
 }
@@ -68,7 +68,7 @@
   gap: 12px;
   background: rgba(0, 0, 0, 0.12);
   border-radius: 12px;
-  padding: 14px;
+  padding: 10px;
 }
 
 .stats-hero-grid > div {
@@ -78,14 +78,14 @@
 }
 
 .stats-hero-grid span {
-  font-size: 11px;
+  font-size: 16px;
   opacity: 0.9;
 }
 
 .stats-hero-grid strong {
   display: block;
   margin-top: 4px;
-  font-size: 15px;
+  font-size: 25px;
   font-weight: 700;
 }
 
@@ -104,18 +104,18 @@
 }
 
 .stats-section-head h3 {
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 700;
 }
 
 .stats-section-head p {
-  font-size: 11px;
+  font-size: 15px;
   color: var(--gray-500);
   margin-top: 4px;
 }
 
 .stats-section-head span {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--gray-400);
 }
 
@@ -128,7 +128,7 @@
 .stats-rank-item {
   border: 1px solid var(--gray-200);
   border-radius: 12px;
-  padding: 14px 16px;
+  padding: 14px 16px ;
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 8px 12px;

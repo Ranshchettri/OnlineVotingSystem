@@ -1,5 +1,5 @@
 .party-header-compact {
-  padding: 12px 0 16px 0 !important;
+  padding: 0px 0 1px 0 !important;
 }
 
 .about-section {
@@ -40,13 +40,13 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 16px;
-  padding-bottom: 12px;
+  padding-bottom: 5px;
   border-bottom: 2px solid var(--gray-100);
 }
 
 .plans-heading h3 {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 21px;
+  font-weight: 650;
   margin: 0;
   color: var(--dark);
   flex: 1;
@@ -59,7 +59,7 @@
 }
 
 .plans-count {
-  font-size: 12px;
+  font-size: 15px;
   color: var(--gray-600);
   display: block;
 }

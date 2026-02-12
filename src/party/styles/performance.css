@@ -1,23 +1,24 @@
 .performance-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 18px;
 }
 
 .performance-stat {
   border-radius: 14px;
   border: 1px solid var(--gray-200);
   background: #fff;
-  padding: 14px 16px;
+  padding: 59px 8px 18px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 15px;
   box-shadow: var(--shadow-sm);
 }
 
 .performance-stat-icon {
-  width: 34px;
-  height: 34px;
+  width: 52px;
+  height: 54px;
+  margin-bottom: 20px;
   border-radius: 10px;
   background: var(--gray-100);
   display: flex;
@@ -32,14 +33,14 @@
 }
 
 .performance-stat span {
-  font-size: 11px;
-  color: var(--gray-500);
+  font-size: 18px;
+  color: var(--gray-600);
 }
 
 .performance-stat strong {
   display: block;
-  margin-top: 4px;
-  font-size: 16px;
+  margin-top: 0px;
+  font-size: 29px;
   font-weight: 700;
 }
 
@@ -48,8 +49,8 @@
 }
 
 .performance-history-header h3 {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 750;
 }
 
 .performance-history-list {
@@ -61,7 +62,7 @@
 .performance-history-item {
   border: 1px solid var(--gray-200);
   border-radius: 12px;
-  padding: 12px 14px;
+  padding: 12px 19px;
   display: grid;
   gap: 10px;
 }
@@ -70,29 +71,29 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 600px;
 }
 
 .performance-history-head h4 {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .performance-history-head span {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--gray-500);
 }
 
 .performance-history-boxes {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 50px;
 }
 
 .performance-box {
   background: #f8fafc;
   border-radius: 10px;
-  padding: 8px 10px;
+  padding: 12px 13px;
   font-size: 11px;
   color: var(--gray-600);
   border: 1px solid var(--gray-200);
@@ -100,13 +101,13 @@
 
 .performance-box span {
   font-size: 10px;
-  color: var(--gray-500);
+  color: var(--gray-900);
 }
 
 .performance-box strong {
   display: block;
   margin-top: 4px;
-  font-size: 12px;
+  font-size: 15px;
   color: var(--gray-900);
 }
 
@@ -123,10 +124,10 @@
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 100;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 0px;
 }
 
 .performance-badge svg {
@@ -158,9 +159,9 @@
 .performance-insights-title {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 2px;
   font-weight: 600;
-  margin-bottom: 8px;
+  margin-bottom: 11px;
 }
 
 .performance-insights-title span {
