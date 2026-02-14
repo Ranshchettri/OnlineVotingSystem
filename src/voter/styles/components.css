@@ -64,7 +64,7 @@
 
 .vote-banner {
   margin-top: 15px;
-  padding: 28px 32px;
+  padding: 38px 32px;
   border-radius: 14px;
   color: #fff;
   background: linear-gradient(90deg, #16a34a 0%, #15803d 100%);
@@ -74,12 +74,13 @@
 }
 
 .vote-banner h2 {
-  font-size: 22px;
+  font-size: 32px;
+  color: #fff;
   font-weight: 700;
 }
 
 .vote-banner p {
-  margin-top: 8px;
+  margin-top: 3px;
   color: rgba(255, 255, 255, 0.85);
   font-size: 14px;
 }
@@ -195,9 +196,9 @@
 }
 
 .party-view-btn {
-  border: 1px solid var(--gray-200);
+  border: 1px solid var(--gray-400);
   background: #fff;
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 8px 14px;
   font-size: 13px;
   color: var(--gray-700);
@@ -353,8 +354,7 @@
   width: 38px;
   height: 38px;
   border-radius: 12px;
-  background: #fff;
-  color: #f59e0b;
+  color: #f79d02;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -482,6 +482,7 @@
 
 .vote-modal-title h3 {
   font-size: 20px;
+  color: #fff;
   font-weight: 700;
   margin-top: 4px;
 }
@@ -501,7 +502,7 @@
   display: flex;
   gap: 14px;
   padding: 16px;
-  border-radius: 16px;
+  border-radius: 8px;
   background: #fee2e2;
   border: 1px solid #fecaca;
   color: #991b1b;
@@ -511,7 +512,6 @@
   width: 34px;
   height: 34px;
   border-radius: 999px;
-  background: #fff;
   color: #dc2626;
   display: flex;
   align-items: center;
@@ -558,7 +558,7 @@
 .vote-email {
   margin-top: 16px;
   padding: 14px 16px;
-  border-radius: 14px;
+  border-radius: 8px;
   background: var(--green-50);
   border: 1px solid var(--green-200);
   display: flex;
@@ -570,7 +570,6 @@
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  background: #fff;
   color: var(--green-600);
   display: flex;
   align-items: center;

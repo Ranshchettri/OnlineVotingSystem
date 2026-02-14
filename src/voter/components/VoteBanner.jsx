@@ -11,15 +11,9 @@ export default function VoteBanner({ hasVoted }) {
       </div>
       <div className="vote-banner-icon">
         {hasVoted ? (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M20 6l-8 8-4-4" />
-          </svg>
+          <i className="ri-checkbox-circle-line" aria-hidden="true" />
         ) : (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="4" y="3" width="16" height="6" rx="1" />
-            <path d="M8 9v12h8V9" />
-            <path d="M12 13v4" />
-          </svg>
+          <i className="ri-ballot-line" aria-hidden="true" />
         )}
       </div>
     </div>

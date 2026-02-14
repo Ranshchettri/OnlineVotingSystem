@@ -26,9 +26,7 @@ export default function PartyCard({ party, hasVoted, isVotedParty, onVote }) {
         <span className="party-rank">#{party.rank}</span>
         {isVotedParty ? (
           <span className="party-check">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M20 6l-8 8-4-4" />
-            </svg>
+            <i className="ri-checkbox-circle-line" aria-hidden="true" />
           </span>
         ) : null}
       </div>

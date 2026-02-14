@@ -4,11 +4,7 @@ export default function EmailBanner({ visible, partyName }) {
   return (
     <div className="email-banner">
       <span className="email-banner-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M4 4h16v16H4z" />
-          <path d="M4 6l8 6 8-6" />
-          <path d="M8 13l4 3 4-3" />
-        </svg>
+        <i className="ri-mail-check-line" aria-hidden="true" />
       </span>
       <div>
         <h4>Email Confirmation Sent!</h4>

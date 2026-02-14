@@ -52,10 +52,7 @@ export default function VoteConfirmModal({
 
           <div className="vote-email">
             <div className="vote-email-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M4 4h16v16H4z" />
-                <path d="M4 6l8 6 8-6" />
-              </svg>
+              <i className="ri-mail-line" aria-hidden="true" />
             </div>
             <div>
               <h4>Email Confirmation</h4>
