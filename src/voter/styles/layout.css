@@ -13,16 +13,17 @@
 }
 
 .voter-content {
-  padding: 24px 32px 40px;
+  padding: 4px 32px 40px;
   overflow-y: auto;
   flex: 1;
 }
 
 .voter-sidebar {
-  width: 280px;
+  width: 230px;
   background: #fff;
   border-right: 1px solid var(--gray-200);
   display: flex;
+  font-size: 13px;
   flex-direction: column;
   height: 100vh;
   position: sticky;
@@ -33,16 +34,16 @@
   padding: 24px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 11px;
   border-bottom: 1px solid var(--gray-200);
 }
 
 .voter-avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 16px;
+  width: 55px;
+  height: 58px;
+  border-radius: 8px;
   background: var(--green-50);
-  color: var(--green-600);
+  color: var(--green-700);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -59,10 +60,11 @@
 }
 
 .voter-nav {
-  padding: 20px 16px;
+  padding: 15px 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 1px;
+  height: 110px;
   flex: 1;
 }
 
@@ -71,11 +73,11 @@
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  border-radius: 12px;
+  border-radius: 8px;
   color: var(--gray-900);
-  border: 1px solid transparent;
+  /* border: 1px solid transparent; */
   transition: 0.2s ease;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .voter-nav-link:hover {
@@ -91,12 +93,12 @@
 .voter-nav-icon {
   width: 32px;
   height: 32px;
-  border-radius: 10px;
-  border: 1px solid var(--gray-200);
+  border-radius:5px;
+  /* border: px solid var(--gray-200); */
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
+  /* background: #fff; */
 }
 
 .voter-nav-link.is-active .voter-nav-icon {
@@ -119,24 +121,24 @@
 .voter-status-card {
   margin: 0 16px 20px;
   padding: 16px;
-  border-radius: 16px;
+  border-radius: 8px;
   background: var(--green-50);
-  border: 1px solid var(--green-200);
+  /* border: 1px solid var(--green-200); */
 }
 
 .voter-status-title {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-weight: 600;
+  font-weight: 450;
   color: var(--green-700);
 }
 
 .voter-status-title span {
-  width: 32px;
+  width: 19px;
   height: 32px;
   border-radius: 999px;
-  background: #fff;
+  /* background: #000000; */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -145,7 +147,7 @@
 
 .voter-status-text {
   font-size: 12px;
-  color: var(--gray-600);
+  color: var(--gray-700);
   margin-top: 8px;
 }
 
