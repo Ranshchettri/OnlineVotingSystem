@@ -1,5 +1,5 @@
 .party-profile-card {
-  border-radius: 16px;
+  border-radius: 10px;
   border: 1px solid var(--gray-200);
   background: #fff;
   overflow: hidden;
@@ -18,9 +18,9 @@
 .party-profile-logo {
   width: 109px;
   height: 120px;
-  border-radius: 14px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.2);
-  border: 1px dotted rgba(101, 101, 101, 0.9);
+  border: 1px dotted rgba(255, 255, 255, 0.9);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -155,7 +155,7 @@
 }
 
 .party-team h3 {
-  font-size: 18px;
+  font-size: 28px;
   font-weight: 750;
 }
 
@@ -163,7 +163,7 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
-  margin-top: 59px;
+  margin-top: 99px;
 }
 
 .party-team-card {
@@ -175,7 +175,7 @@
 .party-team-photo {
   width: 100%;
   aspect-ratio: 3 / 4;
-  border-radius: 14px;
+  border-radius: 10px;
   background: var(--gray-100);
   border: 1px solid var(--gray-200);
   box-shadow: var(--shadow-sm);
@@ -240,7 +240,7 @@
 }
 
 .party-notice {
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid #fde68a;
   background: #fefce8;
   padding: 12px 14px;

@@ -450,19 +450,19 @@
 .export-title p {
   margin: 0;
   font-size: 13px;
-  color: #6b7280;
+  color: #000000;
 }
 
 .export-title h4 {
   margin: 2px 0 0;
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .export-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
+  width: 47px;
+  height: 49px;
+  border-radius: 8px;
   background: #e0f2fe;
   color: #0ea5e9;
   display: grid;
@@ -481,11 +481,11 @@
 }
 
 .export-summary-card .stat-number.bold {
-  font-weight: 800;
+  font-weight: 650;
 }
 
 .export-subtitle {
-  font-size: 13px;
+  font-size: 15px;
   color: #475569;
   margin: 4px 0 0;
 }
@@ -505,7 +505,7 @@
   align-items: center;
   gap: 12px;
   padding: 14px;
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid #e5e7eb;
   background: #fff;
   cursor: pointer;
@@ -533,7 +533,7 @@
 .export-card-icon {
   width: 52px;
   height: 52px;
-  border-radius: 14px;
+  border-radius: 8px;
   display: grid;
   place-items: center;
   background: rgba(255, 255, 255, 0.7);
@@ -551,7 +551,7 @@
 }
 
 .export-card-title {
-  font-weight: 800;
+  font-weight: 600;
   margin: 0;
 }
 
@@ -587,7 +587,7 @@
 
 .export-table {
   border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
 }
 
@@ -628,7 +628,7 @@
 }
 
 .export-party-meta .party-name {
-  font-weight: 700;
+  font-weight: 450;
   margin: 0;
 }
 

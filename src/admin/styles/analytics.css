@@ -1,7 +1,7 @@
 .analytics-page {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 8px;
 }
 
 .analytics-stats {
@@ -13,7 +13,7 @@
 .analytics-stat-card {
   background: var(--admin-card);
   border: 1px solid var(--admin-border);
-  border-radius: 14px;
+  border-radius: 10px;
   padding: 16px;
   box-shadow: var(--admin-shadow);
 }

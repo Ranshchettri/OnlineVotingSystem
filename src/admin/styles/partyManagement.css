@@ -103,7 +103,7 @@
 .party-row {
   background: var(--admin-card);
   border: 1px solid var(--admin-border);
-  border-radius: 14px;
+  border-radius: 10px;
   padding: 16px;
   display: grid;
   grid-template-columns: 220px 1fr;
@@ -124,8 +124,8 @@
 .party-logo {
   width: 54px;
   height: 54px;
-  border-radius: 12px;
-  background: #f1f5f9;
+  border-radius: 10px;
+  background: #000000;
   display: grid;
   place-items: center;
   font-weight: 700;
