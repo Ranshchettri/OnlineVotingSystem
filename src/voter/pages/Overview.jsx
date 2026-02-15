@@ -6,6 +6,7 @@ import EmailBanner from "../components/EmailBanner";
 import WarningNotice from "../components/WarningNotice";
 import OtpModal from "../components/OtpModal";
 import VoteConfirmModal from "../components/VoteConfirmModal";
+import FaceVerifyModal from "../components/FaceVerifyModal";
 import { electionOverview, stats, parties } from "../data/fakeVoterData";
 import "../styles/overview.css";
 
@@ -17,6 +18,7 @@ export default function Overview() {
   const [otpError, setOtpError] = useState("");
   const [showEmailBanner, setShowEmailBanner] = useState(false);
   const [voteStep, setVoteStep] = useState(null);
+  const [faceVerified, setFaceVerified] = useState(false);
 
   useEffect(() => {
     if (!showEmailBanner) return undefined;
@@ -38,11 +40,17 @@ export default function Overview() {
     setSelectedParty(party);
     setOtp("");
     setOtpError("");
+    setFaceVerified(false);
     setVoteStep("confirm");
   };
 
   const handleConfirmVote = () => {
     if (!selectedParty) return;
+    if (!faceVerified) {
+      setOtpError("Complete face verification before entering OTP.");
+      setVoteStep("face");
+      return;
+    }
     if (otp !== "12345") {
       setOtpError("Invalid OTP. Try 12345.");
       return;
@@ -122,7 +130,21 @@ export default function Overview() {
           setSelectedParty(null);
           setVoteStep(null);
         }}
-        onProceed={() => setVoteStep("otp")}
+        onProceed={() => setVoteStep("face")}
+      />
+
+      <FaceVerifyModal
+        isOpen={voteStep === "face"}
+        party={selectedParty}
+        onClose={() => {
+          setVoteStep("confirm");
+          setFaceVerified(false);
+        }}
+        onVerified={() => {
+          setFaceVerified(true);
+          setVoteStep("otp");
+          setOtpError("");
+        }}
       />
 
       <OtpModal
@@ -131,9 +153,11 @@ export default function Overview() {
         otpValue={otp}
         onChange={setOtp}
         error={otpError}
+        faceVerified={faceVerified}
         onClose={() => {
           setSelectedParty(null);
           setOtpError("");
+          setFaceVerified(false);
           setVoteStep(null);
         }}
         onConfirm={handleConfirmVote}

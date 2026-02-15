@@ -4,7 +4,7 @@ import ProgressBar from "./ProgressBar";
 export default function PartyCard({ party, hasVoted, isVotedParty, onVote }) {
   const isDisabled = hasVoted && !isVotedParty;
   const voteLabel = isVotedParty
-    ? "Your Vote ✓"
+    ? "Your Vote"
     : hasVoted
       ? "Already Voted"
       : "Vote for This Party";
@@ -66,6 +66,18 @@ export default function PartyCard({ party, hasVoted, isVotedParty, onVote }) {
           className={`party-vote-btn ${voteClass}`}
           disabled={hasVoted && !isVotedParty}
         >
+          <span className="party-vote-icon">
+            <i
+              className={
+                isVotedParty
+                  ? "ri-checkbox-circle-line"
+                  : hasVoted
+                    ? "ri-close-circle-line"
+                    : "ri-vote-line"
+              }
+              aria-hidden="true"
+            />
+          </span>
           {voteLabel}
         </button>
       </div>

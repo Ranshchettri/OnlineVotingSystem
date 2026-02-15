@@ -56,10 +56,7 @@ export default function VoteConfirmModal({
             </div>
             <div>
               <h4>Email Confirmation</h4>
-              <p>
-                After voting, you will receive an email confirmation at your
-                registered email address.
-              </p>
+              <p>After voting, you will receive an email confirmation at your registered email address.</p>
             </div>
           </div>
 

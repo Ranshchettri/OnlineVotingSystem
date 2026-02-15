@@ -1,10 +1,12 @@
 .timeline-header h1 {
   font-size: 26px;
   font-weight: 700;
+  margin-bottom: 1px;
+
 }
 
 .timeline-header p {
-  margin-top: 4px;
+  margin-top: 0px;
   font-size: 14px;
   color: var(--gray-500);
 }
@@ -36,6 +38,7 @@
 .timeline-active h2 {
   margin-top: 10px;
   font-size: 24px;
+  color: #fff;
   font-weight: 700;
 }
 
@@ -60,19 +63,23 @@
 
 .timeline-date-card h4 {
   font-size: 14px;
-  font-weight: 600;
+  color: #fff;
+  font-weight: 200;
 }
 
 .timeline-date-card strong {
   display: block;
   margin-top: 6px;
   font-size: 16px;
+  font-weight: 450;
+
 }
 
 .timeline-date-card span {
   display: block;
   margin-top: 4px;
   font-size: 13px;
+  font-weight: 600;
   color: rgba(255, 255, 255, 0.8);
 }
 
@@ -138,7 +145,7 @@
 
 .timeline-section h3 {
   font-size: 20px;
-  font-weight: 600;
+  font-weight: 750;
 }
 
 .timeline-section p {

@@ -23,7 +23,7 @@
 
 .party-back svg {
   width: 18px;
-  height: 18px;
+  height: 48px;
 }
 
 .party-top-logo svg {
@@ -32,7 +32,7 @@
 }
 
 .party-hero {
-  border-radius: 18px;
+  border-radius: 9px;
   overflow: hidden;
   border: 1px solid var(--gray-200);
   background: #fff;
@@ -50,7 +50,7 @@
 .party-hero-logo {
   width: 100px;
   height: 100px;
-  border-radius: 16px;
+  border-radius: 8px;
   border: 3px solid rgba(255, 255, 255, 0.7);
   background: rgba(255, 255, 255, 0.15);
   display: flex;
@@ -106,7 +106,7 @@
 
 .party-hero-body h3 {
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 750;
 }
 
 .party-hero-body p {
@@ -124,7 +124,7 @@
 }
 
 .metric-card {
-  border-radius: 18px;
+  border-radius: 8px;
   border: 1px solid var(--gray-200);
   background: #fff;
   padding: 20px;
@@ -133,7 +133,7 @@
 
 .metric-card h4 {
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 750;
 }
 
 .metric-note {
@@ -215,7 +215,7 @@
 
 .party-section h3 {
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 750;
   margin-bottom: 14px;
 }
 
@@ -289,7 +289,7 @@
 
 .ready-banner {
   margin-top: 24px;
-  border-radius: 18px;
+  border-radius: 8px;
   background: linear-gradient(90deg, #16a34a 0%, #15803d 100%);
   padding: 24px;
   color: #fff;
@@ -298,7 +298,9 @@
 
 .ready-banner h3 {
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 650;
+  color: #fff;
+  margin-bottom: 1px;
 }
 
 .ready-banner p {
@@ -312,7 +314,7 @@
   display: inline-block;
   padding: 10px 22px;
   border-radius: 12px;
-  background: #fff;
+  background: #000000;
   color: var(--green-700);
   font-weight: 600;
 }

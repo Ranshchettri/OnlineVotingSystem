@@ -1,10 +1,10 @@
 .rules-header h1 {
   font-size: 26px;
   font-weight: 700;
+  margin-bottom: 1px;
 }
 
 .rules-header p {
-  margin-top: 4px;
   font-size: 14px;
   color: var(--gray-500);
 }
@@ -166,7 +166,7 @@
 
 .help-card {
   margin-top: 18px;
-  border-radius: 18px;
+  border-radius: 8px;
   background: #fff3e8;
   border: 1px solid #fdba74;
   padding: 22px;
@@ -175,15 +175,15 @@
 .help-title {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 2px;
 }
 
 .help-icon {
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  background: #fff7ed;
-  color: #ea580c;
+  color: #ff7300;
+  margin-bottom: 11px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -197,13 +197,14 @@
 .help-card h4 {
   font-size: 16px;
   font-weight: 600;
-  color: #c2410c;
+  color: #000000;
 }
 
 .help-card p {
-  margin-top: 6px;
+  margin-top: 1px;
+  margin-left: 16px;
   font-size: 13px;
-  color: #c2410c;
+  color: #000000;
 }
 
 .help-card ul {

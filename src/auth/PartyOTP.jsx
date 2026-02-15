@@ -29,7 +29,7 @@ export default function PartyOTP({ email, onBack }) {
   };
 
   return (
-    <div className="party-auth-container">
+    <div className="auth-shell party-auth-container">
       <div className="party-auth-card">
         <div className="auth-header">
           <h1>Verify OTP</h1>

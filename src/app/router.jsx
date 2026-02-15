@@ -26,12 +26,20 @@ import PartyStats from "../party/pages/PartyStats";
 import PartyNotifications from "../party/pages/PartyNotifications";
 import PartyRules from "../party/pages/PartyRules";
 import NotFound from "../shared/NotFound";
+import AccessLanding from "./AccessLanding";
+import VoterLogin from "../voter/Login";
+import PartyLogin from "../auth/PartyLogin";
 
 export default function AppRouter() {
   return (
     <Routes>
-      {/* Admin Routes */}
+      {/* Landing */}
+      <Route path="/" element={<AccessLanding />} />
+
+      {/* Auth routes */}
       <Route path="/admin/login" element={<AdminLogin />} />
+      <Route path="/voter/login" element={<VoterLogin />} />
+      <Route path="/party/login" element={<PartyLogin />} />
 
       <Route
         path="/admin/*"
@@ -79,7 +87,6 @@ export default function AppRouter() {
       </Route>
 
       {/* Default Route */}
-      <Route path="/" element={<AdminLogin />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
