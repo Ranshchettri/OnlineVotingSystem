@@ -18,44 +18,13 @@ export default function Voters() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedVoter, setSelectedVoter] = useState(null);
+  /* Demo seed data disabled as requested
   const demoVoters = [
-    {
-      _id: "demo-1",
-      fullName: "Ram Bahadur Thapa",
-      voterId: "V2847392",
-      email: "ram.thapa@email.com",
-      mobile: "+977-9841234567",
-      district: "Kathmandu",
-      province: "Bagmati",
-      status: "ACTIVE",
-      voted: true,
-      avatar: "https://i.pravatar.cc/100?img=12",
-    },
-    {
-      _id: "demo-2",
-      fullName: "Sita Kumari Sharma",
-      voterId: "V2847393",
-      email: "sita.sharma@email.com",
-      mobile: "+977-9851234568",
-      district: "Pokhara",
-      province: "Gandaki",
-      status: "ACTIVE",
-      voted: true,
-      avatar: "https://i.pravatar.cc/100?img=47",
-    },
-    {
-      _id: "demo-3",
-      fullName: "Krishna Prasad Adhikari",
-      voterId: "V2847394",
-      email: "krishna.adhikari@email.com",
-      mobile: "+977-9861234569",
-      district: "Lalitpur",
-      province: "Bagmati",
-      status: "PENDING",
-      voted: false,
-      avatar: "https://i.pravatar.cc/100?img=32",
-    },
+    { _id: "demo-1", fullName: "Ram Bahadur Thapa", voterId: "V2847392", email: "ram.thapa@email.com", mobile: "+977-9841234567", district: "Kathmandu", province: "Bagmati", status: "ACTIVE", voted: true, avatar: "https://i.pravatar.cc/100?img=12" },
+    { _id: "demo-2", fullName: "Sita Kumari Sharma", voterId: "V2847393", email: "sita.sharma@email.com", mobile: "+977-9851234568", district: "Pokhara", province: "Gandaki", status: "ACTIVE", voted: true, avatar: "https://i.pravatar.cc/100?img=47" },
+    { _id: "demo-3", fullName: "Krishna Prasad Adhikari", voterId: "V2847394", email: "krishna.adhikari@email.com", mobile: "+977-9861234569", district: "Lalitpur", province: "Bagmati", status: "PENDING", voted: false, avatar: "https://i.pravatar.cc/100?img=32" },
   ];
+  */
 
   const [addForm, setAddForm] = useState({
     fullName: "",
@@ -105,8 +74,9 @@ export default function Voters() {
       try {
         const res = await api.get("/voters/admin/stats");
         const data = res.data?.data || {};
-        setStats(data.stats || computeStatsFromList(data.voters || []));
-        setVoters(data.voters || []);
+        const remoteVoters = data.voters || [];
+        setStats(data.stats || computeStatsFromList(remoteVoters));
+        setVoters(remoteVoters);
         setError(null);
         return;
       } catch (err) {
@@ -119,11 +89,25 @@ export default function Voters() {
           setError(null);
           return;
         }
+        if (err.isNetworkError) {
+          setVoters([]);
+          setStats(computeStatsFromList([]));
+          setError("Backend offline: could not load voters.");
+          return;
+        }
+        if (err.isUnauthorized) {
+          setError("Unauthorized: please log in as admin.");
+          return;
+        }
         throw err;
       }
     } catch (err) {
       console.error("Failed to fetch voter data:", err);
-      setError("Failed to load voter data");
+      const friendly =
+        err.isNetworkError === true
+          ? "Backend offline: could not reach voter API."
+          : "Failed to load voter data";
+      setError(friendly);
       setVoters([]);
       setStats({
         totalRegistered: 0,
@@ -241,44 +225,57 @@ export default function Voters() {
       fetchVoterData();
     } catch (err) {
       console.error("Failed to add voter:", err);
-      alert(err.response?.data?.message || "Failed to add voter");
+      const msg =
+        err.isNetworkError
+          ? "Backend unavailable: cannot create voter right now."
+          : err.response?.data?.message || "Failed to add voter";
+      alert(msg);
     }
   };
 
+  const votedCount = useMemo(
+    () => voters.filter((v) => v.hasVoted || v.voted).length,
+    [voters],
+  );
+
   const statsCards = useMemo(
-    () => [
-      {
-        label: "Active Voters",
-        value: stats.activeVoters.toLocaleString(),
-        sub: "93.2% of total",
-        color: "green",
-        icon: "ri-user-3-line",
-      },
-      {
-        label: "Voted",
-        value: `${
-          stats.totalRegistered
-            ? ((stats.activeVoters / stats.totalRegistered) * 100).toFixed(1)
-            : 68.4
-        }%`,
-        sub: "1,947,283 voters",
-        color: "purple",
-        icon: "ri-checkbox-circle-line",
-      },
-      {
-        label: "Pending Approval",
-        value: stats.inactiveVoters || 156,
-        sub: "Requires action",
-        color: "orange",
-        icon: "ri-time-line",
-      },
-    ],
-    [stats],
+    () => {
+      const total = Number(stats.totalRegistered || 0);
+      const activeRate = total
+        ? ((stats.activeVoters / total) * 100).toFixed(1)
+        : null;
+      const votedRate = total ? ((votedCount / total) * 100).toFixed(1) : null;
+      const pendingRate = total
+        ? ((stats.inactiveVoters / total) * 100).toFixed(1)
+        : null;
+
+      return [
+        {
+          label: "Active Voters",
+          value: Number(stats.activeVoters || 0).toLocaleString(),
+          sub: activeRate ? `${activeRate}% of total` : "Awaiting data",
+          color: "green",
+          icon: "ri-user-3-line",
+        },
+        {
+          label: "Voted",
+          value: votedCount.toLocaleString(),
+          sub: votedRate ? `${votedRate}% turnout` : "Awaiting data",
+          color: "purple",
+          icon: "ri-checkbox-circle-line",
+        },
+        {
+          label: "Pending Approval",
+          value: Number(stats.inactiveVoters || 0).toLocaleString(),
+          sub: pendingRate ? `${pendingRate}% of total` : "Awaiting action",
+          color: "orange",
+          icon: "ri-time-line",
+        },
+      ];
+    },
+    [stats, votedCount],
   );
-  const displayVoters = useMemo(
-    () => (filteredVoters.length ? filteredVoters : demoVoters),
-    [filteredVoters],
-  );
+  const displayVoters = filteredVoters;
 
   if (loading) {
     return (
@@ -358,63 +355,79 @@ export default function Voters() {
             </tr>
           </thead>
           <tbody>
-            {displayVoters.map((voter) => {
-              const status = voter.status || "PENDING";
-              const voted = voter.hasVoted || voter.voted || false;
-              const avatarUrl = voter.avatar || voter.photoUrl || voter.photo;
-              return (
-                <tr key={voter._id || voter.voterId}>
-                  <td>
-                    <div className="voter-cell">
-                      {avatarUrl ? (
-                        <img className="voter-avatar photo" src={avatarUrl} alt={voter.fullName} />
-                      ) : (
-                        <div className="voter-avatar">
-                          {voter.fullName?.[0] || "V"}
-                        </div>
-                      )}
-                      <div>
-                        <div className="voter-name">{voter.fullName}</div>
-                        <div className="voter-id">{voter.voterId || "V2847392"}</div>
+            {displayVoters.length === 0 ? (
+              <tr className="voters-empty-row">
+                <td colSpan="6">
+                  <div className="voters-empty">
+                    <span className="empty-icon" aria-hidden="true">
+                      <i className="ri-database-2-line" />
+                    </span>
+                    <div>No voter records to display</div>
+                    <div className="muted">Data will appear here after the backend returns voters.</div>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              displayVoters.map((voter) => {
+                const status = voter.status || "PENDING";
+                const voted = voter.hasVoted || voter.voted || false;
+                const avatarUrl = voter.avatar || voter.photoUrl || voter.photo;
+                const isLocal = voter._local;
+                return (
+                  <tr key={voter._id || voter.voterId}>
+                    <td>
+                      <div className="voter-cell">
+                        {avatarUrl ? (
+                          <img className="voter-avatar photo" src={avatarUrl} alt={voter.fullName} />
+                        ) : (
+                          <div className="voter-avatar">
+                            {voter.fullName?.[0] || "V"}
+                          </div>
+                        )}
+                        <div>
+                      <div className="voter-name">{voter.fullName || "—"}</div>
+                      <div className="voter-id">{voter.voterId || "—"}</div>
+                      {isLocal && <div className="local-chip">Pending sync</div>}
+                    </div>
+                  </div>
+                    </td>
+                    <td>
+                      <div className="voter-contact">
+                        <div>{voter.email || "—"}</div>
+                        <div className="muted">{voter.mobile || "—"}</div>
                       </div>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="voter-contact">
-                      <div>{voter.email}</div>
-                      <div className="muted">{voter.mobile}</div>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="voter-location">
-                      <div>{voter.district || "Kathmandu"}</div>
-                      <div className="muted">{voter.province || "Bagmati"}</div>
-                    </div>
-                  </td>
-                  <td>
-                    <span className={`status-badge ${status.toLowerCase()}`}>
-                      {status === "ACTIVE" ? "Active" : status === "PENDING" ? "Pending" : status}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`voted-badge ${voted ? "yes" : "no"}`}>
-                      <i
-                        className={voted ? "ri-check-line" : "ri-close-line"}
-                        aria-hidden="true"
-                      />
-                    </span>
-                  </td>
-                  <td className="align-right">
-                    <button
-                      className="link-btn"
-                      onClick={() => setSelectedVoter(voter)}
-                    >
-                      View Details
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
+                    </td>
+                    <td>
+                      <div className="voter-location">
+                        <div>{voter.district || "—"}</div>
+                        <div className="muted">{voter.province || "—"}</div>
+                      </div>
+                    </td>
+                    <td>
+                      <span className={`status-badge ${status.toLowerCase()}`}>
+                        {status === "ACTIVE" ? "Active" : status === "PENDING" ? "Pending" : status}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`voted-badge ${voted ? "yes" : "no"}`}>
+                        <i
+                          className={voted ? "ri-check-line" : "ri-close-line"}
+                          aria-hidden="true"
+                        />
+                      </span>
+                    </td>
+                    <td className="align-right">
+                      <button
+                        className="link-btn"
+                        onClick={() => setSelectedVoter(voter)}
+                      >
+                        View Details
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
@@ -470,6 +483,19 @@ export default function Voters() {
                     required
                   />
                 </label>
+              </div>
+              <div className="two-col">
+                <label>
+                  Voter ID
+                  <input
+                    name="voterId"
+                    value={addForm.voterId}
+                    onChange={handleAddFormChange}
+                    placeholder="V1234567"
+                    required
+                  />
+                </label>
+                <div />
               </div>
               <div className="two-col">
                 <label>
@@ -553,7 +579,7 @@ export default function Voters() {
                     <div>
                       <div className="details-name">{selectedVoter.fullName}</div>
                       <div className="details-id">
-                        Voter ID: {selectedVoter.voterId || "V2847393"}
+                        Voter ID: {selectedVoter.voterId || "—"}
                       </div>
                       <div className="details-badges">
                         <span className={`status-badge ${status.toLowerCase()}`}>
@@ -570,22 +596,22 @@ export default function Voters() {
                   <div className="details-grid">
                     <div>
                       <div className="stat-label">Email</div>
-                      <div className="stat-number">{selectedVoter.email}</div>
+                      <div className="stat-number">{selectedVoter.email || "—"}</div>
                     </div>
                     <div>
                       <div className="stat-label">Mobile</div>
-                      <div className="stat-number">{selectedVoter.mobile}</div>
+                      <div className="stat-number">{selectedVoter.mobile || "—"}</div>
                     </div>
                     <div>
                       <div className="stat-label">District</div>
                       <div className="stat-number">
-                        {selectedVoter.district || "Pokhara"}
+                        {selectedVoter.district || "—"}
                       </div>
                     </div>
                     <div>
                       <div className="stat-label">Province</div>
                       <div className="stat-number">
-                        {selectedVoter.province || "Gandaki"}
+                        {selectedVoter.province || "—"}
                       </div>
                     </div>
                   </div>

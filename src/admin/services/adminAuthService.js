@@ -15,3 +15,9 @@ export const verifyAdminOtp = async (adminId, otp) => {
   });
   return res.data;
 };
+
+// Convenience wrapper used by adminLogin page
+export const verifyAdminOtpWrapper = async (adminId, otp) => {
+  const res = await verifyAdminOtp(adminId, otp);
+  return res;
+};

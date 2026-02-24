@@ -2,56 +2,26 @@ import { useEffect, useMemo, useState } from "react";
 import api from "../../services/api";
 import "../styles/analytics.css";
 
+/* Demo seed data disabled as requested
 const fallbackCandidates = [
-  {
-    id: "c1",
-    name: "K.P. Sharma Oli",
-    party: "Nepal Communist Party (UML)",
-    votes: "1,247,893",
-    avatar: "https://i.pravatar.cc/100?img=12",
-    development: 72,
-    good: 85,
-    bad: 15,
-    goodTopics: ["Infrastructure development", "Education reforms", "Healthcare improvements"],
-    badTopics: ["Corruption allegations", "Delayed projects", "Policy failures"],
-  },
-  {
-    id: "c2",
-    name: "Sher Bahadur Deuba",
-    party: "Nepali Congress",
-    votes: "1,089,234",
-    avatar: "https://i.pravatar.cc/100?img=47",
-    development: 68,
-    good: 78,
-    bad: 22,
-    goodTopics: ["Rural connectivity", "Agriculture subsidy", "Social security"],
-    badTopics: ["Budget delays", "Policy reversals", "Inflation concerns"],
-  },
-  {
-    id: "c3",
-    name: "Rabi Lamichhane",
-    party: "Rastriya Swatantra Party",
-    votes: "610,156",
-    avatar: "https://i.pravatar.cc/100?img=32",
-    development: 45,
-    good: 62,
-    bad: 38,
-    goodTopics: ["Digital governance", "Youth programs", "Citizen services"],
-    badTopics: ["Execution gaps", "Funding shortage", "Regional disputes"],
-  },
+  { id: "c1", name: "K.P. Sharma Oli", party: "Nepal Communist Party (UML)", votes: "1,247,893", avatar: "https://i.pravatar.cc/100?img=12", development: 72, good: 85, bad: 15, goodTopics: ["Infrastructure development", "Education reforms", "Healthcare improvements"], badTopics: ["Corruption allegations", "Delayed projects", "Policy failures"] },
+  { id: "c2", name: "Sher Bahadur Deuba", party: "Nepali Congress", votes: "1,089,234", avatar: "https://i.pravatar.cc/100?img=47", development: 68, good: 78, bad: 22, goodTopics: ["Rural connectivity", "Agriculture subsidy", "Social security"], badTopics: ["Budget delays", "Policy reversals", "Inflation concerns"] },
+  { id: "c3", name: "Rabi Lamichhane", party: "Rastriya Swatantra Party", votes: "610,156", avatar: "https://i.pravatar.cc/100?img=32", development: 45, good: 62, bad: 38, goodTopics: ["Digital governance", "Youth programs", "Citizen services"], badTopics: ["Execution gaps", "Funding shortage", "Regional disputes"] },
 ];
+*/
 
 export default function Analytics() {
-  const [candidates, setCandidates] = useState(fallbackCandidates);
+  const [candidates, setCandidates] = useState([]);
+  const [error, setError] = useState(null);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [showReport, setShowReport] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showUpdate, setShowUpdate] = useState(false);
   const [toast, setToast] = useState(null);
   const [updateValues, setUpdateValues] = useState({
-    development: 70,
-    good: 80,
-    bad: 20,
+    development: 0,
+    good: 0,
+    bad: 0,
   });
 
   useEffect(() => {
@@ -64,19 +34,31 @@ export default function Analytics() {
             list.map((c) => ({
               id: c._id || c.id,
               name: c.fullName || c.name,
-              party: c.partyName || c.party || "Party",
+              party: c.partyName || c.party || "",
               votes: c.totalVotes?.toLocaleString?.() || c.totalVotes || "0",
               avatar: c.avatar || c.photo || c.image,
-              development: c.development || c.totalTaskCompletion || 70,
-              good: c.goodWork || 80,
-              bad: c.badWork || 20,
-              goodTopics: c.goodTopics || ["Infrastructure development", "Education reforms"],
-              badTopics: c.badTopics || ["Policy delays", "Budget gaps"],
+              development: c.development || c.totalTaskCompletion || 0,
+              good: c.goodWork || 0,
+              bad: c.badWork || 0,
+              goodTopics: Array.isArray(c.goodTopics) ? c.goodTopics : [],
+              badTopics: Array.isArray(c.badTopics) ? c.badTopics : [],
             })),
           );
+          setError(null);
+        } else {
+          setCandidates([]);
+          setError("No analytics data returned yet.");
         }
       } catch (err) {
         console.error("Failed to fetch analytics:", err);
+        setCandidates([]);
+        setError(
+          err.isNetworkError === true
+            ? "Backend offline: could not reach analytics API."
+            : err.isUnauthorized
+              ? "Unauthorized: please log in as admin."
+              : "Failed to load analytics data",
+        );
       }
     };
     fetchAnalytics();
@@ -99,13 +81,13 @@ export default function Analytics() {
     };
   }, [candidates]);
 
-  const historyRows = [
-    { year: "2020", development: 65, good: 78, bad: 22, votes: "980,000 votes" },
-    { year: "2021", development: 68, good: 80, bad: 20, votes: "1,050,000 votes" },
-    { year: "2022", development: 70, good: 82, bad: 18, votes: "1,120,000 votes" },
-    { year: "2023", development: 71, good: 84, bad: 16, votes: "1,180,000 votes" },
-    { year: "2024", development: 72, good: 85, bad: 15, votes: "1,247,893 votes" },
-  ];
+  const historyRows = useMemo(
+    () =>
+      Array.isArray(selectedCandidate?.history)
+        ? selectedCandidate.history
+        : [],
+    [selectedCandidate],
+  );
 
   const openReport = (candidate) => {
     setSelectedCandidate(candidate);
@@ -199,81 +181,99 @@ export default function Analytics() {
         </div>
       </div>
 
+      {error && (
+        <div className="analytics-error">
+          {error}
+        </div>
+      )}
+
       <div className="analytics-list">
-        {candidates.map((candidate) => (
-          <div key={candidate.id} className="analytics-card">
-            <div className="analytics-card__left">
-              {candidate.avatar ? (
-                <img
-                  className="candidate-avatar photo"
-                  src={candidate.avatar}
-                  alt={candidate.name}
-                />
-              ) : (
-                <div className="candidate-avatar">{candidate.name?.[0] || "C"}</div>
-              )}
-              <div>
-                <div className="candidate-name">{candidate.name}</div>
-                <div className="candidate-party">{candidate.party}</div>
-                <div className="candidate-votes">{candidate.votes} votes</div>
-              </div>
-            </div>
-
-            <div className="analytics-card__middle">
-              <div className="metric-group">
-                <div className="metric-title">Good Work Performance</div>
-                <div className="metric-bar good">
-                  <span style={{ width: `${candidate.good}%` }} />
-                </div>
-                <ul className="good">
-                  {candidate.goodTopics.map((topic) => (
-                    <li key={topic}>
-                      <i className="ri-checkbox-circle-line" aria-hidden="true" />
-                      {topic}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="metric-group">
-                <div className="metric-title">Bad Work Performance</div>
-                <div className="metric-bar bad">
-                  <span style={{ width: `${candidate.bad}%` }} />
-                </div>
-                <ul className="bad">
-                  {candidate.badTopics.map((topic) => (
-                    <li key={topic}>
-                      <i className="ri-close-circle-line" aria-hidden="true" />
-                      {topic}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="analytics-actions">
-                <button className="admin-button ghost" onClick={() => openReport(candidate)}>
-                  <i className="ri-file-chart-line" aria-hidden="true" />
-                  View Full Report
-                </button>
-                <button className="admin-button ghost" onClick={() => openHistory(candidate)}>
-                  <i className="ri-history-line" aria-hidden="true" />
-                  Historical Data
-                </button>
-                <button className="admin-button primary" onClick={() => openUpdate(candidate)}>
-                  <i className="ri-edit-line" aria-hidden="true" />
-                  Update Analytics
-                </button>
-              </div>
-            </div>
-
-            <div className="analytics-card__right">
-              <div className="progress-wrap">
-                <div className="circular-progress" style={{ "--value": candidate.development }}>
-                  <div className="progress-value">{candidate.development}%</div>
-                </div>
-                <div className="progress-label">Development</div>
-              </div>
-            </div>
+        {candidates.length === 0 ? (
+          <div className="analytics-empty">
+            <span className="empty-icon" aria-hidden="true">
+              <i className="ri-database-2-line" />
+            </span>
+            <div>No analytics data yet</div>
+            <div className="muted">Connect backend metrics to populate this view.</div>
           </div>
-        ))}
+        ) : (
+          candidates.map((candidate) => (
+            <div key={candidate.id} className="analytics-card">
+              <div className="analytics-card__left">
+                {candidate.avatar ? (
+                  <img
+                    className="candidate-avatar photo"
+                    src={candidate.avatar}
+                    alt={candidate.name}
+                  />
+                ) : (
+                  <div className="candidate-avatar">{candidate.name?.[0] || "C"}</div>
+                )}
+                <div>
+                  <div className="candidate-name">{candidate.name}</div>
+                  <div className="candidate-party">{candidate.party}</div>
+                  <div className="candidate-votes">
+                    {candidate.votes} {candidate.votes ? "votes" : ""}
+                  </div>
+                </div>
+              </div>
+
+              <div className="analytics-card__middle">
+                <div className="metric-group">
+                  <div className="metric-title">Good Work Performance</div>
+                  <div className="metric-bar good">
+                    <span style={{ width: `${candidate.good || 0}%` }} />
+                  </div>
+                  <ul className="good">
+                    {(candidate.goodTopics || []).map((topic) => (
+                      <li key={topic}>
+                        <i className="ri-checkbox-circle-line" aria-hidden="true" />
+                        {topic}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="metric-group">
+                  <div className="metric-title">Bad Work Performance</div>
+                  <div className="metric-bar bad">
+                    <span style={{ width: `${candidate.bad || 0}%` }} />
+                  </div>
+                  <ul className="bad">
+                    {(candidate.badTopics || []).map((topic) => (
+                      <li key={topic}>
+                        <i className="ri-close-circle-line" aria-hidden="true" />
+                        {topic}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="analytics-actions">
+                  <button className="admin-button ghost" onClick={() => openReport(candidate)}>
+                    <i className="ri-file-chart-line" aria-hidden="true" />
+                    View Full Report
+                  </button>
+                  <button className="admin-button ghost" onClick={() => openHistory(candidate)}>
+                    <i className="ri-history-line" aria-hidden="true" />
+                    Historical Data
+                  </button>
+                  <button className="admin-button primary" onClick={() => openUpdate(candidate)}>
+                    <i className="ri-edit-line" aria-hidden="true" />
+                    Update Analytics
+                  </button>
+                </div>
+              </div>
+
+              <div className="analytics-card__right">
+                <div className="progress-wrap">
+                  <div className="circular-progress" style={{ "--value": candidate.development || 0 }}>
+                    <div className="progress-value">{candidate.development || 0}%</div>
+                  </div>
+                  <div className="progress-label">Development</div>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {toast && (
@@ -379,37 +379,46 @@ export default function Analytics() {
               </button>
             </div>
             <div className="history-list">
-              {historyRows.map((row) => (
-                <div key={row.year} className="history-row">
-                  <div className="year-pill">{row.year}</div>
-                  <div className="history-bars">
-                    <div>
-                      <div className="stat-label">Development</div>
-                      <div className="metric-bar good">
-                        <span style={{ width: `${row.development}%` }} />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="stat-label">Good Work</div>
-                      <div className="metric-bar good">
-                        <span style={{ width: `${row.good}%` }} />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="stat-label">Bad Work</div>
-                      <div className="metric-bar bad">
-                        <span style={{ width: `${row.bad}%` }} />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="history-votes">{row.votes}</div>
+              {historyRows.length === 0 ? (
+                <div className="history-empty">
+                  <i className="ri-inbox-line" aria-hidden="true" />
+                  <div>No historical data available</div>
                 </div>
-              ))}
+              ) : (
+                historyRows.map((row, idx) => (
+                  <div key={row.year || row.label || idx} className="history-row">
+                    <div className="year-pill">{row.year || row.label || "—"}</div>
+                    <div className="history-bars">
+                      <div>
+                        <div className="stat-label">Development</div>
+                        <div className="metric-bar good">
+                          <span style={{ width: `${row.development || 0}%` }} />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="stat-label">Good Work</div>
+                        <div className="metric-bar good">
+                          <span style={{ width: `${row.good || 0}%` }} />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="stat-label">Bad Work</div>
+                        <div className="metric-bar bad">
+                          <span style={{ width: `${row.bad || 0}%` }} />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="history-votes">{row.votes || "—"}</div>
+                  </div>
+                ))
+              )}
             </div>
-            <div className="trend-box">
-              <i className="ri-line-chart-line" aria-hidden="true" />
-              Development has improved by 7% since 2020.
-            </div>
+            {historyRows.length > 0 && (
+              <div className="trend-box">
+                <i className="ri-line-chart-line" aria-hidden="true" />
+                Development trend will appear once history is populated.
+              </div>
+            )}
             <div className="admin-modal-actions">
               <button className="admin-button ghost wide" onClick={() => setShowHistory(false)}>
                 Close

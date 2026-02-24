@@ -2,60 +2,12 @@ import { useEffect, useState } from "react";
 import api from "../../services/api";
 import "../styles/elections.css";
 
+/* Demo seed data disabled as requested
 const fallbackElections = [
-  {
-    id: "e1",
-    title: "National Parliamentary Election 2025",
-    type: "Political",
-    status: "Running",
-    startDate: "2025-03-15T07:00:00",
-    endDate: "2025-03-15T17:00:00",
-    totalVotes: 1947283,
-    turnout: "68.4%",
-    autoClose: true,
-    autoResults: true,
-    parties: [
-      { name: "Nepal Communist Party (UML)", leader: "K.P. Sharma Oli", votes: 545238, percentage: "28.0%" },
-      { name: "Nepali Congress", leader: "Sher Bahadur Deuba", votes: 487321, percentage: "25.0%" },
-      { name: "CPN (Maoist Centre)", leader: "Pushpa Kamal Dahal", votes: 389456, percentage: "20.0%" },
-      { name: "Rastriya Swatantra Party", leader: "Rabi Lamichhane", votes: 311565, percentage: "16.0%" },
-      { name: "Rastriya Prajatantra Party", leader: "Rajendra Lingden", votes: 213703, percentage: "11.0%" },
-    ],
-  },
-  {
-    id: "e2",
-    title: "Provincial Assembly Election",
-    type: "Political",
-    status: "Upcoming",
-    startDate: "2025-04-20T07:00:00",
-    endDate: "2025-04-20T17:00:00",
-    totalVotes: 0,
-    turnout: "0%",
-    autoClose: true,
-    autoResults: true,
-    parties: [
-      { name: "Province Reform Party", leader: "Anil KC", votes: 0, percentage: "0%" },
-      { name: "United Students Front", leader: "Kiran Rai", votes: 0, percentage: "0%" },
-    ],
-  },
-  {
-    id: "e3",
-    title: "Student Union Election 2025",
-    type: "Student",
-    status: "Ended",
-    startDate: "2025-02-10T09:00:00",
-    endDate: "2025-02-10T16:00:00",
-    totalVotes: 45892,
-    turnout: "82.3%",
-    autoClose: true,
-    autoResults: true,
-    parties: [
-      { name: "All Nepal Student Union", leader: "Suman Shrestha", votes: 19820, percentage: "43.2%" },
-      { name: "Free Student Union", leader: "Mina Thapa", votes: 16540, percentage: "36.1%" },
-      { name: "Independent Panel", leader: "Bibek Gurung", votes: 9542, percentage: "20.7%" },
-    ],
-  },
+  { id: "e1", title: "National Parliamentary Election 2025", type: "Political", status: "Running", startDate: "2025-03-15T07:00:00", endDate: "2025-03-15T17:00:00", totalVotes: 1947283, turnout: "68.4%", autoClose: true, autoResults: true, parties: [ ... ] },
+  ...
 ];
+*/
 
 const formatDate = (value) => {
   if (!value) return "-";
@@ -70,7 +22,8 @@ const formatVotes = (value) =>
   typeof value === "number" ? value.toLocaleString() : value || "0";
 
 export default function Elections() {
-  const [elections, setElections] = useState(fallbackElections);
+  const [elections, setElections] = useState([]);
+  const [error, setError] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
   const [preview, setPreview] = useState(null);
   const [showExport, setShowExport] = useState(false);
@@ -114,9 +67,21 @@ export default function Elections() {
             };
           });
           setElections(mapped);
+          setError(null);
+        } else {
+          setElections([]);
+          setError("No elections returned from API yet.");
         }
       } catch (err) {
         console.error("Failed to load elections:", err);
+        setElections([]);
+        if (err.isNetworkError) {
+          setError("Backend offline: could not reach elections API.");
+        } else if (err.isUnauthorized) {
+          setError("Unauthorized: please log in as admin.");
+        } else {
+          setError("Failed to load elections");
+        }
       }
     };
 
@@ -140,6 +105,11 @@ export default function Elections() {
       setShowCreate(false);
     } catch (err) {
       console.error("Failed to create election:", err);
+      const msg =
+        err.isNetworkError
+          ? "Backend unavailable: cannot create election right now."
+          : err.response?.data?.message || "Failed to create election";
+      alert(msg);
     } finally {
       setLoading(false);
     }
@@ -359,89 +329,100 @@ export default function Elections() {
           {exportSuccess}
         </div>
       )}
+      {error && <div className="elections-error">{error}</div>}
 
       <div className="admin-elections__list">
-        {elections.map((election) => (
-          <div key={election.id} className="admin-elections__card">
-            <div className="admin-elections__card-header">
-              <div className="election-title-row">
-                <div className="election-title">{election.title}</div>
-                <div className="election-tags">
-                  <span
-                    className={`admin-pill ${
-                      election.status?.toLowerCase() === "running"
-                        ? "green"
-                        : election.status?.toLowerCase() === "upcoming"
-                          ? "blue"
-                          : "red"
-                    }`}
-                  >
-                    {election.status}
-                  </span>
-                  <span className="admin-pill purple">{election.type}</span>
-                </div>
-              </div>
-            <div className="election-actions">
-              <button
-                className="admin-button ghost btn-export"
-                onClick={() => handleExport(election)}
-              >
-                <i className="ri-download-line icon-download" aria-hidden="true" />
-                Export
-              </button>
-              <button
-                className="admin-button ghost btn-outline"
-                onClick={() => setPreview(election)}
-              >
-                <i className="ri-eye-line icon-eye" aria-hidden="true" />
-                  Preview
-                </button>
-                {election.status?.toLowerCase() === "running" && (
-                  <button className="admin-button primary btn-danger">
-                    <i className="ri-stop-circle-line icon-stop" aria-hidden="true" />
-                    Stop
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="admin-elections__card-dates">
-              <div className="date-item">
-                <i className="ri-calendar-line icon-calendar" aria-hidden="true" />
-                <span>Start: {formatDate(election.startDate)}</span>
-              </div>
-              <div className="date-item">
-                <i className="ri-calendar-line icon-calendar" aria-hidden="true" />
-                <span>End: {formatDate(election.endDate)}</span>
-              </div>
-            </div>
-
-            <div className="election-divider" />
-
-            <div className="admin-elections__stats">
-              <div>
-              <div className="stat-label">Total Votes</div>
-                <div className="stat-number">{formatVotes(election.totalVotes)}</div>
-              </div>
-              <div>
-                <div className="stat-label">Turnout</div>
-                <div className="stat-number">{election.turnout}</div>
-              </div>
-              <div>
-                <div className="stat-label">Auto Close</div>
-                <div className="stat-number success">
-                  {election.autoClose ? "Enabled" : "Disabled"}
-                </div>
-              </div>
-              <div>
-                <div className="stat-label">Auto Results</div>
-                <div className="stat-number success">
-                  {election.autoResults ? "Enabled" : "Disabled"}
-                </div>
-              </div>
-            </div>
+        {elections.length === 0 ? (
+          <div className="admin-empty">
+            <span className="empty-icon" aria-hidden="true">
+              <i className="ri-database-2-line" />
+            </span>
+            <div>No elections to display</div>
+            <div className="muted">Create an election or connect the backend feed.</div>
           </div>
-        ))}
+        ) : (
+          elections.map((election) => (
+            <div key={election.id} className="admin-elections__card">
+              <div className="admin-elections__card-header">
+                <div className="election-title-row">
+                  <div className="election-title">{election.title}</div>
+                  <div className="election-tags">
+                    <span
+                      className={`admin-pill ${
+                        election.status?.toLowerCase() === "running"
+                          ? "green"
+                          : election.status?.toLowerCase() === "upcoming"
+                            ? "blue"
+                            : "red"
+                      }`}
+                    >
+                      {election.status}
+                    </span>
+                    <span className="admin-pill purple">{election.type}</span>
+                  </div>
+                </div>
+              <div className="election-actions">
+                <button
+                  className="admin-button ghost btn-export"
+                  onClick={() => handleExport(election)}
+                >
+                  <i className="ri-download-line icon-download" aria-hidden="true" />
+                  Export
+                </button>
+                <button
+                  className="admin-button ghost btn-outline"
+                  onClick={() => setPreview(election)}
+                >
+                  <i className="ri-eye-line icon-eye" aria-hidden="true" />
+                    Preview
+                  </button>
+                  {election.status?.toLowerCase() === "running" && (
+                    <button className="admin-button primary btn-danger">
+                      <i className="ri-stop-circle-line icon-stop" aria-hidden="true" />
+                      Stop
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="admin-elections__card-dates">
+                <div className="date-item">
+                  <i className="ri-calendar-line icon-calendar" aria-hidden="true" />
+                  <span>Start: {formatDate(election.startDate)}</span>
+                </div>
+                <div className="date-item">
+                  <i className="ri-calendar-line icon-calendar" aria-hidden="true" />
+                  <span>End: {formatDate(election.endDate)}</span>
+                </div>
+              </div>
+
+              <div className="election-divider" />
+
+              <div className="admin-elections__stats">
+                <div>
+                <div className="stat-label">Total Votes</div>
+                  <div className="stat-number">{formatVotes(election.totalVotes)}</div>
+                </div>
+                <div>
+                  <div className="stat-label">Turnout</div>
+                  <div className="stat-number">{election.turnout || "—"}</div>
+                </div>
+                <div>
+                  <div className="stat-label">Auto Close</div>
+                  <div className="stat-number success">
+                    {election.autoClose ? "Enabled" : "Disabled"}
+                  </div>
+                </div>
+                <div>
+                  <div className="stat-label">Auto Results</div>
+                  <div className="stat-number success">
+                    {election.autoResults ? "Enabled" : "Disabled"}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {showCreate && (

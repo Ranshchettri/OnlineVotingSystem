@@ -3,82 +3,213 @@ import api from "../../services/api";
 import "../styles/adminDashboard.css";
 
 export default function AdminDashboard() {
-  const [analytics, setAnalytics] = useState([]);
+  const [overview, setOverview] = useState({
+    totalVoters: null,
+    activeVoters: null,
+    votedRate: null,
+    totalParties: null,
+    activeParties: null,
+    pendingApprovals: null,
+  });
+  const [loadingOverview, setLoadingOverview] = useState(true);
+  const [backendOffline, setBackendOffline] = useState(false);
+  const [activities, setActivities] = useState([]);
+  const [timeline, setTimeline] = useState([]);
+  const [electionStatus, setElectionStatus] = useState(null);
   const [showForceLogout, setShowForceLogout] = useState(false);
   const [showShutdown, setShowShutdown] = useState(false);
 
   useEffect(() => {
-    const fetchAnalytics = async () => {
+    const formatDateTime = (value) => {
+      if (!value) return "—";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "—";
+      return date.toLocaleString();
+    };
+
+    const fetchOverview = async () => {
       try {
-        const res = await api.get("/analytics/candidates");
-        setAnalytics(res.data.data || []);
+        setLoadingOverview(true);
+        const [voterRes, partyRes, electionRes] = await Promise.allSettled([
+          api.get("/voters/admin/stats"),
+          api.get("/parties"),
+          api.get("/elections"),
+        ]);
+        const offline =
+          (voterRes.status === "rejected" && voterRes.reason?.isNetworkError) ||
+          (partyRes.status === "rejected" && partyRes.reason?.isNetworkError) ||
+          (electionRes.status === "rejected" && electionRes.reason?.isNetworkError);
+        setBackendOffline(offline);
+
+        let totalVoters = null;
+        let activeVoters = null;
+        let votedRate = null;
+        if (voterRes.status === "fulfilled") {
+          const payload = voterRes.value.data?.data || {};
+          const statsData = payload.stats || {};
+          const voterList = Array.isArray(payload.voters) ? payload.voters : [];
+          totalVoters = statsData.totalRegistered ?? voterList.length ?? null;
+          activeVoters =
+            statsData.activeVoters ??
+            voterList.filter((v) => v.status === "ACTIVE").length ??
+            null;
+          const votedCount = voterList.filter((v) => v.hasVoted || v.voted).length;
+          if (totalVoters) {
+            votedRate =
+              totalVoters > 0 ? `${((votedCount / totalVoters) * 100).toFixed(1)}%` : null;
+          }
+          setActivities(
+            Array.isArray(payload.activities) ? payload.activities : [],
+          );
+        }
+
+        let totalParties = null;
+        let activeParties = null;
+        let pendingApprovals = null;
+        if (partyRes.status === "fulfilled") {
+          const partyList =
+            partyRes.value.data?.data?.parties ||
+            partyRes.value.data?.data ||
+            partyRes.value.data ||
+            [];
+          if (Array.isArray(partyList)) {
+            totalParties = partyList.length;
+            activeParties = partyList.filter(
+              (p) => p.status === "Active" || p.status === "APPROVED" || p.isActive,
+            ).length;
+            pendingApprovals = partyList.filter((p) => p.status === "PENDING").length;
+          }
+        }
+
+        let timelineItems = [];
+        if (electionRes.status === "fulfilled") {
+          const list =
+            electionRes.value.data?.data?.elections ||
+            electionRes.value.data?.data ||
+            electionRes.value.data ||
+            [];
+          if (Array.isArray(list) && list.length) {
+            const current =
+              list.find((e) => (e.status || "").toLowerCase() === "running") || list[0];
+            if (current) {
+              setElectionStatus(current.status || "Status unavailable");
+              timelineItems = [
+                {
+                  title: "Election Start",
+                  meta: formatDateTime(current.startDate) || "Pending date",
+                  color: "green",
+                  icon: "ri-play-circle-line",
+                },
+                {
+                  title: "Current Status",
+                  meta: current.status || "Unknown",
+                  color: "blue",
+                  icon: "ri-time-line",
+                },
+                {
+                  title: "Election End",
+                  meta: formatDateTime(current.endDate) || "Pending date",
+                  color: "gray",
+                  icon: "ri-stop-circle-line",
+                },
+              ];
+            }
+          }
+        }
+
+        setOverview({
+          totalVoters,
+          activeVoters,
+          votedRate,
+          totalParties,
+          activeParties,
+          pendingApprovals,
+        });
+        setTimeline(timelineItems);
       } catch (err) {
-        console.error("Failed to fetch analytics:", err);
-        setAnalytics([]);
+        console.error("Failed to fetch dashboard overview:", err);
+        setBackendOffline(err.isNetworkError === true);
+        setOverview({
+          totalVoters: null,
+          activeVoters: null,
+          votedRate: null,
+          totalParties: null,
+          activeParties: null,
+          pendingApprovals: null,
+        });
+        setTimeline([]);
+      } finally {
+        setLoadingOverview(false);
       }
     };
 
-    fetchAnalytics();
+    fetchOverview();
   }, []);
+
+  const formatValue = (value) => {
+    if (value === null || value === undefined) return "—";
+    return typeof value === "number" ? value.toLocaleString() : value;
+  };
 
   const stats = [
     {
       title: "Total Voters",
-      value: "2,847,392",
-      delta: "+12.5% vs last election",
+      value: formatValue(overview.totalVoters),
+      delta: overview.totalVoters === null ? "Awaiting data" : "",
       color: "blue",
       icon: "ri-user-line",
     },
     {
       title: "Active Voters",
-      value: "2,654,128",
-      delta: "+8.3% vs last election",
+      value: formatValue(overview.activeVoters),
+      delta: overview.activeVoters === null ? "Awaiting data" : "",
       color: "green",
       icon: "ri-user-star-line",
     },
     {
       title: "Voted",
-      value: "68.4%",
-      delta: "+15.2% vs last election",
+      value: overview.votedRate || "—",
+      delta: overview.votedRate ? "" : "Awaiting data",
       color: "purple",
       icon: "ri-checkbox-circle-line",
     },
     {
       title: "Total Parties",
-      value: "47",
-      delta: "+3 vs last election",
+      value: formatValue(overview.totalParties),
+      delta: overview.totalParties === null ? "Awaiting data" : "",
       color: "amber",
       icon: "ri-flag-line",
     },
     {
       title: "Active Parties",
-      value: "42",
-      delta: "+2 vs last election",
+      value: formatValue(overview.activeParties),
+      delta: overview.activeParties === null ? "Awaiting data" : "",
       color: "teal",
       icon: "ri-shield-check-line",
     },
     {
       title: "Pending Approvals",
-      value: "156",
-      delta: "-24 vs last election",
+      value: formatValue(overview.pendingApprovals),
+      delta: overview.pendingApprovals === null ? "Awaiting data" : "",
       color: "red",
       icon: "ri-time-line",
     },
   ];
+  const statusLabel = loadingOverview
+    ? "Syncing data..."
+    : backendOffline
+      ? "API offline"
+      : electionStatus || "Preview mode";
 
-  const analyticsCount = analytics.length;
-  const activities = [
-    { title: "New voter registered", meta: "Ram Bahadur Thapa", time: "2 mins ago", color: "green", icon: "ri-user-add-line" },
-    { title: "Party verified", meta: "Nepal Communist Party", time: "15 mins ago", color: "blue", icon: "ri-shield-check-line" },
-    { title: "Vote cast", meta: "Voter #284739", time: "23 mins ago", color: "purple", icon: "ri-checkbox-circle-line" },
-    { title: "Voter approved", meta: "Sita Kumari Sharma", time: "1 hour ago", color: "green", icon: "ri-user-line" },
-  ];
+  const handleForceLogout = () => {
+    setShowForceLogout(false);
+    alert("Force logout triggered. Wire this to backend endpoint.");
+  };
 
-  const timeline = [
-    { title: "Election Started", meta: "March 15, 2025 - 07:00 AM", color: "green", icon: "ri-play-circle-line" },
-    { title: "Current Status", meta: "Voting in progress - 6 hours remaining", color: "blue", icon: "ri-time-line" },
-    { title: "Election Ends", meta: "March 15, 2025 - 05:00 PM", color: "gray", icon: "ri-stop-circle-line" },
-  ];
+  const handleShutdown = () => {
+    setShowShutdown(false);
+    alert("Emergency shutdown triggered. Wire this to backend endpoint.");
+  };
 
   return (
     <div className="admin-page admin-dashboard">
@@ -90,11 +221,17 @@ export default function AdminDashboard() {
           </div>
         </div>
         <span className="admin-pill green">
-          <span className="dot" /> Election Running
+          <span className="dot" /> {statusLabel}
         </span>
       </div>
 
-      <div className="admin-dashboard__stats">
+      {loadingOverview === false && statusLabel.includes("offline") && (
+        <div className="dashboard-error">
+          Could not reach the backend API. Start the server at {import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api"}.
+        </div>
+      )}
+
+     <div className="admin-dashboard__stats">
         {stats.map((stat) => (
           <div key={stat.title} className="admin-dashboard__stat-card">
             <div className={`stat-icon ${stat.color}`}>
@@ -127,25 +264,25 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
-        <div className="admin-dashboard__emergency-actions">
-          <button
-            className="admin-dashboard__emergency-btn warning"
-            onClick={() => setShowShutdown(true)}
-          >
-            <i className="ri-shut-down-line" aria-hidden="true" />
-            Emergency Shutdown
-          </button>
-          <button
-            className="admin-dashboard__emergency-btn amber"
-            onClick={() => setShowForceLogout(true)}
-          >
-            <i className="ri-logout-box-line" aria-hidden="true" />
-            Force Logout All
-          </button>
-          <button className="admin-dashboard__emergency-btn success">
-            <i className="ri-trophy-line" aria-hidden="true" />
-            Trigger Results
-          </button>
+            <div className="admin-dashboard__emergency-actions">
+              <button
+                className="admin-dashboard__emergency-btn warning"
+                onClick={() => setShowShutdown(true)}
+              >
+                <i className="ri-shut-down-line" aria-hidden="true" />
+                Emergency Shutdown
+              </button>
+              <button
+                className="admin-dashboard__emergency-btn amber"
+                onClick={() => setShowForceLogout(true)}
+              >
+                <i className="ri-logout-box-line" aria-hidden="true" />
+                Force Logout All
+              </button>
+              <button className="admin-dashboard__emergency-btn success">
+                <i className="ri-trophy-line" aria-hidden="true" />
+                Trigger Results
+              </button>
         </div>
       </div>
 
@@ -153,34 +290,48 @@ export default function AdminDashboard() {
         <div className="admin-card admin-dashboard__activity">
           <div className="card-title">Recent Activities</div>
           <div className="activity-list">
-            {activities.map((item) => (
-              <div key={item.title} className="activity-item">
-                <span className={`activity-icon ${item.color}`}>
-                  <i className={item.icon} aria-hidden="true" />
-                </span>
-                <div>
-                  <div className="activity-title">{item.title}</div>
-                  <div className="activity-meta">{item.meta}</div>
-                </div>
-                <div className="activity-time">{item.time}</div>
+            {activities.length === 0 ? (
+              <div className="dashboard-empty">
+                <i className="ri-inbox-line" aria-hidden="true" />
+                <div>No activity to display yet</div>
               </div>
-            ))}
+            ) : (
+              activities.map((item) => (
+                <div key={item.title} className="activity-item">
+                  <span className={`activity-icon ${item.color || "blue"}`}>
+                    <i className={item.icon || "ri-notification-3-line"} aria-hidden="true" />
+                  </span>
+                  <div>
+                    <div className="activity-title">{item.title}</div>
+                    <div className="activity-meta">{item.meta}</div>
+                  </div>
+                  <div className="activity-time">{item.time}</div>
+                </div>
+              ))
+            )}
           </div>
         </div>
         <div className="admin-card admin-dashboard__timeline">
           <div className="card-title">Election Timeline</div>
           <div className="timeline-list">
-            {timeline.map((item) => (
-              <div key={item.title} className="timeline-item">
-                <span className={`timeline-icon ${item.color}`}>
-                  <i className={item.icon} aria-hidden="true" />
-                </span>
-                <div>
-                  <div className="timeline-title">{item.title}</div>
-                  <div className="timeline-meta">{item.meta}</div>
-                </div>
+            {timeline.length === 0 ? (
+              <div className="dashboard-empty">
+                <i className="ri-time-line" aria-hidden="true" />
+                <div>No timeline data available</div>
               </div>
-            ))}
+            ) : (
+              timeline.map((item) => (
+                <div key={item.title} className="timeline-item">
+                  <span className={`timeline-icon ${item.color}`}>
+                    <i className={item.icon} aria-hidden="true" />
+                  </span>
+                  <div>
+                    <div className="timeline-title">{item.title}</div>
+                    <div className="timeline-meta">{item.meta}</div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -204,7 +355,9 @@ export default function AdminDashboard() {
               <button className="admin-button ghost" onClick={() => setShowForceLogout(false)}>
                 Cancel
               </button>
-              <button className="admin-button warning">Force Logout</button>
+              <button className="admin-button warning" onClick={handleForceLogout}>
+                Force Logout
+              </button>
             </div>
           </div>
         </div>
@@ -229,7 +382,9 @@ export default function AdminDashboard() {
               <button className="admin-button ghost" onClick={() => setShowShutdown(false)}>
                 Cancel
               </button>
-              <button className="admin-button primary">Confirm Shutdown</button>
+              <button className="admin-button primary" onClick={handleShutdown}>
+                Confirm Shutdown
+              </button>
             </div>
           </div>
         </div>

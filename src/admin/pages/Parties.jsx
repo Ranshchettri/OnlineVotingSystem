@@ -2,6 +2,7 @@
 import api from "../../services/api";
 import "../styles/partyManagement.css";
 
+/* Demo seed data disabled as requested
 const fallbackParties = [
   {
     id: "p1",
@@ -37,9 +38,11 @@ const fallbackParties = [
     status: "Active",
   },
 ];
+*/
 
 export default function Parties() {
-  const [parties, setParties] = useState(fallbackParties);
+  const [parties, setParties] = useState([]);
+  const [error, setError] = useState(null);
   const [showRegister, setShowRegister] = useState(false);
   const [activeParty, setActiveParty] = useState(null);
   const [showDocs, setShowDocs] = useState(false);
@@ -47,9 +50,9 @@ export default function Parties() {
   const [showBlock, setShowBlock] = useState(false);
   const [toast, setToast] = useState(null);
   const [editValues, setEditValues] = useState({
-    development: 72,
-    goodWork: 85,
-    badWork: 15,
+    development: 0,
+    goodWork: 0,
+    badWork: 0,
   });
   const [registerForm, setRegisterForm] = useState({
     name: "",
@@ -58,12 +61,7 @@ export default function Parties() {
     logo: null,
     documents: null,
   });
-  const documents = [
-    { name: "Registration Certificate", date: "2024-01-15", status: "Verified" },
-    { name: "Party Constitution", date: "2024-01-15", status: "Verified" },
-    { name: "Leader ID Proof", date: "2024-01-16", status: "Verified" },
-    { name: "Financial Statement 2024", date: "2024-03-01", status: "Pending" },
-  ];
+  const documents = activeParty?.documents || [];
 
   useEffect(() => {
     const fetchParties = async () => {
@@ -83,20 +81,35 @@ export default function Parties() {
             status: party.status || (party.isActive ? "Active" : "Blocked"),
           }));
           setParties(mapped);
+          setError(null);
+        } else {
+          setParties([]);
+          setError("No parties returned from API yet.");
         }
       } catch (err) {
         console.error("Failed to load parties:", err);
+        setParties([]);
+        if (err.isNetworkError) {
+          setError("Backend offline: could not reach parties API.");
+        } else if (err.isUnauthorized) {
+          setError("Unauthorized: please log in as admin.");
+        } else {
+        setError("Failed to load parties");
       }
-    };
+    }
+  };
 
     fetchParties();
   }, []);
 
   const stats = useMemo(() => {
     const total = parties.length;
-    const active = parties.filter((p) => p.status === "Active").length;
-    const blocked = parties.filter((p) => p.status !== "Active").length;
-    return { total, active, blocked };
+    const active = parties.filter((p) => p.status === "Active" || p.status === "APPROVED" || p.isActive).length;
+    const blocked = parties.filter(
+      (p) => p.status && p.status !== "Active" && p.status !== "APPROVED" && !p.isActive,
+    ).length;
+    const pending = parties.filter((p) => p.status === "PENDING").length;
+    return { total, active, blocked, pending };
   }, [parties]);
 
   const handleRegisterSubmit = async (e) => {
@@ -112,6 +125,11 @@ export default function Parties() {
       setShowRegister(false);
     } catch (err) {
       console.error("Failed to register party:", err);
+      const msg =
+        err.isNetworkError
+          ? "Backend unavailable: cannot register party right now."
+          : err.response?.data?.message || "Failed to register party";
+      alert(msg);
     }
   };
 
@@ -189,6 +207,8 @@ export default function Parties() {
         </button>
       </div>
 
+      {error && <div className="parties-error">{error}</div>}
+
       <div className="parties-stats">
         <div className="parties-stat-card">
           <div className="stat-top">
@@ -198,7 +218,7 @@ export default function Parties() {
             </span>
           </div>
           <div className="stat-value">{stats.total}</div>
-          <div className="stat-sub">Registered parties</div>
+          <div className="stat-sub">{stats.total ? "Registered parties" : "Awaiting data"}</div>
         </div>
         <div className="parties-stat-card">
           <div className="stat-top">
@@ -208,7 +228,11 @@ export default function Parties() {
             </span>
           </div>
           <div className="stat-value">{stats.active}</div>
-          <div className="stat-sub green">89.4% active rate</div>
+          <div className="stat-sub green">
+            {stats.total
+              ? `${((stats.active / stats.total) * 100 || 0).toFixed(1)}% active rate`
+              : "Awaiting data"}
+          </div>
         </div>
         <div className="parties-stat-card">
           <div className="stat-top">
@@ -218,75 +242,91 @@ export default function Parties() {
             </span>
           </div>
           <div className="stat-value">{stats.blocked}</div>
-          <div className="stat-sub red">Development below 40%</div>
+          <div className="stat-sub red">
+            {stats.total
+              ? stats.pending
+                ? `${stats.pending} pending approvals`
+                : "No pending approvals"
+              : "Awaiting data"}
+          </div>
         </div>
       </div>
 
       <div className="parties-list">
-        {parties.map((party) => (
-          <div key={party.id} className="party-row">
+        {parties.length === 0 ? (
+          <div className="parties-empty">
+            <span className="empty-icon" aria-hidden="true">
+              <i className="ri-database-2-line" />
+            </span>
+            <div>No parties to display</div>
+            <div className="muted">Register or fetch parties to populate this list.</div>
+          </div>
+        ) : (
+          parties.map((party) => (
+            <div key={party.id} className="party-row">
             <div className="party-info">
-              <div className="party-logo">{party.logo}</div>
+              <div className="party-logo">{party.logo || "P"}</div>
               <div>
                 <div className="party-name">{party.name}</div>
                 <div className="party-meta line">
                   <span className="label">Leader:</span>
-                  <span className="value">{party.leader}</span>
+                  <span className="value">{party.leader || "—"}</span>
                 </div>
-                <div className="party-meta muted">{party.email}</div>
+                <div className="party-meta muted">{party.email || "—"}</div>
               </div>
             </div>
-            <div className="party-metrics">
-              <div className="metric">
-                <div className="metric-label">Development</div>
-                <div className="metric-bar">
-                  <span style={{ width: `${party.development}%` }} />
+              <div className="party-metrics">
+                <div className="metric">
+                  <div className="metric-label">Development</div>
+                  <div className="metric-bar">
+                    <span style={{ width: `${party.development || 0}%` }} />
+                  </div>
+                  <div className="metric-value">{party.development ?? 0}%</div>
                 </div>
-                <div className="metric-value">{party.development}%</div>
+                <div className="metric">
+                  <div className="metric-label">Good Work</div>
+                  <div className="metric-bar good">
+                    <span style={{ width: `${party.goodWork || 0}%` }} />
+                  </div>
+                  <div className="metric-value">{party.goodWork ?? 0}%</div>
+                </div>
+                <div className="metric">
+                  <div className="metric-label">Bad Work</div>
+                  <div className="metric-bar bad">
+                    <span style={{ width: `${party.badWork || 0}%` }} />
+                  </div>
+                  <div className="metric-value">{party.badWork ?? 0}%</div>
+                </div>
               </div>
-              <div className="metric">
-                <div className="metric-label">Good Work</div>
-                <div className="metric-bar good">
-                  <span style={{ width: `${party.goodWork}%` }} />
+              <div className="party-actions">
+                <span className={`party-status ${party.status === "Active" ? "active" : "blocked"}`}>
+                  {party.status || "—"}
+                </span>
+                <div className="party-actions-row">
+                  <button className="admin-button ghost" onClick={() => openDocs(party)}>
+                    <i className="ri-file-list-line" aria-hidden="true" />
+                    View Documents
+                  </button>
+                  <button className="admin-button ghost" onClick={() => openEdit(party)}>
+                    <i className="ri-edit-line" aria-hidden="true" />
+                    Edit Analytics
+                  </button>
+                  <button className="admin-button primary" onClick={() => openBlock(party)}>
+                    <i
+                      className={
+                        party.status === "Active"
+                          ? "ri-forbid-2-line"
+                          : "ri-checkbox-circle-line"
+                      }
+                      aria-hidden="true"
+                    />
+                    {party.status === "Active" ? "Block Party" : "Activate Party"}
+                  </button>
                 </div>
-                <div className="metric-value">{party.goodWork}%</div>
-              </div>
-              <div className="metric">
-                <div className="metric-label">Bad Work</div>
-                <div className="metric-bar bad">
-                  <span style={{ width: `${party.badWork}%` }} />
-                </div>
-                <div className="metric-value">{party.badWork}%</div>
               </div>
             </div>
-            <div className="party-actions">
-              <span className={`party-status ${party.status === "Active" ? "active" : "blocked"}`}>
-                {party.status}
-              </span>
-              <div className="party-actions-row">
-                <button className="admin-button ghost" onClick={() => openDocs(party)}>
-                  <i className="ri-file-list-line" aria-hidden="true" />
-                  View Documents
-                </button>
-                <button className="admin-button ghost" onClick={() => openEdit(party)}>
-                  <i className="ri-edit-line" aria-hidden="true" />
-                  Edit Analytics
-                </button>
-                <button className="admin-button primary" onClick={() => openBlock(party)}>
-                  <i
-                    className={
-                      party.status === "Active"
-                        ? "ri-forbid-2-line"
-                        : "ri-checkbox-circle-line"
-                    }
-                    aria-hidden="true"
-                  />
-                  {party.status === "Active" ? "Block Party" : "Activate Party"}
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       {showRegister && (
@@ -391,28 +431,40 @@ export default function Parties() {
               </button>
             </div>
             <div className="docs-list">
-              {documents.map((doc) => (
-                <div key={doc.name} className="doc-item">
-                  <div className="doc-left">
-                    <span className="doc-icon">
-                      <i className="ri-file-pdf-line" aria-hidden="true" />
-                    </span>
-                    <div>
-                      <div className="doc-title">{doc.name}</div>
-                      <div className="doc-meta">Uploaded: {doc.date}</div>
+              {documents.length === 0 ? (
+                <div className="doc-empty">
+                  <span className="doc-icon muted">
+                    <i className="ri-inbox-line" aria-hidden="true" />
+                  </span>
+                  <div>No documents uploaded yet</div>
+                  <div className="doc-meta">Party files will appear here once submitted.</div>
+                </div>
+              ) : (
+                documents.map((doc) => (
+                  <div key={doc.name} className="doc-item">
+                    <div className="doc-left">
+                      <span className="doc-icon">
+                        <i className="ri-file-pdf-line" aria-hidden="true" />
+                      </span>
+                      <div>
+                        <div className="doc-title">{doc.name}</div>
+                        <div className="doc-meta">
+                          Uploaded: {doc.date || "—"}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="doc-actions">
+                      <span className={`doc-status ${(doc.status || "pending").toLowerCase()}`}>
+                        {doc.status || "Pending"}
+                      </span>
+                      <button className="admin-button ghost doc-btn">
+                        <i className="ri-download-line" aria-hidden="true" />
+                        Download
+                      </button>
                     </div>
                   </div>
-                  <div className="doc-actions">
-                    <span className={`doc-status ${doc.status.toLowerCase()}`}>
-                      {doc.status}
-                    </span>
-                    <button className="admin-button ghost doc-btn">
-                      <i className="ri-download-line" aria-hidden="true" />
-                      Download
-                    </button>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
             <div className="admin-modal-actions">
               <button className="admin-button ghost wide" onClick={() => setShowDocs(false)}>

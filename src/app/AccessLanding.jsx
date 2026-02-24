@@ -4,7 +4,7 @@ import "../styles/auth.css";
 const samples = {
   voter: { email: "demo.voter@evote.gov.np", voterId: "NP2025-001" },
   party: { email: "demo.party@evote.gov.np", otp: "246810" },
-  admin: { email: "demo.admin@evote.gov.np" },
+  admin: { email: "ranshsunar@gmail.com" },
 };
 
 export default function AccessLanding() {

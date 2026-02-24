@@ -111,6 +111,26 @@
   gap: 14px;
 }
 
+.auth-error,
+.auth-success {
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.auth-error {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.auth-success {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
 .auth-shell .input-label {
   font-size: 13px;
   font-weight: 700;
