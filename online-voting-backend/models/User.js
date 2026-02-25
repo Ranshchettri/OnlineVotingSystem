@@ -69,6 +69,14 @@ const userSchema = new mongoose.Schema(
       type: String,
     },
 
+    district: {
+      type: String,
+    },
+
+    province: {
+      type: String,
+    },
+
     profilePhoto: {
       type: String, // Base64 or URL
     },

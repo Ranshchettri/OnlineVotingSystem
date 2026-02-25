@@ -9,6 +9,25 @@ const AuditLog = require("../models/AuditLog");
 const Analytics = require("../models/Analytics");
 const AppError = require("../utils/AppError");
 
+const deriveElectionStatus = (election = {}, now = new Date()) => {
+  const start = election.startDate ? new Date(election.startDate) : null;
+  const end = election.endDate ? new Date(election.endDate) : null;
+  const raw = String(election.status || "").toLowerCase();
+
+  if (raw === "ended" || election.isEnded || election.allowVoting === false) {
+    return "Ended";
+  }
+
+  if (start && now < start) return "Upcoming";
+  if (end && now > end) return "Ended";
+  if (start && end && now >= start && now <= end) return "Running";
+
+  if (raw === "running" || raw === "upcoming") {
+    return raw[0].toUpperCase() + raw.slice(1);
+  }
+  return "Upcoming";
+};
+
 // Utility: create activity log (non-blocking)
 const logActivity = async ({ action, user, userId, icon, color }) => {
   try {
@@ -189,6 +208,7 @@ const getActivities = async (req, res, next) => {
 const listElections = async (req, res, next) => {
   try {
     const elections = await Election.find().sort({ createdAt: -1 }).lean();
+    const now = new Date();
 
     const voteAgg = await Vote.aggregate([
       {
@@ -230,9 +250,12 @@ const listElections = async (req, res, next) => {
           id: e._id,
           title: e.title,
           type: e.type,
-          status: e.status || (e.isActive ? "Running" : e.isEnded ? "Ended" : "Upcoming"),
+          status: deriveElectionStatus(e, now),
           startDate: e.startDate,
           endDate: e.endDate,
+          allowVoting: e.allowVoting !== false,
+          isActive: Boolean(e.isActive),
+          isEnded: Boolean(e.isEnded),
           totalVotes,
           turnout: e.turnout || 0,
           parties,
@@ -293,8 +316,9 @@ const stopElection = async (req, res, next) => {
 
     election.status = "Ended";
     election.isActive = false;
+    election.isEnded = true;
     election.allowVoting = false;
-    election.endDate = election.endDate || new Date();
+    election.endDate = new Date();
     await election.save();
 
     await logActivity({

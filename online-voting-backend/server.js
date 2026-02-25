@@ -12,8 +12,8 @@ if (!process.env.NODE_ENV) {
 // Middleware
 app.use(cors());
 // allow large base64 uploads for logo/photo (front-end sends data URLs)
-app.use(express.json({ limit: "100mb" }));
-app.use(express.urlencoded({ limit: "100mb", extended: true }));
+app.use(express.json({ limit: "200mb" }));
+app.use(express.urlencoded({ limit: "200mb", extended: true }));
 
 if (!process.env.JWT_SECRET) {
   process.env.JWT_SECRET = "devsecret";

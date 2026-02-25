@@ -182,7 +182,10 @@ const partySchema = new mongoose.Schema(
       publicComplaints: { type: Number, default: 0 },
     },
 
-    documents: [String],
+    documents: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
 
     historicalData: [
       {

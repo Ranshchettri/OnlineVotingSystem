@@ -2,6 +2,93 @@ const Party = require("../models/Party");
 const AppError = require("../utils/AppError");
 const Election = require("../models/Election");
 
+const estimateDataUrlSize = (dataUrl = "") => {
+  if (!dataUrl || typeof dataUrl !== "string" || !dataUrl.includes(",")) return 0;
+  const base64 = dataUrl.split(",")[1] || "";
+  return Math.ceil((base64.length * 3) / 4);
+};
+
+const normalizePartyDocuments = (documents = []) => {
+  const source = Array.isArray(documents) ? documents : documents ? [documents] : [];
+
+  return source
+    .map((doc, index) => {
+      if (!doc) return null;
+
+      if (typeof doc === "string") {
+        const mimeTypeMatch = doc.match(/^data:([^;,]+)[;,]/i);
+        const mimeType = mimeTypeMatch?.[1] || "application/octet-stream";
+        const extension = mimeType.includes("/")
+          ? mimeType.split("/")[1].replace(/[^\w.-]/g, "")
+          : "bin";
+
+        return {
+          name: `Document ${index + 1}.${extension || "bin"}`,
+          mimeType,
+          size: estimateDataUrlSize(doc),
+          dataUrl: doc,
+          uploadedAt: new Date(),
+        };
+      }
+
+      if (typeof doc === "object") {
+        const dataUrl =
+          typeof doc.dataUrl === "string"
+            ? doc.dataUrl
+            : typeof doc.url === "string"
+              ? doc.url
+              : typeof doc.content === "string"
+                ? doc.content
+                : "";
+        const mimeType =
+          doc.mimeType ||
+          doc.type ||
+          (dataUrl.match(/^data:([^;,]+)[;,]/i)?.[1] || "application/octet-stream");
+
+        return {
+          name: doc.name || doc.fileName || `Document ${index + 1}`,
+          mimeType,
+          size: Number(doc.size || 0) || estimateDataUrlSize(dataUrl),
+          dataUrl,
+          uploadedAt: doc.uploadedAt ? new Date(doc.uploadedAt) : new Date(),
+        };
+      }
+
+      return null;
+    })
+    .filter(Boolean);
+};
+
+const formatPartyStatus = (party) => {
+  const raw = String(party.status || "").toLowerCase();
+  const isBlocked = raw === "rejected" || raw === "blocked" || party.isActive === false;
+  if (raw === "pending") return "PENDING";
+  return isBlocked ? "BLOCKED" : "ACTIVE";
+};
+
+const formatPartyPayload = (party, index = 0) => ({
+  _id: party._id,
+  electionId: party.electionId || null,
+  name: party.name,
+  shortName: party.shortName,
+  leader: party.leader,
+  email: party.email,
+  mobile: party.mobile,
+  symbol: party.symbol || party.logo || null,
+  logo: party.logo,
+  description: party.description || party.vision || party.motivationQuote || "",
+  color: party.color || "#7c7cff",
+  isActive: party.isActive === undefined ? true : party.isActive,
+  status: formatPartyStatus(party),
+  development: party.development ?? party.goodWorkPercent ?? 0,
+  goodWork: party.goodWork ?? party.goodWorkPercent ?? 0,
+  badWork: party.badWork ?? party.badWorkPercent ?? 0,
+  totalVotes: party.currentVotes || 0,
+  documents: normalizePartyDocuments(party.documents || []),
+  createdAt: party.createdAt,
+  rank: index + 1,
+});
+
 // Get all parties for an election
 const getParties = async (req, res, next) => {
   try {
@@ -21,26 +108,7 @@ const getParties = async (req, res, next) => {
 
     const parties = await Party.find(filter).sort({ createdAt: -1 });
 
-    const formatted = parties.map((p) => ({
-      _id: p._id,
-      electionId: p.electionId || null,
-      name: p.name,
-      shortName: p.shortName,
-      leader: p.leader,
-      email: p.email,
-      mobile: p.mobile,
-      symbol: p.symbol || p.logo || null,
-      logo: p.logo,
-      description: p.description || p.vision || p.motivationQuote || "",
-      color: p.color || "#7c7cff",
-      isActive: p.isActive === undefined ? true : p.isActive,
-      status: (p.status || (p.isActive ? "approved" : "pending")).toUpperCase(),
-      development: p.development ?? p.goodWorkPercent ?? 0,
-      goodWork: p.goodWork ?? p.goodWorkPercent ?? 0,
-      badWork: p.badWork ?? p.badWorkPercent ?? 0,
-      totalVotes: p.currentVotes || 0,
-      createdAt: p.createdAt,
-    }));
+    const formatted = parties.map((p, index) => formatPartyPayload(p, index));
 
     res.status(200).json({ data: { parties: formatted } });
   } catch (error) {
@@ -59,27 +127,10 @@ const getPartyProfile = async (req, res, next) => {
     if (!party) return next(new AppError("Party not found", 404));
 
     const resp = {
-      _id: party._id,
-      electionId: party.electionId || null,
-      name: party.name,
-      shortName: party.shortName || "",
-      leader: party.leader || "",
-      email: party.email || "",
-      mobile: party.mobile || "",
-      symbol: party.symbol || party.logo || null,
-      logo: party.logo || "",
-      description:
-        party.description || party.vision || party.motivationQuote || "",
-      color: party.color || "#7c7cff",
-      development: party.development ?? party.goodWorkPercent ?? 0,
-      goodWork: party.goodWork ?? party.goodWorkPercent ?? 0,
-      badWork: party.badWork ?? party.badWorkPercent ?? 0,
-      totalVotes: party.currentVotes || 0,
+      ...formatPartyPayload(party),
       vision: party.vision || "",
       futurePlans: Array.isArray(party.futurePlans) ? party.futurePlans : [],
       teamMembers: Array.isArray(party.teamMembers) ? party.teamMembers : [],
-      isActive: party.isActive,
-      createdAt: party.createdAt,
     };
 
     res.status(200).json({ data: { party: resp } });
@@ -131,6 +182,9 @@ const createParty = async (req, res, next) => {
       electionType = "Political";
     }
 
+    const resolvedIsActive = typeof isActive === "boolean" ? isActive : true;
+    const normalizedDocuments = normalizePartyDocuments(documents || req.body.documentData);
+
     const party = new Party({
       name,
       shortName,
@@ -141,31 +195,15 @@ const createParty = async (req, res, next) => {
       logo,
       description,
       color,
-      isActive: isActive === undefined ? true : isActive,
-      status: isActive ? "approved" : "pending",
+      isActive: resolvedIsActive,
+      status: resolvedIsActive ? "approved" : "rejected",
       electionId: electionId || undefined,
       electionType,
-      documents: Array.isArray(documents)
-        ? documents
-        : documents
-          ? [documents]
-          : [],
+      documents: normalizedDocuments,
     });
 
     await party.save();
-
-    const resp = {
-      _id: party._id,
-      name: party.name,
-      symbol: party.symbol || party.logo || null,
-      description:
-        party.description || party.vision || party.motivationQuote || "",
-      color: party.color || "#7c7cff",
-      isActive: party.isActive,
-      createdAt: party.createdAt,
-    };
-
-    res.status(201).json({ data: resp });
+    res.status(201).json({ data: formatPartyPayload(party) });
   } catch (error) {
     console.error("createParty failed", error);
     if (error.code === 11000) {
@@ -179,63 +217,44 @@ const createParty = async (req, res, next) => {
 const updateParty = async (req, res, next) => {
   try {
     const { partyId } = req.params;
-    const {
-      name,
-      logo,
-      motivationQuote,
-      vision,
-      teamMembers,
-      goodWorkPercent,
-      badWorkPercent,
-    } = req.body;
-
     const party = await Party.findById(partyId);
 
     if (!party) return next(new AppError("Party not found", 404));
 
+    if (req.body.documents !== undefined) {
+      party.documents = normalizePartyDocuments(req.body.documents);
+    }
+
     // Apply provided updates only
     Object.keys(req.body).forEach((key) => {
+      if (key === "documents") return;
       party[key] = req.body[key];
     });
 
     if (party.status) {
       const normalized = party.status.toString().toLowerCase();
-      if (
-        ["approved", "rejected", "pending", "suspended"].includes(normalized)
-      ) {
-        party.status = normalized;
-        if (normalized === "approved") party.isActive = true;
-        if (normalized === "rejected" || normalized === "suspended")
+      if (["approved", "rejected", "pending", "blocked"].includes(normalized)) {
+        if (normalized === "approved") {
+          party.status = "approved";
+          party.isActive = true;
+        } else if (normalized === "rejected" || normalized === "blocked") {
+          party.status = "rejected";
           party.isActive = false;
+        } else if (normalized === "pending") {
+          party.status = "pending";
+          party.isActive = false;
+        }
       }
     }
 
+    if (req.body.isActive !== undefined) {
+      const resolvedIsActive = Boolean(req.body.isActive);
+      party.isActive = resolvedIsActive;
+      party.status = resolvedIsActive ? "approved" : "rejected";
+    }
+
     await party.save();
-
-    const resp = {
-      _id: party._id,
-      name: party.name,
-      shortName: party.shortName,
-      leader: party.leader,
-      email: party.email,
-      mobile: party.mobile,
-      symbol: party.symbol || party.logo || null,
-      logo: party.logo,
-      description:
-        party.description || party.vision || party.motivationQuote || "",
-      color: party.color || "#7c7cff",
-      isActive: party.isActive,
-      status: (
-        party.status || (party.isActive ? "approved" : "pending")
-      ).toUpperCase(),
-      development: party.development ?? party.goodWorkPercent ?? 0,
-      goodWork: party.goodWork ?? party.goodWorkPercent ?? 0,
-      badWork: party.badWork ?? party.badWorkPercent ?? 0,
-      totalVotes: party.currentVotes || 0,
-      createdAt: party.createdAt,
-    };
-
-    res.status(200).json({ data: resp });
+    res.status(200).json({ data: formatPartyPayload(party) });
   } catch (error) {
     next(error);
   }
