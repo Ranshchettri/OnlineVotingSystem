@@ -1,8 +1,8 @@
-import { voterProfile, electionOverview } from "../data/fakeVoterData";
-
 export default function VoteConfirmModal({
   isOpen,
   party,
+  electionName,
+  voterId,
   onCancel,
   onProceed,
 }) {
@@ -42,11 +42,11 @@ export default function VoteConfirmModal({
             </div>
             <div className="vote-summary-row">
               <span>Election:</span>
-              <strong>{electionOverview.electionName}</strong>
+              <strong>{electionName || "Current Election"}</strong>
             </div>
             <div className="vote-summary-row">
               <span>Voter ID:</span>
-              <strong>{voterProfile.id}</strong>
+              <strong>{voterId || "—"}</strong>
             </div>
           </div>
 

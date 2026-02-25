@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { partySidebar } from "../data/fakePartyData";
+import { usePartyData } from "../hooks/usePartyData";
 
 const navItems = [
   { label: "Home / Profile", path: "/party/home", icon: "ri-home-line" },
@@ -12,13 +12,14 @@ const navItems = [
 ];
 
 export default function PartySidebar() {
+  const { party } = usePartyData();
   return (
     <aside className="party-sidebar">
       <div className="party-sidebar-head">
-        <div className="party-logo-mini">{partySidebar.short}</div>
+        <div className="party-logo-mini">{party?.short || party?.symbol || "P"}</div>
         <div>
-          <div className="party-sidebar-title">{partySidebar.name}</div>
-          <div className="party-sidebar-sub">{partySidebar.status}</div>
+          <div className="party-sidebar-title">{party?.name || "Party"}</div>
+          <div className="party-sidebar-sub">{party?.status || "Active"}</div>
         </div>
       </div>
 

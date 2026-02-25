@@ -1,23 +1,50 @@
-import { useState } from "react";
-import { partyHome } from "../data/fakePartyData";
+import { useEffect, useState } from "react";
+import api from "../../services/api";
 import "../styles/home.css";
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
+const defaults = {
+  title: "Party Dashboard",
+  subtitle: "Manage your party profile and team",
+  logoBg: "#e5e7eb",
+  logoText: "P",
+};
 
 export default function PartyHome() {
-  const [saved, setSaved] = useState(() => ({
-    name: partyHome.name,
-    leader: partyHome.leader,
-    vision: partyHome.vision,
-    logoImage: partyHome.logoImage || "",
-    team: partyHome.team.map((member, index) => ({
-      ...member,
-      id: `${member.name}-${index}`,
-      photo: member.photo || "",
-    })),
-  }));
+  const [saved, setSaved] = useState({
+    name: "",
+    leader: "",
+    vision: "",
+    logoImage: "",
+    team: [],
+  });
   const [draft, setDraft] = useState(() => clone(saved));
   const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    const loadParty = async () => {
+      try {
+        const res = await api.get("/parties");
+        const party = (res.data?.data || res.data || [])[0] || {};
+        const mapped = {
+          name: party.name || "",
+          leader: party.leader || "",
+          vision: party.vision || party.mission || "",
+          logoImage: party.logoUrl || party.logo || "",
+          team: (party.teamMembers || []).map((m, idx) => ({
+            ...m,
+            id: `${m.name || "member"}-${idx}`,
+            photo: m.photo || "",
+          })),
+        };
+        setSaved(mapped);
+        setDraft(clone(mapped));
+      } catch (err) {
+        console.error("Failed to load party data", err.message);
+      }
+    };
+    loadParty();
+  }, []);
 
   const startEdit = () => {
     setDraft(clone(saved));
@@ -87,8 +114,8 @@ export default function PartyHome() {
     <div className="party-page">
       <div className="party-page-header">
         <div>
-          <h1>{partyHome.title}</h1>
-          <p>{partyHome.subtitle}</p>
+          <h1>{defaults.title}</h1>
+          <p>{defaults.subtitle}</p>
         </div>
         {isEditing ? (
           <div className="party-header-actions">
@@ -119,14 +146,14 @@ export default function PartyHome() {
         <div className="party-profile-hero">
           <div
             className="party-profile-logo"
-            style={{ background: partyHome.logoBg }}
+            style={{ background: defaults.logoBg }}
           >
             {isEditing ? (
               <>
                 {draft.logoImage ? (
                   <img src={draft.logoImage} alt="Party logo" />
                 ) : (
-                  <span>{partyHome.logoText}</span>
+                  <span>{defaults.logoText}</span>
                 )}
                 <label className="party-logo-upload">
                   <input
@@ -141,7 +168,7 @@ export default function PartyHome() {
             ) : saved.logoImage ? (
               <img src={saved.logoImage} alt="Party logo" />
             ) : (
-              <span>{partyHome.logoText}</span>
+              <span>{defaults.logoText}</span>
             )}
           </div>
           <div className="party-profile-info">

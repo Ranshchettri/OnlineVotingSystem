@@ -1,73 +1,35 @@
-﻿import { useState } from "react";
-import { partyAbout } from "../data/fakePartyData";
+import { useEffect, useState } from "react";
+import api from "../../services/api";
 import "../styles/about.css";
 
-const clone = (value) => JSON.parse(JSON.stringify(value));
-
 export default function PartyAbout() {
-  const [savedPlans, setSavedPlans] = useState(() => clone(partyAbout.plans));
-  const [draftPlans, setDraftPlans] = useState(() => clone(partyAbout.plans));
-  const [isEditing, setIsEditing] = useState(false);
+  const [party, setParty] = useState(null);
+  const [focusAreas, setFocusAreas] = useState([]);
 
-  const startEdit = () => {
-    setDraftPlans(clone(savedPlans));
-    setIsEditing(true);
-  };
-
-  const cancelEdit = () => {
-    setDraftPlans(clone(savedPlans));
-    setIsEditing(false);
-  };
-
-  const saveEdit = () => {
-    setSavedPlans(clone(draftPlans));
-    setIsEditing(false);
-  };
-
-  const addPlan = () => {
-    setDraftPlans((prev) => [...prev, ""]);
-  };
-
-  const updatePlan = (index, value) => {
-    setDraftPlans((prev) =>
-      prev.map((item, idx) => (idx === index ? value : item)),
-    );
-  };
-
-  const removePlan = (index) => {
-    setDraftPlans((prev) => prev.filter((_, idx) => idx !== index));
-  };
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [profileRes, plansRes] = await Promise.all([
+          api.get("/party/profile/full"),
+          api.get("/party/future-plans"),
+        ]);
+        const profile = profileRes.data?.data || {};
+        setParty(profile);
+        setFocusAreas(plansRes.data?.data?.futurePlans || []);
+      } catch (err) {
+        console.error("Failed to load party about data", err.message);
+      }
+    };
+    load();
+  }, []);
 
   return (
     <div className="party-page">
       <div className="party-page-header party-header-compact">
         <div>
-          <h1>{partyAbout.title}</h1>
-          <p>{partyAbout.subtitle}</p>
+          <h1>{party?.name || "Party"}</h1>
+          <p>{party?.vision || party?.manifesto || "Vision not provided."}</p>
         </div>
-        {isEditing ? (
-          <div className="party-header-actions">
-            <button
-              type="button"
-              className="party-btn ghost"
-              onClick={cancelEdit}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="party-btn primary"
-              onClick={saveEdit}
-            >
-              Save Changes
-            </button>
-          </div>
-        ) : (
-          <button className="party-edit-btn" type="button" onClick={startEdit}>
-            <i className="ri-edit-line" aria-hidden="true" />
-            Edit Plans
-          </button>
-        )}
       </div>
 
       <div className="about-section">
@@ -75,48 +37,18 @@ export default function PartyAbout() {
           <div className="plans-heading">
             <div>
               <h3>Future Plans</h3>
-              <span className="plans-count">
-                {isEditing ? draftPlans.length : savedPlans.length} of 50 plans
-                added
-              </span>
+              <span className="plans-count">{focusAreas.length} items</span>
             </div>
-            {isEditing ? (
-              <button
-                type="button"
-                className="party-btn outline add-plan-btn"
-                onClick={addPlan}
-              >
-                <i className="ri-add-line" aria-hidden="true" />
-                Add Plan
-              </button>
-            ) : null}
           </div>
           <div className="about-list">
-            {(isEditing ? draftPlans : savedPlans).map((plan, index) => (
-              <div key={`${index}-${plan}`} className="about-item">
-                <span>{index + 1}</span>
-                {isEditing ? (
-                  <>
-                    <input
-                      value={plan}
-                      placeholder="Enter future plan..."
-                      onChange={(event) =>
-                        updatePlan(index, event.target.value)
-                      }
-                    />
-                    <button
-                      type="button"
-                      className="about-remove"
-                      onClick={() => removePlan(index)}
-                    >
-                      <i className="ri-delete-bin-line" aria-hidden="true" />
-                    </button>
-                  </>
-                ) : (
-                  <p>{plan}</p>
-                )}
-              </div>
-            ))}
+            {(focusAreas.length ? focusAreas : ["No future plans submitted."]).map(
+              (item, index) => (
+                <div key={`${index}-${item}`} className="about-item">
+                  <span>{index + 1}</span>
+                  <p>{item}</p>
+                </div>
+              ),
+            )}
           </div>
         </div>
       </div>
@@ -129,9 +61,9 @@ export default function PartyAbout() {
           <b>Guidelines</b>
         </div>
         <ul>
-          {partyAbout.guidelines.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
+          <li>Keep party details updated before election lock-in.</li>
+          <li>Ensure manifesto matches submitted documents.</li>
+          <li>Uploads are stored directly in Mongo for transparency.</li>
         </ul>
       </div>
     </div>

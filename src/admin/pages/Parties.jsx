@@ -59,32 +59,64 @@ export default function Parties() {
     leader: "",
     email: "",
     logo: null,
+    logoPreview: "",
+    logoData: "",
     documents: null,
+    documentData: "",
+    documentName: "",
+    electionId: "",
+    electionType: "Political",
   });
   const documents = activeParty?.documents || [];
+  const [elections, setElections] = useState([]);
+
+  const fileToDataUrl = (file, cb) => {
+    if (!file) return cb("");
+    const reader = new FileReader();
+    reader.onload = () => cb(reader.result);
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
-    const fetchParties = async () => {
+    const fetchData = async () => {
       try {
-        const res = await api.get("/parties");
-        const list = res.data?.data?.parties || res.data?.data || res.data;
-        if (Array.isArray(list) && list.length > 0) {
-          const mapped = list.map((party) => ({
+        const [partyRes, electionRes] = await Promise.all([
+          api.get("/parties"),
+          api.get("/elections"),
+        ]);
+
+        const list = partyRes.data?.data?.parties || partyRes.data?.data || partyRes.data;
+        if (Array.isArray(list)) {
+          const totalVotes = list.reduce((acc, p) => acc + (p.totalVotes || 0), 0);
+          const mapped = list.map((party, idx) => ({
             id: party._id || party.id,
             name: party.name || party.partyName,
             leader: party.leaderName || party.leader,
             email: party.email || party.govEmail,
-            logo: party.symbol || party.shortName || "P",
-            development: party.developmentScore || 70,
-            goodWork: party.goodWork || 80,
-            badWork: party.badWork || 20,
+            logo: party.logo || party.symbol || party.shortName || "P",
+            development: party.development ?? party.developmentScore ?? 70,
+            goodWork: party.goodWork ?? 80,
+            badWork: party.badWork ?? 20,
             status: party.status || (party.isActive ? "Active" : "Blocked"),
+            share: totalVotes ? `${(((party.totalVotes || 0) / totalVotes) * 100).toFixed(1)}%` : "0%",
+            rank: idx + 1,
+            documents: party.documents || [],
           }));
           setParties(mapped);
           setError(null);
         } else {
           setParties([]);
           setError("No parties returned from API yet.");
+        }
+
+        const electionList = electionRes.data?.data?.elections || electionRes.data?.data || electionRes.data || [];
+        setElections(electionList);
+        if (!registerForm.electionId && electionList.length) {
+          setRegisterForm((p) => ({
+            ...p,
+            electionId: electionList[0]._id || electionList[0].id,
+            electionType: electionList[0].type || p.electionType,
+          }));
         }
       } catch (err) {
         console.error("Failed to load parties:", err);
@@ -94,12 +126,12 @@ export default function Parties() {
         } else if (err.isUnauthorized) {
           setError("Unauthorized: please log in as admin.");
         } else {
-        setError("Failed to load parties");
+          setError("Failed to load parties");
+        }
       }
-    }
-  };
+    };
 
-    fetchParties();
+    fetchData();
   }, []);
 
   const stats = useMemo(() => {
@@ -115,14 +147,48 @@ export default function Parties() {
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     try {
-      const fd = new FormData();
-      fd.append("name", registerForm.name);
-      fd.append("leaderName", registerForm.leader);
-      fd.append("email", registerForm.email);
-      if (registerForm.logo) fd.append("logo", registerForm.logo);
-      if (registerForm.documents) fd.append("documents", registerForm.documents);
-      await api.post("/parties", fd);
+      const payload = {
+        name: registerForm.name,
+        leader: registerForm.leader,
+        email: registerForm.email,
+        logo: registerForm.logoData,
+        symbol: registerForm.logoData || registerForm.name?.slice(0, 2),
+        documents: registerForm.documentData ? [registerForm.documentData] : [],
+        electionId: registerForm.electionId,
+        electionType: registerForm.electionType || "Political",
+      };
+      await api.post("/parties", payload);
       setShowRegister(false);
+      setRegisterForm({
+        name: "",
+        leader: "",
+        email: "",
+        logo: null,
+        logoPreview: "",
+        logoData: "",
+        documents: null,
+        documentData: "",
+        documentName: "",
+        electionId: elections[0]?._id || elections[0]?.id || "",
+        electionType: elections[0]?.type || "Political",
+      });
+      // Refresh list
+      const res = await api.get("/parties");
+      const list = res.data?.data?.parties || res.data?.data || res.data;
+      setParties(
+        (list || []).map((party, idx) => ({
+          id: party._id || party.id,
+          name: party.name || party.partyName,
+          leader: party.leaderName || party.leader,
+          email: party.email || party.govEmail,
+          logo: party.logo || party.symbol || party.shortName || "P",
+          development: party.development ?? party.developmentScore ?? 70,
+          goodWork: party.goodWork ?? 80,
+          badWork: party.badWork ?? 20,
+          status: party.status || (party.isActive ? "Active" : "Blocked"),
+          rank: idx + 1,
+        })),
+      );
     } catch (err) {
       console.error("Failed to register party:", err);
       const msg =
@@ -265,7 +331,11 @@ export default function Parties() {
           parties.map((party) => (
             <div key={party.id} className="party-row">
             <div className="party-info">
-              <div className="party-logo">{party.logo || "P"}</div>
+              <div className="party-logo">
+                {party.logo && (party.logo.startsWith("data:") || party.logo.startsWith("http"))
+                  ? <img src={party.logo} alt={party.name} />
+                  : (party.logo || "P")}
+              </div>
               <div>
                 <div className="party-name">{party.name}</div>
                 <div className="party-meta line">
@@ -371,29 +441,77 @@ export default function Parties() {
                 Party Logo
                 <input
                   type="file"
-                  onChange={(e) =>
-                    setRegisterForm({ ...registerForm, logo: e.target.files?.[0] })
-                  }
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) {
+                      setRegisterForm((p) => ({
+                        ...p,
+                        logo: null,
+                        logoPreview: "",
+                        logoData: "",
+                      }));
+                      return;
+                    }
+                    fileToDataUrl(file, (dataUrl) => {
+                      setRegisterForm((p) => ({
+                        ...p,
+                        logo: file,
+                        logoPreview: dataUrl,
+                        logoData: dataUrl,
+                      }));
+                    });
+                  }}
                 />
                 <span className="file-drop-icon" aria-hidden="true">
                   <i className="ri-upload-cloud-line" />
                 </span>
                 <span>Click to upload party logo</span>
                 <small>PNG, JPG up to 2MB</small>
+                {registerForm.logo && (
+                  <div className="upload-preview">
+                    <i className="ri-image-line" aria-hidden="true" /> {registerForm.logo.name}
+                    {registerForm.logoPreview ? (
+                      <img src={registerForm.logoPreview} alt="Logo preview" className="upload-thumb" />
+                    ) : null}
+                  </div>
+                )}
               </label>
               <label className="file-drop danger">
                 Verification Documents
                 <input
                   type="file"
-                  onChange={(e) =>
-                    setRegisterForm({ ...registerForm, documents: e.target.files?.[0] })
-                  }
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) {
+                      setRegisterForm((p) => ({
+                        ...p,
+                        documents: null,
+                        documentData: "",
+                        documentName: "",
+                      }));
+                      return;
+                    }
+                    fileToDataUrl(file, (dataUrl) => {
+                      setRegisterForm((p) => ({
+                        ...p,
+                        documents: file,
+                        documentData: dataUrl,
+                        documentName: file.name,
+                      }));
+                    });
+                  }}
                 />
                 <span className="file-drop-icon" aria-hidden="true">
                   <i className="ri-file-upload-line" />
                 </span>
                 <span>Upload registration documents</span>
                 <small>PDF, DOC up to 10MB</small>
+                {registerForm.documents && (
+                  <div className="upload-preview">
+                    <i className="ri-file-pdf-2-line" aria-hidden="true" /> {registerForm.documents.name}
+                  </div>
+                )}
               </label>
               <div className="admin-modal-actions">
                 <button className="admin-button ghost" type="button" onClick={() => setShowRegister(false)}>

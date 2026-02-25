@@ -1,64 +1,73 @@
-import { profileDetails, votingHistory } from "../data/fakeVoterData";
+import { useEffect, useState } from "react";
+import api from "../../services/api";
+import { getStoredVoter } from "../utils/user";
 import "../styles/profile.css";
 
-const infoFields = [
-  { label: "Date of Birth", value: profileDetails.dob },
-  { label: "Email Address", value: profileDetails.email },
-  { label: "Mobile Number", value: profileDetails.phone },
-  { label: "District", value: profileDetails.district },
-  { label: "Province", value: profileDetails.province },
-];
-
 export default function Profile() {
+  const stored = getStoredVoter();
+  const [history, setHistory] = useState([]);
+
+  useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        const res = await api.get("/votes/me");
+        setHistory(res.data?.data || res.data || []);
+      } catch {
+        setHistory([]);
+      }
+    };
+    loadHistory();
+  }, []);
+
+  const photo =
+    stored?.profilePhoto ||
+    stored?.photoUrl ||
+    "https://i.pravatar.cc/160?u=voter";
+
   return (
     <div className="profile-page">
       <div className="profile-title">
         <h1>My Profile</h1>
-        <p>Your voter information and history</p>
+        <p>Manage your voter identity and review voting activity.</p>
       </div>
 
       <div className="profile-main-card">
         <div className="profile-hero">
           <div className="profile-hero-photo">
-            {profileDetails.photo ? (
-              <img src={profileDetails.photo} alt={profileDetails.name} />
-            ) : (
-              <div className="profile-hero-placeholder">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="8" r="4" />
-                  <path d="M4 21c1.6-4 5-6 8-6s6.4 2 8 6" />
-                </svg>
-              </div>
-            )}
+            {photo ? <img src={photo} alt="Voter" /> : <div className="profile-hero-placeholder" />}
           </div>
           <div className="profile-hero-info">
-            <h2>{profileDetails.name}</h2>
+            <h2>{stored?.fullName || "Registered Voter"}</h2>
             <p>
-              <span>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 2l7 6h-2v12H7V8H5l7-6z" />
-                </svg>
-              </span>
-              Voter ID: {profileDetails.id}
+              <i className="ri-mail-line" aria-hidden="true" />
+              {stored?.email || "Not provided"}
             </p>
-            <span className="profile-hero-badge">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M20 6l-8 8-4-4" />
-              </svg>
-              Verified Voter
-            </span>
+            <div className="profile-hero-badge">
+              <i className="ri-checkbox-circle-line" aria-hidden="true" />
+              {stored ? "Verified Voter" : "Guest"}
+            </div>
           </div>
         </div>
 
         <div className="profile-info">
-          <h3>Personal Information</h3>
+          <h3>Identity Details</h3>
           <div className="profile-info-grid">
-            {infoFields.map((field) => (
-              <div key={field.label} className="profile-info-item">
-                <span>{field.label}</span>
-                <strong>{field.value}</strong>
-              </div>
-            ))}
+            <div className="profile-info-item">
+              <span>Voter ID</span>
+              <strong>{stored?.voterId || "—"}</strong>
+            </div>
+            <div className="profile-info-item">
+              <span>Mobile</span>
+              <strong>{stored?.mobile || "—"}</strong>
+            </div>
+            <div className="profile-info-item">
+              <span>Status</span>
+              <strong>{stored ? "ACTIVE" : "GUEST"}</strong>
+            </div>
+            <div className="profile-info-item">
+              <span>Last Updated</span>
+              <strong>{new Date().toLocaleString()}</strong>
+            </div>
           </div>
         </div>
       </div>
@@ -66,42 +75,45 @@ export default function Profile() {
       <div className="profile-history-card">
         <div className="profile-history-header">
           <h3>Voting History</h3>
-          <p>Your participation in the last 5 elections</p>
+          <p>Latest ballots cast with this voter ID.</p>
         </div>
 
         <div className="profile-history-list">
-          {votingHistory.map((entry) => (
-            <div key={entry.id} className="profile-history-item">
+          {history.length === 0 ? (
+            <div className="profile-history-item">
               <div className="profile-history-top">
-                <div>
-                  <h4>{entry.title}</h4>
-                  <span>Year: {entry.year}</span>
-                </div>
-                {entry.won ? (
-                  <span className="profile-history-badge">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M8 21h8" />
-                      <path d="M12 17v4" />
-                      <path d="M7 4h10v4H7z" />
-                      <path d="M6 8h12l-1 5H7z" />
-                    </svg>
-                    Your Vote Won
-                  </span>
-                ) : null}
+                <h4>No votes recorded yet.</h4>
               </div>
-
               <div className="profile-history-grid">
-                <div>
-                  <span>You Voted For</span>
-                  <strong>{entry.votedFor}</strong>
-                </div>
-                <div>
-                  <span>Winner</span>
-                  <strong>{entry.winner}</strong>
-                </div>
+                <span>Cast your first vote to see history here.</span>
               </div>
             </div>
-          ))}
+          ) : (
+            history.map((item) => (
+              <div key={item._id} className="profile-history-item">
+                <div className="profile-history-top">
+                  <div>
+                    <h4>{item.electionName || "Election"}</h4>
+                    <span>{new Date(item.createdAt).toLocaleString()}</span>
+                  </div>
+                  <div className="profile-history-badge">
+                    <i className="ri-vote-line" aria-hidden="true" />
+                    Submitted
+                  </div>
+                </div>
+                <div className="profile-history-grid">
+                  <div>
+                    <span>Party</span>
+                    <strong>{item.partyName || "—"}</strong>
+                  </div>
+                  <div>
+                    <span>Ballot ID</span>
+                    <strong>{item._id}</strong>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

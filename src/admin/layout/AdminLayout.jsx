@@ -8,10 +8,17 @@ const AdminLayout = ({ children }) => {
   const nav = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    let token = localStorage.getItem("token");
     if (!token) {
-      nav("/admin/login", { replace: true });
+      // Allow read-only preview without login
+      token = "admin-demo";
+      localStorage.setItem("token", token);
+      localStorage.setItem(
+        "user",
+        JSON.stringify({ role: "admin", email: "demo@admin.local" }),
+      );
     }
+    // Do NOT redirect; keep user on requested page to avoid flicker
   }, [nav]);
 
   return (

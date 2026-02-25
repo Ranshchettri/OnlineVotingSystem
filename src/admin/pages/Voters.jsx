@@ -36,6 +36,8 @@ export default function Voters() {
     voterId: "",
     idReleaseDate: "",
     photo: null,
+    photoPreview: "",
+    photoData: "",
   });
 
   useEffect(() => {
@@ -175,7 +177,21 @@ export default function Voters() {
   const handleAddFormChange = (e) => {
     const { name, value, files } = e.target;
     if (name === "photo") {
-      setAddForm((p) => ({ ...p, photo: files[0] }));
+      const file = files?.[0];
+      if (!file) {
+        setAddForm((p) => ({ ...p, photo: null, photoPreview: "", photoData: "" }));
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        setAddForm((p) => ({
+          ...p,
+          photo: file,
+          photoPreview: reader.result,
+          photoData: reader.result,
+        }));
+      };
+      reader.readAsDataURL(file);
     } else {
       setAddForm((p) => ({ ...p, [name]: value }));
     }
@@ -189,26 +205,16 @@ export default function Voters() {
     }
 
     try {
-      const fd = new FormData();
-      Object.keys(addForm).forEach((key) => {
-        if (addForm[key] !== null && addForm[key] !== undefined) {
-          fd.append(key, addForm[key]);
-        }
-      });
+      const payload = {
+        fullName: addForm.fullName,
+        email: addForm.email,
+        mobile: addForm.mobile,
+        voterId: addForm.voterId,
+        voterIdNumber: addForm.voterId,
+        photo: addForm.photoData,
+      };
 
-      try {
-        await api.post("/voters/admin", fd, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-      } catch (err) {
-        if (err?.response?.status === 404) {
-          await api.post("/voters", fd, {
-            headers: { "Content-Type": "multipart/form-data" },
-          });
-        } else {
-          throw err;
-        }
-      }
+      await api.post("/voters/admin", payload);
 
       setShowAddModal(false);
       setAddForm({
@@ -221,6 +227,8 @@ export default function Voters() {
         voterId: "",
         idReleaseDate: "",
         photo: null,
+        photoPreview: "",
+        photoData: "",
       });
       fetchVoterData();
     } catch (err) {
@@ -536,6 +544,18 @@ export default function Voters() {
                   <span>Click to upload or drag and drop</span>
                   <small>PNG, JPG up to 2MB</small>
                 </div>
+                {addForm.photo && (
+                  <div className="upload-preview">
+                    <i className="ri-image-line" aria-hidden="true" /> {addForm.photo.name}
+                    {addForm.photoPreview ? (
+                      <img
+                        src={addForm.photoPreview}
+                        alt="Preview"
+                        className="upload-thumb"
+                      />
+                    ) : null}
+                  </div>
+                )}
               </label>
               <div className="admin-modal-actions">
                 <button className="admin-button ghost" type="button" onClick={() => setShowAddModal(false)}>

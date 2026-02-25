@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { electionOverview, voterProfile } from "../data/fakeVoterData";
+import { getStoredVoter } from "../utils/user";
 
 const navItems = [
   { label: "Election Overview", path: "/voter/dashboard" },
@@ -18,6 +18,8 @@ const icons = [
 ];
 
 export default function Sidebar() {
+  const voter = getStoredVoter();
+
   return (
     <aside className="voter-sidebar">
       <div className="voter-sidebar-header">
@@ -25,8 +27,8 @@ export default function Sidebar() {
           <i className="ri-user-3-line" aria-hidden="true" />
         </div>
         <div>
-          <p className="voter-profile-name">{voterProfile.name}</p>
-          <p className="voter-profile-id">ID: {voterProfile.id}</p>
+          <p className="voter-profile-name">{voter?.email || "Voter"}</p>
+          <p className="voter-profile-id">ID: {voter?.voterId || "—"}</p>
         </div>
       </div>
 
@@ -53,10 +55,10 @@ export default function Sidebar() {
           <span>
             <i className="ri-time-line" aria-hidden="true" />
           </span>
-          <p>{electionOverview.statusTitle}</p>
+          <p>Election Status</p>
         </div>
-        <p className="voter-status-text">{electionOverview.statusText}</p>
-        <p className="voter-status-time">{electionOverview.statusEnds}</p>
+        <p className="voter-status-text">Live data from backend</p>
+        <p className="voter-status-time">Stay tuned</p>
       </div>
     </aside>
   );

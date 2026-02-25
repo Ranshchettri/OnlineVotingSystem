@@ -7,7 +7,9 @@ import WarningNotice from "../components/WarningNotice";
 import OtpModal from "../components/OtpModal";
 import VoteConfirmModal from "../components/VoteConfirmModal";
 import FaceVerifyModal from "../components/FaceVerifyModal";
-import { electionOverview, stats, parties } from "../data/fakeVoterData";
+import api from "../../services/api";
+import { confirmVote } from "../services/voteApi";
+import { getStoredVoter } from "../utils/user";
 import "../styles/overview.css";
 
 export default function Overview() {
@@ -19,6 +21,87 @@ export default function Overview() {
   const [showEmailBanner, setShowEmailBanner] = useState(false);
   const [voteStep, setVoteStep] = useState(null);
   const [faceVerified, setFaceVerified] = useState(false);
+  const [parties, setParties] = useState([]);
+  const [electionOverview, setElectionOverview] = useState({
+    title: "Election Overview",
+    subtitle: "Live election data",
+    electionName: "",
+    activeLabel: "",
+    activeEnds: "",
+    statusTitle: "Election Status",
+    statusText: "",
+    statusEnds: "",
+  });
+  const [stats, setStats] = useState([
+    { key: "votes", label: "Total Votes Cast", value: "–", tone: "green" },
+    { key: "leading", label: "Currently Leading", value: "–", size: "sm", tone: "yellow" },
+    { key: "parties", label: "Active Parties", value: "–", tone: "orange" },
+    { key: "status", label: "Your Status", value: "Not Voted", size: "sm", tone: "red" },
+  ]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const loadLive = async () => {
+      try {
+        setLoading(true);
+        const [partiesRes, electionsRes] = await Promise.all([
+          api.get("/parties"),
+          api.get("/elections"),
+        ]);
+        const liveParties = partiesRes.data?.data || partiesRes.data || [];
+        setParties(liveParties);
+
+        const active = (electionsRes.data?.data || electionsRes.data || []).find(
+          (e) => (e.status || "").toLowerCase() === "running",
+        );
+        if (active) {
+          setElectionOverview({
+            title: active.title || "Election Overview",
+            subtitle: active.type || "",
+            electionName: active.title,
+            activeLabel: `Status: ${active.status}`,
+            activeEnds: active.endDate ? `Ends: ${new Date(active.endDate).toLocaleString()}` : "",
+            statusTitle: "Election Status",
+            statusText: active.status || "",
+            statusEnds: active.endDate ? `Ends: ${new Date(active.endDate).toLocaleString()}` : "",
+          });
+          setStats((prev) => [
+            {
+              key: "votes",
+              label: "Total Votes Cast",
+              value: active.totalVotes?.toLocaleString?.() || active.totalVotes || "–",
+              tone: "green",
+            },
+            {
+              key: "leading",
+              label: "Currently Leading",
+              value: liveParties[0]?.name || "–",
+              size: "sm",
+              tone: "yellow",
+            },
+            {
+              key: "parties",
+              label: "Active Parties",
+              value: liveParties.length ? String(liveParties.length) : "–",
+              tone: "orange",
+            },
+            {
+              key: "status",
+              label: "Your Status",
+              value: hasVoted ? "Voted ✓" : "Not Voted",
+              size: "sm",
+              tone: hasVoted ? "green" : "red",
+            },
+          ]);
+        }
+      } catch (err) {
+        console.error("Failed to load live data; keeping placeholders", err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadLive();
+  }, [hasVoted]);
 
   useEffect(() => {
     if (!showEmailBanner) return undefined;
@@ -51,15 +134,24 @@ export default function Overview() {
       setVoteStep("face");
       return;
     }
-    if (otp !== "12345") {
-      setOtpError("Invalid OTP. Try 12345.");
-      return;
+    submitFinalVote();
+  };
+
+  const submitFinalVote = async () => {
+    try {
+      if (!selectedParty) return;
+      await confirmVote({
+        partyId: selectedParty._id || selectedParty.id,
+        otp,
+      });
+      setHasVoted(true);
+      setVotedPartyId(selectedParty._id || selectedParty.id);
+      setSelectedParty(null);
+      setShowEmailBanner(true);
+      setVoteStep(null);
+    } catch (err) {
+      setOtpError(err.response?.data?.message || "Vote confirmation failed");
     }
-    setHasVoted(true);
-    setVotedPartyId(selectedParty.id);
-    setSelectedParty(null);
-    setShowEmailBanner(true);
-    setVoteStep(null);
   };
 
   return (
@@ -126,6 +218,8 @@ export default function Overview() {
       <VoteConfirmModal
         isOpen={voteStep === "confirm"}
         party={selectedParty}
+        electionName={electionOverview.electionName || electionOverview.title}
+        voterId={getStoredVoter()?.voterId}
         onCancel={() => {
           setSelectedParty(null);
           setVoteStep(null);

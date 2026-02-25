@@ -1,81 +1,50 @@
-import { currentElection, pastResults } from "../data/fakeVoterData";
-import "../styles/results.css";
+import { useEffect, useState } from "react";
+import api from "../../services/api";
 
 export default function Results() {
+  const [ended, setEnded] = useState([]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await api.get("/elections");
+        const list = res.data?.data || res.data || [];
+        setEnded(list.filter((e) => (e.status || "").toLowerCase() === "ended"));
+      } catch {
+        setEnded([]);
+      }
+    };
+    load();
+  }, []);
+
   return (
-    <div>
-      <div className="results-header">
-        <h1>Election Results</h1>
-        <p>Current and historical election outcomes</p>
-      </div>
-
-      <div className="results-current">
-        <div>
-          <h2>{currentElection.title}</h2>
-          <div className="results-current-status">
-            <span />
-            {currentElection.status}
-          </div>
-        </div>
-        <div className="results-current-right">
-          <div className="results-current-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M4 19h16" />
-              <rect x="6" y="7" width="4" height="9" />
-              <rect x="14" y="10" width="4" height="6" />
-            </svg>
-          </div>
-          <p>{currentElection.note}</p>
-        </div>
-      </div>
-
-      <div className="results-section">
-        <h3>Past Election Results</h3>
-        <p>Historical winners from the last 5 elections</p>
-
-        {pastResults.map((result) => (
-          <div key={result.id} className="result-card">
-            <div className="result-card-header">
-              <div>
-                <h4>{result.title}</h4>
-                <span>Year: {result.year}</span>
-              </div>
-              <span className="result-badge">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M8 21h8" />
-                  <path d="M12 17v4" />
-                  <path d="M7 4h10v4H7z" />
-                  <path d="M6 8h12l-1 5H7z" />
-                </svg>
-                Winner
-              </span>
-            </div>
-
-            <div className="result-body">
-              <div className="result-winner">
-                <div className="result-logo" style={{ background: result.color }}>
-                  <span>{result.short}</span>
+    <div className="card" style={{ padding: 20 }}>
+      <h2>Election Results</h2>
+      {ended.length === 0 ? <p>No ended elections yet.</p> : null}
+      <div className="overview-party-list">
+        {ended.map((e) => (
+          <div key={e.id || e._id} className="party-card">
+            <div className="party-content">
+              <div className="party-header">
+                <div>
+                  <p className="party-name">{e.title}</p>
+                  <p className="party-leader">{e.type}</p>
                 </div>
-                <div className="result-info">
-                  <h5>{result.winner}</h5>
-                  <div className="result-stats">
-                    <div>
-                      <span>Total Votes</span>
-                      <strong>{result.winnerVotes}</strong>
-                    </div>
-                    <div className="result-divider" />
-                    <div>
-                      <span>Runner-up</span>
-                      <strong>{result.runnerUp}</strong>
-                      <small>{result.runnerUpVotes} votes</small>
-                    </div>
-                  </div>
-                </div>
+                <span className="party-view-btn">Ended</span>
               </div>
-
-              <div className="result-margin">
-                <span>Victory Margin</span>
-                <strong>{result.margin}</strong>
+              <div className="party-meta">
+                <div>
+                  <span>Total Votes</span>
+                  <strong>{e.totalVotes?.toLocaleString?.() || e.totalVotes || "0"}</strong>
+                </div>
+                <div>
+                  <span>Status</span>
+                  <strong>{e.status}</strong>
+                </div>
+                <div>
+                  <span>Turnout</span>
+                  <strong>{e.turnout || "—"}</strong>
+                </div>
               </div>
             </div>
           </div>

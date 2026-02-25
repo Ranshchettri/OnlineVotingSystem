@@ -22,7 +22,7 @@ export default function PartyCard({ party, hasVoted, isVotedParty, onVote }) {
       }`}
     >
       <div className="party-logo" style={{ background: party.color }}>
-        <span className="party-logo-text">{party.short}</span>
+        <span className="party-logo-text">{party.short || party.shortName || party.symbol || party.name?.slice(0, 3)}</span>
         <span className="party-rank">#{party.rank}</span>
         {isVotedParty ? (
           <span className="party-check">
