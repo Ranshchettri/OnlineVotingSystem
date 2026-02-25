@@ -1,5 +1,8 @@
 import { NavLink } from "react-router-dom";
+import { useEffect, useState } from "react";
+import api from "../../services/api";
 import { getStoredVoter } from "../utils/user";
+import { getTimeLeft, getTimeUntil, normalizeElectionStatus, pickCurrentElection } from "../utils/election";
 
 const navItems = [
   { label: "Election Overview", path: "/voter/dashboard" },
@@ -21,6 +24,49 @@ export default function Sidebar() {
   const voter = getStoredVoter();
   const name = voter?.fullName || voter?.email || "Voter";
   const voterId = voter?.voterId || voter?.voterIdNumber || "N/A";
+  const [statusLine, setStatusLine] = useState("Live data from backend");
+  const [statusTime, setStatusTime] = useState("Stay tuned");
+
+  useEffect(() => {
+    const loadStatus = async () => {
+      try {
+        const res = await api.get("/elections");
+        const elections = Array.isArray(res.data?.data)
+          ? res.data.data
+          : Array.isArray(res.data)
+            ? res.data
+            : [];
+        const current = pickCurrentElection(elections);
+        const state = normalizeElectionStatus(current);
+
+        if (!current) {
+          setStatusLine("No election");
+          setStatusTime("Stay tuned");
+          return;
+        }
+
+        if (state === "running") {
+          setStatusLine(`${current.title} is currently active`);
+          setStatusTime(`Ends in ${getTimeLeft(current.endDate)}`);
+          return;
+        }
+
+        if (state === "upcoming") {
+          setStatusLine(`${current.title} is upcoming`);
+          setStatusTime(getTimeUntil(current.startDate));
+          return;
+        }
+
+        setStatusLine(`${current.title} has ended`);
+        setStatusTime("Results available");
+      } catch {
+        setStatusLine("Live data unavailable");
+        setStatusTime("Stay tuned");
+      }
+    };
+
+    loadStatus();
+  }, []);
 
   return (
     <aside className="voter-sidebar">
@@ -59,8 +105,8 @@ export default function Sidebar() {
           </span>
           <p>Election Status</p>
         </div>
-        <p className="voter-status-text">Live data from backend</p>
-        <p className="voter-status-time">Stay tuned</p>
+        <p className="voter-status-text">{statusLine}</p>
+        <p className="voter-status-time">{statusTime}</p>
       </div>
     </aside>
   );

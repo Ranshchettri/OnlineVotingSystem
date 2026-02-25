@@ -12,6 +12,8 @@ import { confirmVote } from "../services/voteApi";
 import { getStoredVoter } from "../utils/user";
 import {
   formatDateTime,
+  getTimeLeft,
+  getTimeUntil,
   normalizeElectionStatus,
   pickCurrentElection,
 } from "../utils/election";
@@ -28,6 +30,7 @@ export default function Overview() {
   const [faceVerified, setFaceVerified] = useState(false);
   const [parties, setParties] = useState([]);
   const [currentElection, setCurrentElection] = useState(null);
+  const [roleCanVote, setRoleCanVote] = useState(true);
   const [electionOverview, setElectionOverview] = useState({
     title: "Election Overview",
     subtitle: "Loading live election data",
@@ -58,11 +61,15 @@ export default function Overview() {
   const loadLive = useCallback(async () => {
     try {
       setLoading(true);
-      const [partiesRes, electionsRes, votesRes] = await Promise.all([
+      const [partiesRes, electionsRes, votesRes, meRes] = await Promise.all([
         api.get("/parties"),
         api.get("/elections"),
         api.get("/votes/me").catch(() => ({ data: { data: [] } })),
+        api.get("/auth/me").catch(() => ({ data: { data: null } })),
       ]);
+
+      const role = String(meRes.data?.data?.role || "voter").toLowerCase();
+      setRoleCanVote(role === "voter");
 
       const electionList = Array.isArray(electionsRes.data?.data)
         ? electionsRes.data.data
@@ -84,14 +91,21 @@ export default function Overview() {
             ? partiesRes.data
             : [];
 
-      const partyList = partyListRaw
+      const filteredByElection = partyListRaw.filter((party) => {
+        const partyElectionId =
+          party.electionId?._id?.toString?.() ||
+          party.electionId?.toString?.() ||
+          null;
+        if (!selectedElectionId) return true;
+        return !partyElectionId || partyElectionId === selectedElectionId;
+      });
+
+      const partySource = filteredByElection.length > 0 ? filteredByElection : partyListRaw;
+
+      const partyList = partySource
         .filter((party) => {
-          const partyElectionId =
-            party.electionId?._id?.toString?.() ||
-            party.electionId?.toString?.() ||
-            null;
-          if (!selectedElectionId) return true;
-          return !partyElectionId || partyElectionId === selectedElectionId;
+          if (party.status === "REJECTED") return false;
+          return true;
         })
         .map((party) => ({
           id: (party._id || party.id || "").toString(),
@@ -101,6 +115,7 @@ export default function Overview() {
           score: Number(party.development || party.goodWork || 0),
           short:
             party.shortName || party.symbol || party.name?.slice(0, 3) || "PRT",
+          logo: party.logo || party.symbol || "",
           color: party.color || "#2563eb",
         }))
         .sort((a, b) => (b.score === a.score ? b.votes - a.votes : b.score - a.score))
@@ -136,6 +151,15 @@ export default function Overview() {
       setHasVoted(voted);
       setVotedPartyId(votedParty);
 
+      const activeEndsText = (() => {
+        if (!selectedElection) return "";
+        if (selectedStatus === "running") return `Ends in ${getTimeLeft(selectedElection.endDate)}`;
+        if (selectedStatus === "upcoming") return getTimeUntil(selectedElection.startDate);
+        return selectedElection.endDate
+          ? `Ended on ${formatDateTime(selectedElection.endDate)}`
+          : "Ended";
+      })();
+
       setElectionOverview({
         title: selectedElection?.title || "Election Overview",
         subtitle: selectedElection
@@ -143,9 +167,7 @@ export default function Overview() {
           : "No active election available",
         electionName: selectedElection?.title || "",
         activeLabel: selectedElection ? `Status: ${statusLabel}` : "Status: N/A",
-        activeEnds: selectedElection?.endDate
-          ? `Ends: ${formatDateTime(selectedElection.endDate)}`
-          : "",
+        activeEnds: activeEndsText,
       });
 
       setStats([
@@ -205,6 +227,10 @@ export default function Overview() {
   );
 
   const handleVote = (party) => {
+    if (!roleCanVote) {
+      setOtpError("Please login with a voter account to cast a vote.");
+      return;
+    }
     const status = normalizeElectionStatus(currentElection);
     if (!currentElection || status !== "running") {
       setOtpError("Voting is not open right now.");
@@ -249,7 +275,8 @@ export default function Overview() {
     }
   };
 
-  const isVotingOpen = normalizeElectionStatus(currentElection) === "running";
+  const isVotingOpen =
+    roleCanVote && normalizeElectionStatus(currentElection) === "running";
 
   return (
     <div>

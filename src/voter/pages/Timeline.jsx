@@ -56,26 +56,26 @@ export default function Timeline() {
     <div>
       <div className="timeline-header">
         <h1>Election Timeline</h1>
-        <p>Live schedule from backend election records.</p>
+        <p>Current and upcoming election schedules</p>
       </div>
 
       {activeElection ? (
         <div className="timeline-active">
           <div className="timeline-active-label">
             <span />
-            <p>Election in Progress</p>
+            <p>CURRENTLY ACTIVE</p>
           </div>
           <h2>{activeElection.title}</h2>
-          <p>{activeElection.type || "Election"}</p>
+          <p>Election Type: {activeElection.type || "Election"}</p>
 
           <div className="timeline-dates">
             <div className="timeline-date-card">
-              <h4>Start Date</h4>
+              <h4>Start Date & Time</h4>
               <strong>{formatDate(activeElection.startDate)}</strong>
               <span>{formatTime(activeElection.startDate)}</span>
             </div>
             <div className="timeline-date-card">
-              <h4>End Date</h4>
+              <h4>End Date & Time</h4>
               <strong>{formatDate(activeElection.endDate)}</strong>
               <span>{formatTime(activeElection.endDate)}</span>
             </div>
@@ -95,13 +95,13 @@ export default function Timeline() {
               </div>
             </div>
             <div className="timeline-remaining-action">
-              <p>Go to overview to cast your vote.</p>
+              <p>Don't forget to vote!</p>
               <button
                 type="button"
                 className="timeline-cta"
                 onClick={() => navigate("/voter/dashboard")}
               >
-                Open Overview
+                Vote Now
               </button>
             </div>
           </div>
@@ -119,7 +119,7 @@ export default function Timeline() {
 
       <div className="timeline-section">
         <h3>Upcoming Elections</h3>
-        <p>Future elections from backend schedule.</p>
+        <p>Scheduled elections for the coming year.</p>
 
         {loading ? <p style={{ marginTop: 16 }}>Loading timeline...</p> : null}
         {!loading && upcomingElections.length === 0 ? (

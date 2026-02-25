@@ -40,14 +40,22 @@ export const normalizeElectionStatus = (election, now = new Date()) => {
   const raw = String(election.status || "").toLowerCase();
   const start = toDate(election.startDate);
   const end = toDate(election.endDate);
+  const allowVoting = election.allowVoting !== false;
 
+  // Hard-stop states always win.
   if (election.isEnded || raw === "ended") return "ended";
-  if (raw === "running") return "running";
-  if (raw === "upcoming") return "upcoming";
 
+  // Time-window based status (authoritative for voter UX).
   if (start && now < start) return "upcoming";
   if (end && now > end) return "ended";
-  if (election.isActive) return "running";
+  if (start && end && now >= start && now <= end) {
+    return allowVoting ? "running" : "ended";
+  }
+
+  // Fallback when dates are missing.
+  if (raw === "running") return allowVoting ? "running" : "ended";
+  if (raw === "upcoming") return "upcoming";
+  if (election.isActive) return allowVoting ? "running" : "ended";
 
   return "upcoming";
 };
@@ -65,6 +73,21 @@ export const getTimeLeft = (endDate) => {
   if (days > 0) return `${days}d ${hours}h left`;
   if (hours > 0) return `${hours}h ${minutes}m left`;
   return `${minutes}m left`;
+};
+
+export const getTimeUntil = (startDate) => {
+  const start = toDate(startDate);
+  if (!start) return "N/A";
+  const diff = start.getTime() - Date.now();
+  if (diff <= 0) return "Started";
+  const totalMinutes = Math.floor(diff / (1000 * 60));
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
+
+  if (days > 0) return `Starts in ${days}d ${hours}h`;
+  if (hours > 0) return `Starts in ${hours}h ${minutes}m`;
+  return `Starts in ${minutes}m`;
 };
 
 export const pickCurrentElection = (elections = []) => {

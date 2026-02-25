@@ -30,7 +30,13 @@ export default function PartyCard({
       }`}
     >
       <div className="party-logo" style={{ background: party.color }}>
-        <span className="party-logo-text">{party.short || party.shortName || party.symbol || party.name?.slice(0, 3)}</span>
+        {party.logo ? (
+          <img src={party.logo} alt={party.name} className="party-logo-img" />
+        ) : (
+          <span className="party-logo-text">
+            {party.short || party.shortName || party.symbol || party.name?.slice(0, 3)}
+          </span>
+        )}
         <span className="party-rank">#{party.rank}</span>
         {isVotedParty ? (
           <span className="party-check">

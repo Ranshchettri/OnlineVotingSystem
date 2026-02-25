@@ -5,12 +5,9 @@ import { getStoredVoter } from "../utils/user";
 export default function Topbar() {
   const navigate = useNavigate();
   const voter = getStoredVoter();
-  const status = String(
-    voter?.verificationStatus ||
-      (voter?.isVerified || voter?.verified ? "auto-approved" : "pending"),
-  )
-    .replace("-", " ")
-    .toUpperCase();
+  const rawStatus = String(voter?.verificationStatus || "").toLowerCase();
+  const blocked = ["blocked", "rejected"].includes(rawStatus);
+  const status = blocked ? rawStatus.toUpperCase() : "Verified Voter";
 
   const logout = () => {
     localStorage.removeItem("token");
