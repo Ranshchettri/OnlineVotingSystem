@@ -211,6 +211,11 @@
   gap: 8px;
 }
 
+.admin-dashboard__emergency-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 .admin-dashboard__emergency-btn svg {
   width: 18px;
   height: 18px;

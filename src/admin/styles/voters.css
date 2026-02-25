@@ -92,19 +92,21 @@
 }
 
 .voters-controls {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px;
   gap: 12px;
   align-items: center;
 }
 
 .voters-controls .search-box {
-  flex: 1;
   position: relative;
+  min-width: 0;
 }
 
 .voters-controls input {
   width: 100%;
-  padding: 12px 14px 12px 40px;
+  height: 42px;
+  padding: 10px 14px 10px 40px;
   border-radius: 10px;
   border: 1px solid var(--admin-border);
   font-size: 13px;
@@ -129,12 +131,14 @@
 }
 
 .voters-controls .status-filter {
-  padding: 12px 14px;
+  width: 150px;
+  min-width: 150px;
+  height: 42px;
+  padding: 10px 36px 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--admin-border);
   background: #fff;
   font-size: 13px;
-  min-width: 110px;
 }
 
 .voters-error {
@@ -149,8 +153,9 @@
   background: var(--admin-card);
   border: 1px solid var(--admin-border);
   border-radius: 14px;
-  padding: 6px 12px 4px;
+  padding: 0;
   box-shadow: var(--admin-shadow);
+  overflow: hidden;
 }
 
 .voters-table {
@@ -158,18 +163,23 @@
   border-collapse: collapse;
 }
 
+.voters-table thead tr {
+  background: #f3f6fb;
+}
+
 .voters-table th {
   text-align: left;
   font-size: 12px;
   color: var(--admin-muted);
   font-weight: 600;
-  padding: 14px 0 12px;
+  padding: 14px 16px 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .voters-table td {
-  padding: 16px 0;
+  padding: 16px;
   border-top: 1px solid #eef2f7;
   font-size: 13px;
   color: var(--admin-text);
@@ -488,6 +498,15 @@
 @media (max-width: 1100px) {
   .voters-stats {
     grid-template-columns: 1fr;
+  }
+
+  .voters-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .voters-controls .status-filter {
+    width: 100%;
+    min-width: 0;
   }
 
   .voters-form .two-col {

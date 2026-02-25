@@ -1,137 +1,180 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import api from "../../services/api";
-import "../styles/adminDashboard.css";
+import "../styles/AdminDashboard.css";
+
+const EMPTY_OVERVIEW = {
+  totalVoters: null,
+  activeVoters: null,
+  votedRate: null,
+  totalParties: null,
+  activeParties: null,
+  pendingApprovals: null,
+};
+
+const formatDateTime = (value) => {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleString();
+};
+
+const deriveElectionStatus = (election = {}) => {
+  const raw = String(election.status || "").toLowerCase();
+  const now = Date.now();
+  const start = election.startDate ? new Date(election.startDate).getTime() : null;
+  const end = election.endDate ? new Date(election.endDate).getTime() : null;
+
+  if (raw === "ended" || election.isEnded || election.allowVoting === false) return "Ended";
+  if (raw === "running" || election.isActive) return "Running";
+  if (raw === "upcoming") return "Upcoming";
+
+  if (start && now < start) return "Upcoming";
+  if (end && now > end) return "Ended";
+  if (start && end && now >= start && now <= end) return "Running";
+
+  return "Upcoming";
+};
+
+const normalizeElection = (item = {}) => ({
+  ...item,
+  id: item.id || item._id,
+  startDate: item.startDate || item.startsAt || item.start,
+  endDate: item.endDate || item.endsAt || item.end,
+  status: deriveElectionStatus(item),
+});
+
+const getStatusColor = (status) => {
+  if (status === "Running") return "green";
+  if (status === "Ended") return "gray";
+  return "blue";
+};
+
+const pickPrimaryElection = (list = []) => {
+  const running = list.find((item) => item.status === "Running");
+  if (running) return running;
+
+  const upcoming = list
+    .filter((item) => item.status === "Upcoming")
+    .sort((a, b) => new Date(a.startDate || 0) - new Date(b.startDate || 0))[0];
+  if (upcoming) return upcoming;
+
+  return list[0] || null;
+};
+
+const extractElectionList = (response) => {
+  const value = response?.data;
+  const list = value?.data?.elections || value?.data || value || [];
+  return Array.isArray(list) ? list.map(normalizeElection) : [];
+};
+
+const extractPartyList = (response) => {
+  const value = response?.data;
+  const list = value?.data?.parties || value?.data || value || [];
+  return Array.isArray(list) ? list : [];
+};
 
 export default function AdminDashboard() {
-  const [overview, setOverview] = useState({
-    totalVoters: null,
-    activeVoters: null,
-    votedRate: null,
-    totalParties: null,
-    activeParties: null,
-    pendingApprovals: null,
-  });
+  const [overview, setOverview] = useState(EMPTY_OVERVIEW);
   const [loadingOverview, setLoadingOverview] = useState(true);
   const [backendOffline, setBackendOffline] = useState(false);
   const [activities, setActivities] = useState([]);
   const [timeline, setTimeline] = useState([]);
   const [electionStatus, setElectionStatus] = useState(null);
+  const [elections, setElections] = useState([]);
   const [showForceLogout, setShowForceLogout] = useState(false);
   const [showShutdown, setShowShutdown] = useState(false);
+  const [actionBusy, setActionBusy] = useState("");
 
-  useEffect(() => {
-    const formatDateTime = (value) => {
-      if (!value) return "—";
-      const date = new Date(value);
-      if (Number.isNaN(date.getTime())) return "—";
-      return date.toLocaleString();
-    };
+  const refreshDashboard = useCallback(async () => {
+    try {
+      setLoadingOverview(true);
 
-    const fetchOverview = async () => {
-      try {
-        setLoadingOverview(true);
-        // Ensure token is set
-        if (!localStorage.getItem("token")) {
-          localStorage.setItem("token", "admin-demo");
-          localStorage.setItem(
-            "user",
-            JSON.stringify({ role: "admin", email: "demo@admin.local" }),
-          );
-        }
-        const [voterRes, partyRes, electionRes] = await Promise.allSettled([
-          api.get("/voters/admin/stats"),
-          api.get("/parties"),
-          api.get("/elections"),
-        ]);
-        const offline =
-          (voterRes.status === "rejected" && voterRes.reason?.isNetworkError) ||
-          (partyRes.status === "rejected" && partyRes.reason?.isNetworkError) ||
-          (electionRes.status === "rejected" &&
-            electionRes.reason?.isNetworkError);
-        setBackendOffline(offline);
+      const [
+        adminDashboardRes,
+        adminActivitiesRes,
+        adminElectionsRes,
+        voterStatsRes,
+        partiesRes,
+        publicElectionsRes,
+      ] = await Promise.allSettled([
+        api.get("/admin/dashboard"),
+        api.get("/admin/dashboard/activities", { params: { limit: 8 } }),
+        api.get("/admin/elections"),
+        api.get("/voters/admin/stats"),
+        api.get("/parties"),
+        api.get("/elections"),
+      ]);
 
+      const coreResponses = [
+        adminDashboardRes,
+        adminElectionsRes,
+        voterStatsRes,
+        partiesRes,
+        publicElectionsRes,
+      ];
+      const allCoreNetworkFailed = coreResponses.every(
+        (res) => res.status === "rejected" && res.reason?.isNetworkError,
+      );
+      setBackendOffline(allCoreNetworkFailed);
+
+      const adminElectionList =
+        adminElectionsRes.status === "fulfilled"
+          ? extractElectionList(adminElectionsRes.value)
+          : [];
+      const publicElectionList =
+        publicElectionsRes.status === "fulfilled"
+          ? extractElectionList(publicElectionsRes.value)
+          : [];
+      const electionList = adminElectionList.length ? adminElectionList : publicElectionList;
+      setElections(electionList);
+
+      if (adminDashboardRes.status === "fulfilled") {
+        const data = adminDashboardRes.value?.data?.data || {};
+        const voted =
+          data.votedPercentage === null || data.votedPercentage === undefined
+            ? null
+            : `${Number(data.votedPercentage).toFixed(1)}%`;
+
+        setOverview({
+          totalVoters: data.totalVoters ?? null,
+          activeVoters: data.activeVoters ?? null,
+          votedRate: voted,
+          totalParties: data.totalParties ?? null,
+          activeParties: data.activeParties ?? null,
+          pendingApprovals: data.pendingApprovals ?? null,
+        });
+      } else {
         let totalVoters = null;
         let activeVoters = null;
         let votedRate = null;
-        if (voterRes.status === "fulfilled") {
-          const payload = voterRes.value.data?.data || {};
-          const statsData = payload.stats || {};
+        if (voterStatsRes.status === "fulfilled") {
+          const payload = voterStatsRes.value?.data?.data || {};
+          const stats = payload.stats || {};
           const voterList = Array.isArray(payload.voters) ? payload.voters : [];
-          totalVoters = statsData.totalRegistered ?? voterList.length ?? null;
+          totalVoters = stats.totalRegistered ?? voterList.length ?? null;
           activeVoters =
-            statsData.activeVoters ??
-            voterList.filter((v) => v.status === "ACTIVE").length ??
+            stats.activeVoters ??
+            voterList.filter((v) => String(v.status || "").toUpperCase() === "ACTIVE").length ??
             null;
-          const votedCount = voterList.filter(
-            (v) => v.hasVoted || v.voted,
-          ).length;
-          if (totalVoters) {
-            votedRate =
-              totalVoters > 0
-                ? `${((votedCount / totalVoters) * 100).toFixed(1)}%`
-                : null;
+          const votedCount = voterList.filter((v) => v.hasVoted || v.voted).length;
+          if (totalVoters && totalVoters > 0) {
+            votedRate = `${((votedCount / totalVoters) * 100).toFixed(1)}%`;
           }
-          setActivities(
-            Array.isArray(payload.activities) ? payload.activities : [],
-          );
         }
 
         let totalParties = null;
         let activeParties = null;
         let pendingApprovals = null;
-        if (partyRes.status === "fulfilled") {
-          const partyList =
-            partyRes.value.data?.data?.parties ||
-            partyRes.value.data?.data ||
-            partyRes.value.data ||
-            [];
-          if (Array.isArray(partyList)) {
-            totalParties = partyList.length;
-            activeParties = partyList.filter(
-              (p) =>
-                p.status === "Active" || p.status === "APPROVED" || p.isActive,
-            ).length;
-            pendingApprovals = partyList.filter(
-              (p) => p.status === "PENDING",
-            ).length;
-          }
-        }
-
-        let timelineItems = [];
-        if (electionRes.status === "fulfilled") {
-          const list =
-            electionRes.value.data?.data?.elections ||
-            electionRes.value.data?.data ||
-            electionRes.value.data ||
-            [];
-          if (Array.isArray(list) && list.length) {
-            const current =
-              list.find((e) => (e.status || "").toLowerCase() === "running") ||
-              list[0];
-            if (current) {
-              setElectionStatus(current.status || "Status unavailable");
-              timelineItems = [
-                {
-                  title: "Election Start",
-                  meta: formatDateTime(current.startDate) || "Pending date",
-                  color: "green",
-                  icon: "ri-play-circle-line",
-                },
-                {
-                  title: "Current Status",
-                  meta: current.status || "Unknown",
-                  color: "blue",
-                  icon: "ri-time-line",
-                },
-                {
-                  title: "Election End",
-                  meta: formatDateTime(current.endDate) || "Pending date",
-                  color: "gray",
-                  icon: "ri-stop-circle-line",
-                },
-              ];
-            }
-          }
+        if (partiesRes.status === "fulfilled") {
+          const partyList = extractPartyList(partiesRes.value);
+          totalParties = partyList.length;
+          activeParties = partyList.filter((p) => {
+            const status = String(p.status || "").toLowerCase();
+            return p.isActive || status === "approved" || status === "active";
+          }).length;
+          pendingApprovals = partyList.filter(
+            (p) => String(p.status || "").toLowerCase() === "pending",
+          ).length;
         }
 
         setOverview({
@@ -142,29 +185,131 @@ export default function AdminDashboard() {
           activeParties,
           pendingApprovals,
         });
-        setTimeline(timelineItems);
-      } catch (err) {
-        console.error("Failed to fetch dashboard overview:", err);
-        setBackendOffline(err.isNetworkError === true);
-        setOverview({
-          totalVoters: null,
-          activeVoters: null,
-          votedRate: null,
-          totalParties: null,
-          activeParties: null,
-          pendingApprovals: null,
-        });
-        setTimeline([]);
-      } finally {
-        setLoadingOverview(false);
       }
-    };
 
-    fetchOverview();
+      if (adminActivitiesRes.status === "fulfilled") {
+        const list = adminActivitiesRes.value?.data?.data || [];
+        const mapped = Array.isArray(list)
+          ? list.map((item, index) => ({
+              title: item.action || item.title || `Activity ${index + 1}`,
+              meta: item.user ? `By ${item.user}` : item.meta || "System update",
+              time: formatDateTime(item.time || item.createdAt),
+              icon: item.icon || "ri-notification-3-line",
+              color: item.color || "blue",
+            }))
+          : [];
+        setActivities(mapped);
+      } else {
+        setActivities([]);
+      }
+
+      const currentElection = pickPrimaryElection(electionList);
+      if (!currentElection) {
+        setElectionStatus(null);
+        setTimeline([]);
+      } else {
+        setElectionStatus(currentElection.status || "Upcoming");
+        setTimeline([
+          {
+            title: "Election Start",
+            meta: formatDateTime(currentElection.startDate),
+            color: "green",
+            icon: "ri-play-circle-line",
+          },
+          {
+            title: "Current Status",
+            meta: currentElection.status || "Upcoming",
+            color: getStatusColor(currentElection.status),
+            icon: "ri-time-line",
+          },
+          {
+            title: "Election End",
+            meta: formatDateTime(currentElection.endDate),
+            color: "gray",
+            icon: "ri-stop-circle-line",
+          },
+        ]);
+      }
+    } catch (err) {
+      console.error("Failed to fetch dashboard overview:", err);
+      setBackendOffline(err?.isNetworkError === true);
+      setOverview(EMPTY_OVERVIEW);
+      setActivities([]);
+      setTimeline([]);
+      setElectionStatus(null);
+      setElections([]);
+    } finally {
+      setLoadingOverview(false);
+    }
   }, []);
 
+  useEffect(() => {
+    refreshDashboard();
+  }, [refreshDashboard]);
+
+  const findRunningElection = () =>
+    elections.find((election) => election.status === "Running" && election.id);
+
+  const handleForceLogout = async () => {
+    try {
+      setActionBusy("force-logout");
+      await api.post("/admin/sessions/force-logout");
+      setShowForceLogout(false);
+      await refreshDashboard();
+      alert("Forced logout command sent to all users.");
+    } catch (err) {
+      console.error("Failed to force logout users:", err);
+      alert(err.response?.data?.message || "Failed to force logout users");
+    } finally {
+      setActionBusy("");
+    }
+  };
+
+  const handleShutdown = async () => {
+    try {
+      setActionBusy("shutdown");
+      const running = findRunningElection();
+      if (!running) {
+        alert("No running election found to stop.");
+        setShowShutdown(false);
+        return;
+      }
+      await api.put(`/admin/elections/${running.id}/stop`);
+      setShowShutdown(false);
+      await refreshDashboard();
+      alert("Election stopped successfully.");
+    } catch (err) {
+      console.error("Failed to stop election:", err);
+      alert(err.response?.data?.message || "Failed to stop election");
+    } finally {
+      setActionBusy("");
+    }
+  };
+
+  const handleTriggerResults = async () => {
+    try {
+      setActionBusy("results");
+      const target =
+        elections.find((election) => election.status !== "Ended" && election.id) || elections[0];
+
+      if (!target?.id) {
+        alert("No election available for result trigger.");
+        return;
+      }
+
+      await api.get(`/results/admin/${target.id}`);
+      await refreshDashboard();
+      alert("Results triggered successfully.");
+    } catch (err) {
+      console.error("Failed to trigger results:", err);
+      alert(err.response?.data?.message || "Failed to trigger results");
+    } finally {
+      setActionBusy("");
+    }
+  };
+
   const formatValue = (value) => {
-    if (value === null || value === undefined) return "—";
+    if (value === null || value === undefined) return "-";
     return typeof value === "number" ? value.toLocaleString() : value;
   };
 
@@ -185,7 +330,7 @@ export default function AdminDashboard() {
     },
     {
       title: "Voted",
-      value: overview.votedRate || "—",
+      value: overview.votedRate || "-",
       delta: overview.votedRate ? "" : "Awaiting data",
       color: "purple",
       icon: "ri-checkbox-circle-line",
@@ -212,30 +357,19 @@ export default function AdminDashboard() {
       icon: "ri-time-line",
     },
   ];
+
   const statusLabel = loadingOverview
     ? "Syncing data..."
     : backendOffline
       ? "API offline"
       : electionStatus || "Preview mode";
 
-  const handleForceLogout = () => {
-    setShowForceLogout(false);
-    alert("Force logout triggered. Wire this to backend endpoint.");
-  };
-
-  const handleShutdown = () => {
-    setShowShutdown(false);
-    alert("Emergency shutdown triggered. Wire this to backend endpoint.");
-  };
-
   return (
     <div className="admin-page admin-dashboard">
       <div className="admin-dashboard__header">
         <div>
           <div className="admin-section-title">Dashboard Overview</div>
-          <div className="admin-section-subtitle">
-            Real-time system monitoring and control
-          </div>
+          <div className="admin-section-subtitle">Real-time system monitoring and control</div>
         </div>
         <span className="admin-pill green">
           <span className="dot" /> {statusLabel}
@@ -258,9 +392,7 @@ export default function AdminDashboard() {
             <div className="stat-meta">
               <div className="stat-title">{stat.title}</div>
               <div className="stat-value">{stat.value}</div>
-              <div
-                className={`stat-delta ${stat.delta.startsWith("-") ? "negative" : ""}`}
-              >
+              <div className={`stat-delta ${stat.delta.startsWith("-") ? "negative" : ""}`}>
                 {stat.delta}
               </div>
             </div>
@@ -274,9 +406,7 @@ export default function AdminDashboard() {
             <i className="ri-alarm-warning-line" aria-hidden="true" />
           </div>
           <div>
-            <div className="admin-dashboard__emergency-title">
-              Live Emergency Controls
-            </div>
+            <div className="admin-dashboard__emergency-title">Live Emergency Controls</div>
             <div className="admin-dashboard__emergency-subtitle">
               Critical system operations - use with caution
             </div>
@@ -286,20 +416,26 @@ export default function AdminDashboard() {
           <button
             className="admin-dashboard__emergency-btn warning"
             onClick={() => setShowShutdown(true)}
+            disabled={actionBusy !== ""}
           >
             <i className="ri-shut-down-line" aria-hidden="true" />
-            Emergency Shutdown
+            {actionBusy === "shutdown" ? "Stopping..." : "Emergency Shutdown"}
           </button>
           <button
             className="admin-dashboard__emergency-btn amber"
             onClick={() => setShowForceLogout(true)}
+            disabled={actionBusy !== ""}
           >
             <i className="ri-logout-box-line" aria-hidden="true" />
-            Force Logout All
+            {actionBusy === "force-logout" ? "Applying..." : "Force Logout All"}
           </button>
-          <button className="admin-dashboard__emergency-btn success">
+          <button
+            className="admin-dashboard__emergency-btn success"
+            onClick={handleTriggerResults}
+            disabled={actionBusy !== ""}
+          >
             <i className="ri-trophy-line" aria-hidden="true" />
-            Trigger Results
+            {actionBusy === "results" ? "Publishing..." : "Trigger Results"}
           </button>
         </div>
       </div>
@@ -315,12 +451,9 @@ export default function AdminDashboard() {
               </div>
             ) : (
               activities.map((item) => (
-                <div key={item.title} className="activity-item">
+                <div key={`${item.title}-${item.time}`} className="activity-item">
                   <span className={`activity-icon ${item.color || "blue"}`}>
-                    <i
-                      className={item.icon || "ri-notification-3-line"}
-                      aria-hidden="true"
-                    />
+                    <i className={item.icon || "ri-notification-3-line"} aria-hidden="true" />
                   </span>
                   <div>
                     <div className="activity-title">{item.title}</div>
@@ -358,14 +491,8 @@ export default function AdminDashboard() {
       </div>
 
       {showForceLogout && (
-        <div
-          className="admin-modal-backdrop"
-          onClick={() => setShowForceLogout(false)}
-        >
-          <div
-            className="admin-modal admin-dashboard__confirm"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="admin-modal-backdrop" onClick={() => setShowForceLogout(false)}>
+          <div className="admin-modal admin-dashboard__confirm" onClick={(e) => e.stopPropagation()}>
             <div className="confirm-head">
               <span className="confirm-icon orange">
                 <i className="ri-logout-circle-line" aria-hidden="true" />
@@ -373,21 +500,18 @@ export default function AdminDashboard() {
               <div>
                 <div className="confirm-title">Force Logout All Users</div>
                 <div className="confirm-text">
-                  This will immediately log out all voters and party members
-                  from the system. Use only in emergency situations.
+                  This logs out all voter and party sessions immediately.
                 </div>
               </div>
             </div>
             <div className="admin-modal-actions">
-              <button
-                className="admin-button ghost"
-                onClick={() => setShowForceLogout(false)}
-              >
+              <button className="admin-button ghost" onClick={() => setShowForceLogout(false)}>
                 Cancel
               </button>
               <button
                 className="admin-button warning"
                 onClick={handleForceLogout}
+                disabled={actionBusy === "force-logout"}
               >
                 Force Logout
               </button>
@@ -397,14 +521,8 @@ export default function AdminDashboard() {
       )}
 
       {showShutdown && (
-        <div
-          className="admin-modal-backdrop"
-          onClick={() => setShowShutdown(false)}
-        >
-          <div
-            className="admin-modal admin-dashboard__confirm"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="admin-modal-backdrop" onClick={() => setShowShutdown(false)}>
+          <div className="admin-modal admin-dashboard__confirm" onClick={(e) => e.stopPropagation()}>
             <div className="confirm-head">
               <span className="confirm-icon red">
                 <i className="ri-alarm-warning-line" aria-hidden="true" />
@@ -412,19 +530,19 @@ export default function AdminDashboard() {
               <div>
                 <div className="confirm-title">Emergency Shutdown</div>
                 <div className="confirm-text">
-                  This will immediately stop the election and prevent all
-                  voting. This action cannot be undone. Are you sure?
+                  This immediately stops currently running election voting.
                 </div>
               </div>
             </div>
             <div className="admin-modal-actions">
-              <button
-                className="admin-button ghost"
-                onClick={() => setShowShutdown(false)}
-              >
+              <button className="admin-button ghost" onClick={() => setShowShutdown(false)}>
                 Cancel
               </button>
-              <button className="admin-button primary" onClick={handleShutdown}>
+              <button
+                className="admin-button primary"
+                onClick={handleShutdown}
+                disabled={actionBusy === "shutdown"}
+              >
                 Confirm Shutdown
               </button>
             </div>

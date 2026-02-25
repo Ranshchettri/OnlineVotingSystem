@@ -154,6 +154,16 @@ export default function Voters() {
     fetchVoterData();
   }, []);
 
+  const applyVoterPatch = (voterId, patch) => {
+    const applyPatch = (voter) => {
+      const merged = { ...voter, ...patch };
+      return { ...merged, status: normalizeVoterStatus(merged) };
+    };
+
+    setVoters((prev) => prev.map((voter) => (voter._id === voterId ? applyPatch(voter) : voter)));
+    setSelectedVoter((prev) => (prev && prev._id === voterId ? applyPatch(prev) : prev));
+  };
+
   useEffect(() => {
     let filtered = voters;
 
@@ -204,8 +214,13 @@ export default function Voters() {
   const handleApproveVoter = async (voterId) => {
     try {
       await api.post(`/voters/admin/${voterId}/approve`);
+      applyVoterPatch(voterId, {
+        verificationStatus: "auto-approved",
+        isVerified: true,
+        verified: true,
+      });
+      setEditMode(false);
       await fetchVoterData();
-      if (selectedVoter?._id === voterId) closeVoterDetails();
     } catch (err) {
       console.error("Failed to approve voter:", err);
       alert("Failed to approve voter");
@@ -215,8 +230,13 @@ export default function Voters() {
   const handleBlockVoter = async (voterId) => {
     try {
       await api.post(`/voters/admin/${voterId}/block`);
+      applyVoterPatch(voterId, {
+        verificationStatus: "blocked",
+        isVerified: false,
+        verified: false,
+      });
+      setEditMode(false);
       await fetchVoterData();
-      if (selectedVoter?._id === voterId) closeVoterDetails();
     } catch (err) {
       console.error("Failed to block voter:", err);
       alert("Failed to block voter");
@@ -226,8 +246,13 @@ export default function Voters() {
   const handleRejectVoter = async (voterId) => {
     try {
       await api.post(`/voters/admin/${voterId}/reject`);
+      applyVoterPatch(voterId, {
+        verificationStatus: "rejected",
+        isVerified: false,
+        verified: false,
+      });
+      setEditMode(false);
       await fetchVoterData();
-      if (selectedVoter?._id === voterId) closeVoterDetails();
     } catch (err) {
       console.error("Failed to reject voter:", err);
       alert("Failed to reject voter");
