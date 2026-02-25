@@ -24,43 +24,84 @@ export default function Analytics() {
     bad: 0,
   });
 
-  useEffect(() => {
-    const fetchAnalytics = async () => {
+  const mapAnalyticsRow = (row = {}) => ({
+    id: row._id || row.id || row.candidateId || row.partyId,
+    entityId: row.partyId || row.candidateId || row._id || row.id,
+    name: row.fullName || row.name || row.leader || "Unknown",
+    party: row.partyName || row.party || row.name || "",
+    votes: Number(row.totalVotes || row.currentVotes || 0).toLocaleString(),
+    avatar: row.avatar || row.photo || row.image || row.logo,
+    development: Number(row.development ?? row.totalTaskCompletion ?? 0),
+    good: Number(row.goodWork ?? 0),
+    bad: Number(row.badWork ?? 0),
+    goodTopics: Array.isArray(row.goodTopics) ? row.goodTopics : [],
+    badTopics: Array.isArray(row.badTopics) ? row.badTopics : [],
+    history: Array.isArray(row.history)
+      ? row.history
+      : Array.isArray(row.historicalData)
+        ? row.historicalData
+        : [],
+  });
+
+  const loadPartiesAsFallbackAnalytics = async () => {
+    const partyRes = await api.get("/parties");
+    const partyList =
+      partyRes.data?.data?.parties || partyRes.data?.data || partyRes.data || [];
+    if (!Array.isArray(partyList) || !partyList.length) {
+      setCandidates([]);
+      setError("No analytics data returned yet.");
+      return;
+    }
+    setCandidates(
+      partyList.map((party) =>
+        mapAnalyticsRow({
+          partyId: party._id || party.id,
+          name: party.name,
+          leader: party.leader,
+          logo: party.logo,
+          development: party.development,
+          goodWork: party.goodWork,
+          badWork: party.badWork,
+          currentVotes: party.totalVotes,
+        }),
+      ),
+    );
+    setError(null);
+  };
+
+  const fetchAnalytics = async () => {
+    try {
+      const res = await api.get("/analytics/candidates");
+      const list = res.data?.data || [];
+      if (Array.isArray(list) && list.length > 0) {
+        setCandidates(list.map(mapAnalyticsRow));
+        setError(null);
+      } else {
+        await loadPartiesAsFallbackAnalytics();
+      }
+    } catch (err) {
+      console.error("Failed to fetch analytics:", err);
+      if (err.isNetworkError === true) {
+        setCandidates([]);
+        setError("Backend offline: could not reach analytics API.");
+        return;
+      }
+
       try {
-        const res = await api.get("/analytics/candidates");
-        const list = res.data?.data || [];
-        if (Array.isArray(list) && list.length > 0) {
-          setCandidates(
-            list.map((c) => ({
-              id: c._id || c.id,
-              name: c.fullName || c.name,
-              party: c.partyName || c.party || "",
-              votes: c.totalVotes?.toLocaleString?.() || c.totalVotes || "0",
-              avatar: c.avatar || c.photo || c.image,
-              development: c.development || c.totalTaskCompletion || 0,
-              good: c.goodWork || 0,
-              bad: c.badWork || 0,
-              goodTopics: Array.isArray(c.goodTopics) ? c.goodTopics : [],
-              badTopics: Array.isArray(c.badTopics) ? c.badTopics : [],
-            })),
-          );
-          setError(null);
-        } else {
-          setCandidates([]);
-          setError("No analytics data returned yet.");
-        }
-      } catch (err) {
-        console.error("Failed to fetch analytics:", err);
+        await loadPartiesAsFallbackAnalytics();
+      } catch (fallbackError) {
+        console.error("Failed to load analytics fallback:", fallbackError);
         setCandidates([]);
         setError(
-          err.isNetworkError === true
-            ? "Backend offline: could not reach analytics API."
-            : err.isUnauthorized
-              ? "Unauthorized: please log in as admin."
-              : "Failed to load analytics data",
+          err.isUnauthorized
+            ? "Unauthorized: please log in as admin."
+            : "Failed to load analytics data",
         );
       }
-    };
+    }
+  };
+
+  useEffect(() => {
     fetchAnalytics();
   }, []);
 
@@ -114,21 +155,21 @@ export default function Analytics() {
     setTimeout(() => setToast(null), 2000);
   };
 
-  const saveUpdate = () => {
-    setCandidates((prev) =>
-      prev.map((c) =>
-        c.id === selectedCandidate.id
-          ? {
-              ...c,
-              development: updateValues.development,
-              good: updateValues.good,
-              bad: updateValues.bad,
-            }
-          : c,
-      ),
-    );
-    setShowUpdate(false);
-    showToast("Analytics updated successfully");
+  const saveUpdate = async () => {
+    if (!selectedCandidate) return;
+    try {
+      await api.put(`/admin/analytics/party/${selectedCandidate.entityId}/update`, {
+        development: Number(updateValues.development),
+        goodWork: Number(updateValues.good),
+        badWork: Number(updateValues.bad),
+      });
+      await fetchAnalytics();
+      setShowUpdate(false);
+      showToast("Analytics updated successfully");
+    } catch (err) {
+      console.error("Failed to update analytics:", err);
+      alert(err.response?.data?.message || "Failed to update analytics");
+    }
   };
 
   return (

@@ -2,6 +2,30 @@ import { useEffect, useMemo, useState } from "react";
 import api from "../../services/api";
 import "../styles/voters.css";
 
+const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
+
+const readFileAsDataUrl = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("Failed to read image file"));
+    reader.readAsDataURL(file);
+  });
+
+const normalizeVoterStatus = (voter = {}) => {
+  const raw = String(voter.status || voter.verificationStatus || "").toLowerCase();
+  if (raw === "blocked" || raw === "inactive" || raw === "rejected") return "BLOCKED";
+  if (raw === "active" || raw === "approved" || raw === "auto-approved") return "ACTIVE";
+  if (voter.isVerified || voter.verified) return "ACTIVE";
+  return "PENDING";
+};
+
+const statusLabel = (status) => {
+  if (status === "ACTIVE") return "Active";
+  if (status === "BLOCKED") return "Blocked";
+  return "Pending";
+};
+
 export default function Voters() {
   const [stats, setStats] = useState({
     totalRegistered: 0,
@@ -18,14 +42,17 @@ export default function Voters() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedVoter, setSelectedVoter] = useState(null);
-  /* Demo seed data disabled as requested
-  const demoVoters = [
-    { _id: "demo-1", fullName: "Ram Bahadur Thapa", voterId: "V2847392", email: "ram.thapa@email.com", mobile: "+977-9841234567", district: "Kathmandu", province: "Bagmati", status: "ACTIVE", voted: true, avatar: "https://i.pravatar.cc/100?img=12" },
-    { _id: "demo-2", fullName: "Sita Kumari Sharma", voterId: "V2847393", email: "sita.sharma@email.com", mobile: "+977-9851234568", district: "Pokhara", province: "Gandaki", status: "ACTIVE", voted: true, avatar: "https://i.pravatar.cc/100?img=47" },
-    { _id: "demo-3", fullName: "Krishna Prasad Adhikari", voterId: "V2847394", email: "krishna.adhikari@email.com", mobile: "+977-9861234569", district: "Lalitpur", province: "Bagmati", status: "PENDING", voted: false, avatar: "https://i.pravatar.cc/100?img=32" },
-  ];
-  */
-
+  const [editMode, setEditMode] = useState(false);
+  const [editForm, setEditForm] = useState({
+    fullName: "",
+    email: "",
+    mobile: "",
+    voterId: "",
+    district: "",
+    province: "",
+    dateOfBirth: "",
+    photoData: "",
+  });
   const [addForm, setAddForm] = useState({
     fullName: "",
     dob: "",
@@ -40,27 +67,17 @@ export default function Voters() {
     photoData: "",
   });
 
-  useEffect(() => {
-    fetchVoterData();
-  }, []);
-
-  useEffect(() => {
-    filterVoters();
-  }, [voters, searchQuery, statusFilter]);
-
   const computeStatsFromList = (list = []) => {
     const totalRegistered = list.length;
-    const activeVoters = list.filter((v) => v.status === "ACTIVE").length;
-    const inactiveVoters = list.filter((v) => v.status === "INACTIVE").length;
+    const activeVoters = list.filter((v) => normalizeVoterStatus(v) === "ACTIVE").length;
+    const inactiveVoters = list.filter((v) => normalizeVoterStatus(v) !== "ACTIVE").length;
     const now = Date.now();
     const thirtyDays = 1000 * 60 * 60 * 24 * 30;
     const newRegistered = list.filter((v) => {
       const created = v.createdAt ? new Date(v.createdAt).getTime() : 0;
       return now - created <= thirtyDays;
     }).length;
-    const percentageChange = totalRegistered
-      ? (newRegistered / totalRegistered) * 100
-      : 0;
+    const percentageChange = totalRegistered ? (newRegistered / totalRegistered) * 100 : 0;
     return {
       totalRegistered,
       activeVoters,
@@ -70,13 +87,23 @@ export default function Voters() {
     };
   };
 
+  const normalizeList = (list = []) =>
+    (Array.isArray(list) ? list : []).map((voter) => ({
+      ...voter,
+      status: normalizeVoterStatus(voter),
+      district: voter.district || "",
+      province: voter.province || "",
+      address: voter.address || "",
+      dateOfBirth: voter.dateOfBirth || null,
+    }));
+
   const fetchVoterData = async () => {
     try {
       setLoading(true);
       try {
         const res = await api.get("/voters/admin/stats");
         const data = res.data?.data || {};
-        const remoteVoters = data.voters || [];
+        const remoteVoters = normalizeList(data.voters || []);
         setStats(data.stats || computeStatsFromList(remoteVoters));
         setVoters(remoteVoters);
         setError(null);
@@ -84,10 +111,10 @@ export default function Voters() {
       } catch (err) {
         if (err?.response?.status === 404) {
           const res = await api.get("/voters");
-          const list =
-            res.data?.data?.voters || res.data?.data || res.data || [];
-          setVoters(list);
-          setStats(computeStatsFromList(list));
+          const list = res.data?.data?.voters || res.data?.data || res.data || [];
+          const mapped = normalizeList(list);
+          setVoters(mapped);
+          setStats(computeStatsFromList(mapped));
           setError(null);
           return;
         }
@@ -123,7 +150,11 @@ export default function Voters() {
     }
   };
 
-  const filterVoters = () => {
+  useEffect(() => {
+    fetchVoterData();
+  }, []);
+
+  useEffect(() => {
     let filtered = voters;
 
     if (searchQuery.trim()) {
@@ -138,16 +169,43 @@ export default function Voters() {
     }
 
     if (statusFilter !== "all") {
-      filtered = filtered.filter((voter) => voter.status === statusFilter);
+      if (statusFilter === "INACTIVE") {
+        filtered = filtered.filter((voter) => normalizeVoterStatus(voter) !== "ACTIVE");
+      } else {
+        filtered = filtered.filter((voter) => normalizeVoterStatus(voter) === statusFilter);
+      }
     }
 
     setFilteredVoters(filtered);
+  }, [voters, searchQuery, statusFilter]);
+
+  const openVoterDetails = (voter) => {
+    setSelectedVoter(voter);
+    setEditMode(false);
+    setEditForm({
+      fullName: voter.fullName || "",
+      email: voter.email || "",
+      mobile: voter.mobile || "",
+      voterId: voter.voterId || "",
+      district: voter.district || "",
+      province: voter.province || "",
+      dateOfBirth: voter.dateOfBirth
+        ? new Date(voter.dateOfBirth).toISOString().split("T")[0]
+        : "",
+      photoData: voter.photoUrl || voter.photo || voter.avatar || "",
+    });
+  };
+
+  const closeVoterDetails = () => {
+    setSelectedVoter(null);
+    setEditMode(false);
   };
 
   const handleApproveVoter = async (voterId) => {
     try {
       await api.post(`/voters/admin/${voterId}/approve`);
-      fetchVoterData();
+      await fetchVoterData();
+      if (selectedVoter?._id === voterId) closeVoterDetails();
     } catch (err) {
       console.error("Failed to approve voter:", err);
       alert("Failed to approve voter");
@@ -157,7 +215,8 @@ export default function Voters() {
   const handleBlockVoter = async (voterId) => {
     try {
       await api.post(`/voters/admin/${voterId}/block`);
-      fetchVoterData();
+      await fetchVoterData();
+      if (selectedVoter?._id === voterId) closeVoterDetails();
     } catch (err) {
       console.error("Failed to block voter:", err);
       alert("Failed to block voter");
@@ -167,14 +226,15 @@ export default function Voters() {
   const handleRejectVoter = async (voterId) => {
     try {
       await api.post(`/voters/admin/${voterId}/reject`);
-      fetchVoterData();
+      await fetchVoterData();
+      if (selectedVoter?._id === voterId) closeVoterDetails();
     } catch (err) {
       console.error("Failed to reject voter:", err);
       alert("Failed to reject voter");
     }
   };
 
-  const handleAddFormChange = (e) => {
+  const handleAddFormChange = async (e) => {
     const { name, value, files } = e.target;
     if (name === "photo") {
       const file = files?.[0];
@@ -182,19 +242,24 @@ export default function Voters() {
         setAddForm((p) => ({ ...p, photo: null, photoPreview: "", photoData: "" }));
         return;
       }
-      const reader = new FileReader();
-      reader.onload = () => {
+      if (file.size > MAX_PHOTO_BYTES) {
+        alert("Photo file is too large. Please upload an image up to 2MB.");
+        return;
+      }
+      try {
+        const dataUrl = await readFileAsDataUrl(file);
         setAddForm((p) => ({
           ...p,
           photo: file,
-          photoPreview: reader.result,
-          photoData: reader.result,
+          photoPreview: dataUrl,
+          photoData: dataUrl,
         }));
-      };
-      reader.readAsDataURL(file);
-    } else {
-      setAddForm((p) => ({ ...p, [name]: value }));
+      } catch {
+        alert("Failed to read photo file.");
+      }
+      return;
     }
+    setAddForm((p) => ({ ...p, [name]: value }));
   };
 
   const handleAddVoterSubmit = async (e) => {
@@ -211,11 +276,14 @@ export default function Voters() {
         mobile: addForm.mobile,
         voterId: addForm.voterId,
         voterIdNumber: addForm.voterId,
+        dateOfBirth: addForm.dob || undefined,
+        district: addForm.district,
+        province: addForm.province,
+        address: [addForm.district, addForm.province].filter(Boolean).join(", "),
         photo: addForm.photoData,
       };
 
       await api.post("/voters/admin", payload);
-
       setShowAddModal(false);
       setAddForm({
         fullName: "",
@@ -230,14 +298,56 @@ export default function Voters() {
         photoPreview: "",
         photoData: "",
       });
-      fetchVoterData();
+      await fetchVoterData();
     } catch (err) {
       console.error("Failed to add voter:", err);
-      const msg =
-        err.isNetworkError
-          ? "Backend unavailable: cannot create voter right now."
-          : err.response?.data?.message || "Failed to add voter";
+      const msg = err.isNetworkError
+        ? "Backend unavailable: cannot create voter right now."
+        : err.response?.data?.message || "Failed to add voter";
       alert(msg);
+    }
+  };
+
+  const handleEditFormChange = async (event) => {
+    const { name, value, files } = event.target;
+    if (name === "photo") {
+      const file = files?.[0];
+      if (!file) return;
+      if (file.size > MAX_PHOTO_BYTES) {
+        alert("Photo file is too large. Please upload an image up to 2MB.");
+        return;
+      }
+      try {
+        const dataUrl = await readFileAsDataUrl(file);
+        setEditForm((prev) => ({ ...prev, photoData: dataUrl }));
+      } catch {
+        alert("Failed to read photo file.");
+      }
+      return;
+    }
+    setEditForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSaveVoterEdit = async () => {
+    if (!selectedVoter?._id) return;
+    try {
+      await api.put(`/voters/admin/${selectedVoter._id}`, {
+        fullName: editForm.fullName,
+        email: editForm.email,
+        mobile: editForm.mobile,
+        voterId: editForm.voterId,
+        district: editForm.district,
+        province: editForm.province,
+        address: [editForm.district, editForm.province].filter(Boolean).join(", "),
+        dateOfBirth: editForm.dateOfBirth || undefined,
+        photo: editForm.photoData || undefined,
+      });
+      await fetchVoterData();
+      setEditMode(false);
+      closeVoterDetails();
+    } catch (err) {
+      console.error("Failed to update voter:", err);
+      alert(err.response?.data?.message || "Failed to update voter details");
     }
   };
 
@@ -246,44 +356,36 @@ export default function Voters() {
     [voters],
   );
 
-    const statsCards = useMemo(
-      () => {
-      const total = Number(stats.totalRegistered || 0);
-      const activeRate = total
-        ? ((stats.activeVoters / total) * 100).toFixed(1)
-        : null;
-      const votedRate = total ? ((votedCount / total) * 100).toFixed(1) : null;
-      const pendingRate = total
-        ? ((stats.inactiveVoters / total) * 100).toFixed(1)
-        : null;
+  const statsCards = useMemo(() => {
+    const total = Number(stats.totalRegistered || 0);
+    const activeRate = total ? ((stats.activeVoters / total) * 100).toFixed(1) : null;
+    const votedRate = total ? ((votedCount / total) * 100).toFixed(1) : null;
+    const pendingRate = total ? ((stats.inactiveVoters / total) * 100).toFixed(1) : null;
 
-      return [
-        {
-          label: "Active Voters",
-          value: Number(stats.activeVoters || 0).toLocaleString(),
-          sub: activeRate ? `${activeRate}% of total` : "Awaiting data",
-          color: "green",
-          icon: "ri-user-3-line",
-        },
-        {
-          label: "Voted",
-          value: votedCount.toLocaleString(),
-          sub: votedRate ? `${votedRate}% turnout` : "Awaiting data",
-          color: "purple",
-          icon: "ri-checkbox-circle-line",
-        },
-        {
-          label: "Pending Approval",
-          value: Number(stats.inactiveVoters || 0).toLocaleString(),
-          sub: pendingRate ? `${pendingRate}% of total` : "Awaiting action",
-          color: "orange",
-          icon: "ri-time-line",
-        },
-      ];
-    },
-    [stats, votedCount],
-  );
-  const displayVoters = filteredVoters;
+    return [
+      {
+        label: "Active Voters",
+        value: Number(stats.activeVoters || 0).toLocaleString(),
+        sub: activeRate ? `${activeRate}% of total` : "Awaiting data",
+        color: "green",
+        icon: "ri-user-3-line",
+      },
+      {
+        label: "Voted",
+        value: votedCount.toLocaleString(),
+        sub: votedRate ? `${votedRate}% turnout` : "Awaiting data",
+        color: "purple",
+        icon: "ri-checkbox-circle-line",
+      },
+      {
+        label: "Pending Approval",
+        value: Number(stats.inactiveVoters || 0).toLocaleString(),
+        sub: pendingRate ? `${pendingRate}% of total` : "Awaiting action",
+        color: "orange",
+        icon: "ri-time-line",
+      },
+    ];
+  }, [stats, votedCount]);
 
   if (loading) {
     return (
@@ -292,6 +394,14 @@ export default function Voters() {
       </div>
     );
   }
+
+  const selectedStatus = normalizeVoterStatus(selectedVoter || {});
+  const selectedVoted = Boolean(selectedVoter?.hasVoted || selectedVoter?.voted);
+  const selectedAvatar =
+    editForm.photoData ||
+    selectedVoter?.avatar ||
+    selectedVoter?.photoUrl ||
+    selectedVoter?.photo;
 
   return (
     <div className="admin-page voters-page">
@@ -363,7 +473,7 @@ export default function Voters() {
             </tr>
           </thead>
           <tbody>
-            {displayVoters.length === 0 ? (
+            {filteredVoters.length === 0 ? (
               <tr className="voters-empty-row">
                 <td colSpan="6">
                   <div className="voters-empty">
@@ -376,8 +486,8 @@ export default function Voters() {
                 </td>
               </tr>
             ) : (
-              displayVoters.map((voter) => {
-                const status = voter.status || "PENDING";
+              filteredVoters.map((voter) => {
+                const status = normalizeVoterStatus(voter);
                 const voted = voter.hasVoted || voter.voted || false;
                 const avatarUrl = voter.avatar || voter.photoUrl || voter.photo;
                 const isLocal = voter._local;
@@ -388,47 +498,37 @@ export default function Voters() {
                         {avatarUrl ? (
                           <img className="voter-avatar photo" src={avatarUrl} alt={voter.fullName} />
                         ) : (
-                          <div className="voter-avatar">
-                            {voter.fullName?.[0] || "V"}
-                          </div>
+                          <div className="voter-avatar">{voter.fullName?.[0] || "V"}</div>
                         )}
                         <div>
-                      <div className="voter-name">{voter.fullName || "—"}</div>
-                      <div className="voter-id">{voter.voterId || "—"}</div>
-                      {isLocal && <div className="local-chip">Pending sync</div>}
-                    </div>
-                  </div>
+                          <div className="voter-name">{voter.fullName || "-"}</div>
+                          <div className="voter-id">{voter.voterId || "-"}</div>
+                          {isLocal && <div className="local-chip">Pending sync</div>}
+                        </div>
+                      </div>
                     </td>
                     <td>
                       <div className="voter-contact">
-                        <div>{voter.email || "—"}</div>
-                        <div className="muted">{voter.mobile || "—"}</div>
+                        <div>{voter.email || "-"}</div>
+                        <div className="muted">{voter.mobile || "-"}</div>
                       </div>
                     </td>
                     <td>
                       <div className="voter-location">
-                        <div>{voter.district || "—"}</div>
-                        <div className="muted">{voter.province || "—"}</div>
+                        <div>{voter.district || "-"}</div>
+                        <div className="muted">{voter.province || "-"}</div>
                       </div>
                     </td>
                     <td>
-                      <span className={`status-badge ${status.toLowerCase()}`}>
-                        {status === "ACTIVE" ? "Active" : status === "PENDING" ? "Pending" : status}
-                      </span>
+                      <span className={`status-badge ${status.toLowerCase()}`}>{statusLabel(status)}</span>
                     </td>
                     <td>
                       <span className={`voted-badge ${voted ? "yes" : "no"}`}>
-                        <i
-                          className={voted ? "ri-check-line" : "ri-close-line"}
-                          aria-hidden="true"
-                        />
+                        <i className={voted ? "ri-check-line" : "ri-close-line"} aria-hidden="true" />
                       </span>
                     </td>
                     <td className="align-right">
-                      <button
-                        className="link-btn"
-                        onClick={() => setSelectedVoter(voter)}
-                      >
+                      <button className="link-btn" onClick={() => openVoterDetails(voter)}>
                         View Details
                       </button>
                     </td>
@@ -535,7 +635,7 @@ export default function Voters() {
                 </label>
               </div>
               <label className="file-drop">
-                <input name="photo" type="file" onChange={handleAddFormChange} />
+                <input name="photo" type="file" accept="image/*" onChange={handleAddFormChange} />
                 <span className="file-drop-label">Photo Upload</span>
                 <div className="file-drop-box">
                   <span className="file-drop-icon" aria-hidden="true">
@@ -548,11 +648,7 @@ export default function Voters() {
                   <div className="upload-preview">
                     <i className="ri-image-line" aria-hidden="true" /> {addForm.photo.name}
                     {addForm.photoPreview ? (
-                      <img
-                        src={addForm.photoPreview}
-                        alt="Preview"
-                        className="upload-thumb"
-                      />
+                      <img src={addForm.photoPreview} alt="Preview" className="upload-thumb" />
                     ) : null}
                   </div>
                 )}
@@ -571,113 +667,123 @@ export default function Voters() {
       )}
 
       {selectedVoter && (
-        <div className="admin-modal-backdrop" onClick={() => setSelectedVoter(null)}>
+        <div className="admin-modal-backdrop" onClick={closeVoterDetails}>
           <div className="admin-modal voter-details" onClick={(e) => e.stopPropagation()}>
-            {(() => {
-              const status = selectedVoter.status || "PENDING";
-              const voted = selectedVoter.hasVoted || selectedVoter.voted || false;
-              return (
+            <div className="details-header">
+              {selectedAvatar ? (
+                <img className="voter-avatar large photo" src={selectedAvatar} alt={selectedVoter.fullName} />
+              ) : (
+                <div className="voter-avatar large">{selectedVoter.fullName?.[0] || "V"}</div>
+              )}
+              <div>
+                <div className="details-name">{selectedVoter.fullName}</div>
+                <div className="details-id">Voter ID: {selectedVoter.voterId || "-"}</div>
+                <div className="details-badges">
+                  <span className={`status-badge ${selectedStatus.toLowerCase()}`}>
+                    {statusLabel(selectedStatus)}
+                  </span>
+                  {selectedVoted && <span className="status-badge voted">Voted</span>}
+                </div>
+              </div>
+            </div>
+
+            {editMode ? (
+              <div className="details-grid edit-grid">
+                <label>
+                  <div className="stat-label">Full Name</div>
+                  <input name="fullName" value={editForm.fullName} onChange={handleEditFormChange} />
+                </label>
+                <label>
+                  <div className="stat-label">Email</div>
+                  <input name="email" type="email" value={editForm.email} onChange={handleEditFormChange} />
+                </label>
+                <label>
+                  <div className="stat-label">Mobile</div>
+                  <input name="mobile" value={editForm.mobile} onChange={handleEditFormChange} />
+                </label>
+                <label>
+                  <div className="stat-label">Voter ID</div>
+                  <input name="voterId" value={editForm.voterId} onChange={handleEditFormChange} />
+                </label>
+                <label>
+                  <div className="stat-label">District</div>
+                  <input name="district" value={editForm.district} onChange={handleEditFormChange} />
+                </label>
+                <label>
+                  <div className="stat-label">Province</div>
+                  <input name="province" value={editForm.province} onChange={handleEditFormChange} />
+                </label>
+                <label>
+                  <div className="stat-label">Date of Birth</div>
+                  <input name="dateOfBirth" type="date" value={editForm.dateOfBirth} onChange={handleEditFormChange} />
+                </label>
+                <label className="edit-photo-upload">
+                  <div className="stat-label">Profile Photo</div>
+                  <input name="photo" type="file" accept="image/*" onChange={handleEditFormChange} />
+                </label>
+              </div>
+            ) : (
+              <div className="details-grid">
+                <div>
+                  <div className="stat-label">Email</div>
+                  <div className="stat-number">{selectedVoter.email || "-"}</div>
+                </div>
+                <div>
+                  <div className="stat-label">Mobile</div>
+                  <div className="stat-number">{selectedVoter.mobile || "-"}</div>
+                </div>
+                <div>
+                  <div className="stat-label">District</div>
+                  <div className="stat-number">{selectedVoter.district || "-"}</div>
+                </div>
+                <div>
+                  <div className="stat-label">Province</div>
+                  <div className="stat-number">{selectedVoter.province || "-"}</div>
+                </div>
+                <div>
+                  <div className="stat-label">Date of Birth</div>
+                  <div className="stat-number">
+                    {selectedVoter.dateOfBirth
+                      ? new Date(selectedVoter.dateOfBirth).toLocaleDateString()
+                      : "-"}
+                  </div>
+                </div>
+                <div>
+                  <div className="stat-label">Created</div>
+                  <div className="stat-number">
+                    {selectedVoter.createdAt
+                      ? new Date(selectedVoter.createdAt).toLocaleString()
+                      : "-"}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="admin-modal-actions">
+              {editMode ? (
                 <>
-                  <div className="details-header">
-                    {(() => {
-                      const avatarUrl =
-                        selectedVoter.avatar ||
-                        selectedVoter.photoUrl ||
-                        selectedVoter.photo;
-                      return avatarUrl ? (
-                        <img
-                          className="voter-avatar large photo"
-                          src={avatarUrl}
-                          alt={selectedVoter.fullName}
-                        />
-                      ) : (
-                        <div className="voter-avatar large">
-                          {selectedVoter.fullName?.[0] || "V"}
-                        </div>
-                      );
-                    })()}
-                    <div>
-                      <div className="details-name">{selectedVoter.fullName}</div>
-                      <div className="details-id">
-                        Voter ID: {selectedVoter.voterId || "—"}
-                      </div>
-                      <div className="details-badges">
-                        <span className={`status-badge ${status.toLowerCase()}`}>
-                          {status === "ACTIVE"
-                            ? "Active"
-                            : status === "PENDING"
-                              ? "Pending"
-                              : status}
-                        </span>
-                        {voted && <span className="status-badge voted">Voted</span>}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="details-grid">
-                    <div>
-                      <div className="stat-label">Email</div>
-                      <div className="stat-number">{selectedVoter.email || "—"}</div>
-                    </div>
-                    <div>
-                      <div className="stat-label">Mobile</div>
-                      <div className="stat-number">{selectedVoter.mobile || "—"}</div>
-                    </div>
-                    <div>
-                      <div className="stat-label">District</div>
-                      <div className="stat-number">
-                        {selectedVoter.district || "—"}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="stat-label">Province</div>
-                      <div className="stat-number">
-                        {selectedVoter.province || "—"}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="stat-label">Created</div>
-                      <div className="stat-number">
-                        {selectedVoter.createdAt
-                          ? new Date(selectedVoter.createdAt).toLocaleString()
-                          : "—"}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="admin-modal-actions">
-                    {status === "PENDING" ? (
-                      <>
-                        <button
-                          className="admin-button primary"
-                          onClick={() => handleApproveVoter(selectedVoter._id)}
-                        >
-                          Approve Voter
-                        </button>
-                        <button
-                          className="admin-button ghost"
-                          onClick={() => handleRejectVoter(selectedVoter._id)}
-                        >
-                          Reject
-                        </button>
-                      </>
-                    ) : status === "BLOCKED" ? (
-                      <button
-                        className="admin-button success"
-                        onClick={() => handleApproveVoter(selectedVoter._id)}
-                      >
-                        Unblock Voter
-                      </button>
-                    ) : (
-                      <button
-                        className="admin-button primary danger-full"
-                        onClick={() => handleBlockVoter(selectedVoter._id)}
-                      >
-                        Block Voter
-                      </button>
-                    )}
-                  </div>
+                  <button className="admin-button ghost wide" onClick={() => setEditMode(false)}>
+                    Cancel Edit
+                  </button>
+                  <button className="admin-button success wide" onClick={handleSaveVoterEdit}>
+                    Save Changes
+                  </button>
                 </>
-              );
-            })()}
+              ) : selectedStatus === "BLOCKED" ? (
+                <>
+                  <button className="admin-button ghost wide" onClick={() => setEditMode(true)}>
+                    Edit Voter
+                  </button>
+                  <button className="admin-button success wide" onClick={() => handleApproveVoter(selectedVoter._id)}>
+                    Approve Voter
+                  </button>
+                </>
+              ) : (
+                <button className="admin-button primary danger-full" onClick={() => handleBlockVoter(selectedVoter._id)}>
+                  Block Voter
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

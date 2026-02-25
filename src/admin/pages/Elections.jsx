@@ -21,6 +21,21 @@ const formatDate = (value) => {
 const formatVotes = (value) =>
   typeof value === "number" ? value.toLocaleString() : value || "0";
 
+const deriveElectionStatus = (election = {}, now = new Date()) => {
+  const raw = String(election.status || "").toLowerCase();
+  if (raw === "ended" || election.isEnded || election.allowVoting === false) return "Ended";
+
+  const start = election.startDate ? new Date(election.startDate) : null;
+  const end = election.endDate ? new Date(election.endDate) : null;
+
+  if (start && now < start) return "Upcoming";
+  if (end && now > end) return "Ended";
+  if (start && end && now >= start && now <= end) return "Running";
+
+  if (raw === "running" || raw === "upcoming") return raw[0].toUpperCase() + raw.slice(1);
+  return "Upcoming";
+};
+
 export default function Elections() {
   const [elections, setElections] = useState([]);
   const [error, setError] = useState(null);
@@ -41,51 +56,65 @@ export default function Elections() {
   });
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchElections = async () => {
-      try {
-        const res = await api.get("/elections");
-        const list = res.data?.data?.elections || res.data?.data || res.data;
-        if (Array.isArray(list) && list.length > 0) {
-          const mapped = list.map((e) => {
-            const totalVotesValue =
-              typeof e.totalVotes === "number"
-                ? e.totalVotes
-                : Number(e.totalVotes || 0);
-            return {
-              id: e._id || e.id,
-              title: e.title || e.name,
-              type: e.type ? e.type[0].toUpperCase() + e.type.slice(1) : "Political",
-              status: e.status || "Upcoming",
-              startDate: e.startDate || e.start_time || e.start,
-              endDate: e.endDate || e.end_time || e.end,
-              totalVotes: totalVotesValue,
-              turnout: e.turnout ? `${e.turnout}%` : e.turnout || "0%",
-              autoClose: e.autoClose ?? true,
-              autoResults: e.autoResults ?? true,
-              parties: e.parties || [],
-            };
-          });
-          setElections(mapped);
-          setError(null);
-        } else {
-          setElections([]);
-          setError("No elections returned from API yet.");
-        }
-      } catch (err) {
-        console.error("Failed to load elections:", err);
+  const loadElections = async () => {
+    try {
+      const res = await api.get("/elections");
+      const list = res.data?.data?.elections || res.data?.data || res.data;
+      if (Array.isArray(list) && list.length > 0) {
+        const now = new Date();
+        const mapped = list.map((e) => {
+          const totalVotesValue =
+            typeof e.totalVotes === "number" ? e.totalVotes : Number(e.totalVotes || 0);
+          const startDate = e.startDate || e.start_time || e.start;
+          const endDate = e.endDate || e.end_time || e.end;
+          return {
+            id: e._id || e.id,
+            title: e.title || e.name,
+            type: e.type ? e.type[0].toUpperCase() + e.type.slice(1) : "Political",
+            status: deriveElectionStatus(
+              {
+                ...e,
+                startDate,
+                endDate,
+              },
+              now,
+            ),
+            startDate,
+            endDate,
+            totalVotes: totalVotesValue,
+            turnout:
+              typeof e.turnout === "number"
+                ? `${e.turnout.toFixed(1)}%`
+                : e.turnout || "0%",
+            autoClose: e.autoClose ?? true,
+            autoResults: e.autoResults ?? true,
+            isEnded: Boolean(e.isEnded),
+            isActive: Boolean(e.isActive),
+            allowVoting: e.allowVoting !== false,
+            parties: e.parties || [],
+          };
+        });
+        setElections(mapped);
+        setError(null);
+      } else {
         setElections([]);
-        if (err.isNetworkError) {
-          setError("Backend offline: could not reach elections API.");
-        } else if (err.isUnauthorized) {
-          setError("Unauthorized: please log in as admin.");
-        } else {
-          setError("Failed to load elections");
-        }
+        setError("No elections returned from API yet.");
       }
-    };
+    } catch (err) {
+      console.error("Failed to load elections:", err);
+      setElections([]);
+      if (err.isNetworkError) {
+        setError("Backend offline: could not reach elections API.");
+      } else if (err.isUnauthorized) {
+        setError("Unauthorized: please log in as admin.");
+      } else {
+        setError("Failed to load elections");
+      }
+    }
+  };
 
-    fetchElections();
+  useEffect(() => {
+    loadElections();
   }, []);
 
   const handleCreateElection = async (e) => {
@@ -103,6 +132,7 @@ export default function Elections() {
         tieHandling: form.tieHandling,
       });
       setShowCreate(false);
+      await loadElections();
     } catch (err) {
       console.error("Failed to create election:", err);
       const msg =
@@ -123,11 +153,7 @@ export default function Elections() {
   const handleStopElection = async (electionId) => {
     try {
       await api.put(`/admin/elections/${electionId}/stop`);
-      setElections((prev) =>
-        prev.map((e) =>
-          e.id === electionId ? { ...e, status: "Ended", autoClose: false, autoResults: true } : e,
-        ),
-      );
+      await loadElections();
     } catch (err) {
       console.error("Failed to stop election", err);
       alert("Failed to stop election");
@@ -390,7 +416,7 @@ export default function Elections() {
                   <i className="ri-eye-line icon-eye" aria-hidden="true" />
                     Preview
                   </button>
-                  {election.status?.toLowerCase() === "running" && (
+                  {["running", "upcoming"].includes((election.status || "").toLowerCase()) && (
                     <button
                       className="admin-button primary btn-danger"
                       onClick={() => handleStopElection(election.id)}

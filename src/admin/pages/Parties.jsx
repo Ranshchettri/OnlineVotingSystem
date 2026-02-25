@@ -2,6 +2,73 @@
 import api from "../../services/api";
 import "../styles/partyManagement.css";
 
+const MAX_LOGO_BYTES = 2 * 1024 * 1024;
+const MAX_DOC_BYTES = 8 * 1024 * 1024;
+
+const readFileAsDataUrl = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.readAsDataURL(file);
+  });
+
+const normalizeDocuments = (documents = []) => {
+  const source = Array.isArray(documents) ? documents : documents ? [documents] : [];
+  return source
+    .map((doc, index) => {
+      if (!doc) return null;
+      if (typeof doc === "string") {
+        const mimeType = doc.match(/^data:([^;,]+)[;,]/i)?.[1] || "application/octet-stream";
+        const extension = mimeType.includes("/") ? mimeType.split("/")[1] : "bin";
+        return {
+          name: `Document ${index + 1}.${extension}`,
+          mimeType,
+          size: 0,
+          dataUrl: doc,
+          uploadedAt: null,
+        };
+      }
+      const dataUrl = doc.dataUrl || doc.url || doc.content || "";
+      return {
+        name: doc.name || doc.fileName || `Document ${index + 1}`,
+        mimeType: doc.mimeType || doc.type || "application/octet-stream",
+        size: Number(doc.size || 0) || 0,
+        dataUrl,
+        uploadedAt: doc.uploadedAt || doc.date || null,
+      };
+    })
+    .filter(Boolean);
+};
+
+const resolvePartyStatus = (party = {}) => {
+  const raw = String(party.status || "").toLowerCase();
+  if (raw === "pending") return "PENDING";
+  if (raw === "blocked" || raw === "rejected") return "BLOCKED";
+  if (party.isActive === false) return "BLOCKED";
+  if (raw === "approved" || raw === "active") return "ACTIVE";
+  return "ACTIVE";
+};
+
+const mapPartyFromApi = (party = {}, idx = 0) => {
+  const status = resolvePartyStatus(party);
+  return {
+    id: party._id || party.id,
+    name: party.name || party.partyName || "Unnamed Party",
+    leader: party.leaderName || party.leader || "",
+    email: party.email || party.govEmail || "",
+    logo: party.logo || party.symbol || party.shortName || "P",
+    development: party.development ?? party.developmentScore ?? 0,
+    goodWork: party.goodWork ?? 0,
+    badWork: party.badWork ?? 0,
+    isActive: status === "ACTIVE",
+    status,
+    share: party.share || "0%",
+    rank: party.rank || idx + 1,
+    documents: normalizeDocuments(party.documents || []),
+  };
+};
+
 /* Demo seed data disabled as requested
 const fallbackParties = [
   {
@@ -64,17 +131,38 @@ export default function Parties() {
     documents: null,
     documentData: "",
     documentName: "",
+    documentSize: 0,
+    documentMimeType: "",
     electionId: "",
     electionType: "Political",
   });
   const documents = activeParty?.documents || [];
   const [elections, setElections] = useState([]);
 
-  const fileToDataUrl = (file, cb) => {
-    if (!file) return cb("");
-    const reader = new FileReader();
-    reader.onload = () => cb(reader.result);
-    reader.readAsDataURL(file);
+  const applyPartyList = (list = []) => {
+    const totalVotes = list.reduce((acc, p) => acc + (Number(p.totalVotes || 0) || 0), 0);
+    const mapped = list.map((party, idx) => {
+      const row = mapPartyFromApi(party, idx);
+      return {
+        ...row,
+        share: totalVotes
+          ? `${(((party.totalVotes || 0) / totalVotes) * 100).toFixed(1)}%`
+          : "0%",
+      };
+    });
+    setParties(mapped);
+  };
+
+  const loadParties = async () => {
+    const res = await api.get("/parties");
+    const list = res.data?.data?.parties || res.data?.data || res.data || [];
+    if (!Array.isArray(list)) {
+      setParties([]);
+      setError("No parties returned from API yet.");
+      return;
+    }
+    applyPartyList(list);
+    setError(null);
   };
 
   useEffect(() => {
@@ -85,30 +173,9 @@ export default function Parties() {
           api.get("/elections"),
         ]);
 
-        const list =
-          partyRes.data?.data?.parties || partyRes.data?.data || partyRes.data;
+        const list = partyRes.data?.data?.parties || partyRes.data?.data || partyRes.data || [];
         if (Array.isArray(list)) {
-          const totalVotes = list.reduce(
-            (acc, p) => acc + (p.totalVotes || 0),
-            0,
-          );
-          const mapped = list.map((party, idx) => ({
-            id: party._id || party.id,
-            name: party.name || party.partyName,
-            leader: party.leaderName || party.leader,
-            email: party.email || party.govEmail,
-            logo: party.logo || party.symbol || party.shortName || "P",
-            development: party.development ?? party.developmentScore ?? 70,
-            goodWork: party.goodWork ?? 80,
-            badWork: party.badWork ?? 20,
-            status: party.status || (party.isActive ? "Active" : "Blocked"),
-            share: totalVotes
-              ? `${(((party.totalVotes || 0) / totalVotes) * 100).toFixed(1)}%`
-              : "0%",
-            rank: idx + 1,
-            documents: party.documents || [],
-          }));
-          setParties(mapped);
+          applyPartyList(list);
           setError(null);
         } else {
           setParties([]);
@@ -120,8 +187,8 @@ export default function Parties() {
           electionRes.data?.data ||
           electionRes.data ||
           [];
-        setElections(electionList);
-        if (!registerForm.electionId && electionList.length) {
+        setElections(Array.isArray(electionList) ? electionList : []);
+        if (!registerForm.electionId && Array.isArray(electionList) && electionList.length) {
           setRegisterForm((p) => ({
             ...p,
             electionId: electionList[0]._id || electionList[0].id,
@@ -144,20 +211,13 @@ export default function Parties() {
     };
 
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const stats = useMemo(() => {
     const total = parties.length;
-    const active = parties.filter(
-      (p) => p.status === "Active" || p.status === "APPROVED" || p.isActive,
-    ).length;
-    const blocked = parties.filter(
-      (p) =>
-        p.status &&
-        p.status !== "Active" &&
-        p.status !== "APPROVED" &&
-        !p.isActive,
-    ).length;
+    const active = parties.filter((p) => p.status === "ACTIVE").length;
+    const blocked = parties.filter((p) => p.status === "BLOCKED").length;
     const pending = parties.filter((p) => p.status === "PENDING").length;
     return { total, active, blocked, pending };
   }, [parties]);
@@ -165,17 +225,46 @@ export default function Parties() {
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     try {
+      const docsPayload = registerForm.documentData
+        ? [
+            {
+              name: registerForm.documentName || "Party Document",
+              mimeType: registerForm.documentMimeType || "application/octet-stream",
+              size: registerForm.documentSize || 0,
+              dataUrl: registerForm.documentData,
+              uploadedAt: new Date().toISOString(),
+            },
+          ]
+        : [];
+
       const payload = {
         name: registerForm.name,
         leader: registerForm.leader,
         email: registerForm.email,
         logo: registerForm.logoData,
         symbol: registerForm.logoData || registerForm.name?.slice(0, 2),
-        documents: registerForm.documentData ? [registerForm.documentData] : [],
+        documents: docsPayload,
         electionId: registerForm.electionId || undefined,
         electionType: registerForm.electionType || "Political",
       };
-      await api.post("/parties", payload);
+      try {
+        await api.post("/parties", payload);
+      } catch (firstError) {
+        const errorMessage = String(
+          firstError?.response?.data?.message || firstError?.message || "",
+        ).toLowerCase();
+        const isLegacyDocsCastError =
+          errorMessage.includes("documents.0") &&
+          (errorMessage.includes("cast") || errorMessage.includes("validation"));
+
+        if (!isLegacyDocsCastError) throw firstError;
+
+        // Retry for older backend schema where documents is [String].
+        await api.post("/parties", {
+          ...payload,
+          documents: registerForm.documentData ? [registerForm.documentData] : [],
+        });
+      }
       setShowRegister(false);
       setRegisterForm({
         name: "",
@@ -187,28 +276,14 @@ export default function Parties() {
         documents: null,
         documentData: "",
         documentName: "",
+        documentSize: 0,
+        documentMimeType: "",
         electionId: elections[0]?._id || elections[0]?.id || "",
         electionType:
           (elections[0]?.type || "Political").charAt(0).toUpperCase() +
           (elections[0]?.type || "Political").slice(1).toLowerCase(),
       });
-      // Refresh list
-      const res = await api.get("/parties");
-      const list = res.data?.data?.parties || res.data?.data || res.data;
-      setParties(
-        (list || []).map((party, idx) => ({
-          id: party._id || party.id,
-          name: party.name || party.partyName,
-          leader: party.leaderName || party.leader,
-          email: party.email || party.govEmail,
-          logo: party.logo || party.symbol || party.shortName || "P",
-          development: party.development ?? party.developmentScore ?? 70,
-          goodWork: party.goodWork ?? 80,
-          badWork: party.badWork ?? 20,
-          status: party.status || (party.isActive ? "Active" : "Blocked"),
-          rank: idx + 1,
-        })),
-      );
+      await loadParties();
     } catch (err) {
       console.error("Failed to register party:", err);
       const msg = err.isNetworkError
@@ -243,38 +318,42 @@ export default function Parties() {
     setTimeout(() => setToast(null), 2000);
   };
 
-  const saveEdit = () => {
-    setParties((prev) =>
-      prev.map((p) =>
-        p.id === activeParty.id
-          ? {
-              ...p,
-              development: editValues.development,
-              goodWork: editValues.goodWork,
-              badWork: editValues.badWork,
-            }
-          : p,
-      ),
-    );
-    setShowEdit(false);
-    showToast(`${activeParty.name} analytics updated successfully!`);
+  const saveEdit = async () => {
+    if (!activeParty?.id) return;
+    try {
+      await api.put(`/admin/analytics/party/${activeParty.id}/update`, {
+        development: Number(editValues.development),
+        goodWork: Number(editValues.goodWork),
+        badWork: Number(editValues.badWork),
+      });
+      await loadParties();
+      setShowEdit(false);
+      showToast(`${activeParty.name} analytics updated successfully.`);
+    } catch (err) {
+      console.error("Failed to update party analytics:", err);
+      alert(err.response?.data?.message || "Failed to update party analytics");
+    }
   };
 
-  const confirmBlock = () => {
-    const isBlocked = activeParty.status !== "Active";
-    setParties((prev) =>
-      prev.map((p) =>
-        p.id === activeParty.id
-          ? { ...p, status: isBlocked ? "Active" : "Blocked" }
-          : p,
-      ),
-    );
-    setShowBlock(false);
-    showToast(
-      isBlocked
-        ? `${activeParty.name} has been activated successfully!`
-        : `${activeParty.name} has been blocked successfully!`,
-    );
+  const confirmBlock = async () => {
+    if (!activeParty?.id) return;
+    const activating = activeParty.status !== "ACTIVE";
+    try {
+      await api.patch(`/parties/${activeParty.id}`, {
+        isActive: activating,
+        status: activating ? "approved" : "rejected",
+      });
+      await loadParties();
+      setShowBlock(false);
+      showToast(
+        activating
+          ? `${activeParty.name} activated successfully.`
+          : `${activeParty.name} blocked successfully.`,
+      );
+    } catch (err) {
+      console.error("Failed to update party status:", err);
+      alert(err.response?.data?.message || "Failed to update party status");
+    }
   };
 
   return (
@@ -367,7 +446,18 @@ export default function Parties() {
                   )}
                 </div>
                 <div>
-                  <div className="party-name">{party.name}</div>
+                  <div className="party-name-row">
+                    <div className="party-name">{party.name}</div>
+                    <span
+                      className={`party-status-tag ${party.status.toLowerCase()}`}
+                    >
+                      {party.status === "ACTIVE"
+                        ? "Active"
+                        : party.status === "BLOCKED"
+                          ? "Blocked"
+                          : "Pending"}
+                    </span>
+                  </div>
                   <div className="party-meta line">
                     <span className="label">Leader:</span>
                     <span className="value">{party.leader || "—"}</span>
@@ -399,11 +489,6 @@ export default function Parties() {
                 </div>
               </div>
               <div className="party-actions">
-                <span
-                  className={`party-status ${party.status === "Active" ? "active" : "blocked"}`}
-                >
-                  {party.status || "—"}
-                </span>
                 <div className="party-actions-row">
                   <button
                     className="admin-button ghost"
@@ -420,18 +505,18 @@ export default function Parties() {
                     Edit Analytics
                   </button>
                   <button
-                    className="admin-button primary"
+                    className={`admin-button ${party.status === "ACTIVE" ? "primary" : "success"}`}
                     onClick={() => openBlock(party)}
                   >
                     <i
                       className={
-                        party.status === "Active"
+                        party.status === "ACTIVE"
                           ? "ri-forbid-2-line"
                           : "ri-checkbox-circle-line"
                       }
                       aria-hidden="true"
                     />
-                    {party.status === "Active"
+                    {party.status === "ACTIVE"
                       ? "Block Party"
                       : "Activate Party"}
                   </button>
@@ -499,7 +584,7 @@ export default function Parties() {
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) {
                       setRegisterForm((p) => ({
@@ -510,14 +595,21 @@ export default function Parties() {
                       }));
                       return;
                     }
-                    fileToDataUrl(file, (dataUrl) => {
+                    if (file.size > MAX_LOGO_BYTES) {
+                      alert("Logo file is too large. Please upload an image up to 2MB.");
+                      return;
+                    }
+                    try {
+                      const dataUrl = await readFileAsDataUrl(file);
                       setRegisterForm((p) => ({
                         ...p,
                         logo: file,
                         logoPreview: dataUrl,
                         logoData: dataUrl,
                       }));
-                    });
+                    } catch {
+                      alert("Failed to read logo file.");
+                    }
                   }}
                 />
                 <span className="file-drop-icon" aria-hidden="true">
@@ -543,7 +635,7 @@ export default function Parties() {
                 Verification Documents
                 <input
                   type="file"
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) {
                       setRegisterForm((p) => ({
@@ -551,17 +643,28 @@ export default function Parties() {
                         documents: null,
                         documentData: "",
                         documentName: "",
+                        documentSize: 0,
+                        documentMimeType: "",
                       }));
                       return;
                     }
-                    fileToDataUrl(file, (dataUrl) => {
+                    if (file.size > MAX_DOC_BYTES) {
+                      alert("Document file is too large. Please upload a file up to 8MB.");
+                      return;
+                    }
+                    try {
+                      const dataUrl = await readFileAsDataUrl(file);
                       setRegisterForm((p) => ({
                         ...p,
                         documents: file,
                         documentData: dataUrl,
                         documentName: file.name,
+                        documentSize: file.size,
+                        documentMimeType: file.type || "application/octet-stream",
                       }));
-                    });
+                    } catch {
+                      alert("Failed to read document file.");
+                    }
                   }}
                 />
                 <span className="file-drop-icon" aria-hidden="true">
@@ -636,8 +739,8 @@ export default function Parties() {
                   </div>
                 </div>
               ) : (
-                documents.map((doc) => (
-                  <div key={doc.name} className="doc-item">
+                documents.map((doc, index) => (
+                  <div key={`${doc.name}-${index}`} className="doc-item">
                     <div className="doc-left">
                       <span className="doc-icon">
                         <i className="ri-file-pdf-line" aria-hidden="true" />
@@ -645,20 +748,30 @@ export default function Parties() {
                       <div>
                         <div className="doc-title">{doc.name}</div>
                         <div className="doc-meta">
-                          Uploaded: {doc.date || "—"}
+                          Uploaded:{" "}
+                          {doc.uploadedAt
+                            ? new Date(doc.uploadedAt).toLocaleDateString()
+                            : "Not available"}
+                          {doc.size ? ` · ${(doc.size / 1024 / 1024).toFixed(2)} MB` : ""}
                         </div>
                       </div>
                     </div>
                     <div className="doc-actions">
-                      <span
-                        className={`doc-status ${(doc.status || "pending").toLowerCase()}`}
+                      <span className="doc-status">Uploaded</span>
+                      <a
+                        className="admin-button ghost doc-btn"
+                        href={doc.dataUrl || "#"}
+                        download={doc.name || `document-${index + 1}`}
+                        onClick={(event) => {
+                          if (!doc.dataUrl) {
+                            event.preventDefault();
+                            alert("No downloadable file data found for this document.");
+                          }
+                        }}
                       >
-                        {doc.status || "Pending"}
-                      </span>
-                      <button className="admin-button ghost doc-btn">
                         <i className="ri-download-line" aria-hidden="true" />
                         Download
-                      </button>
+                      </a>
                     </div>
                   </div>
                 ))
@@ -785,11 +898,11 @@ export default function Parties() {
             <div className="party-modal-head">
               <div className="party-modal-title">
                 <span
-                  className={`modal-icon ${activeParty.status === "Active" ? "red" : "green"}`}
+                  className={`modal-icon ${activeParty.status === "ACTIVE" ? "red" : "green"}`}
                 >
                   <i
                     className={
-                      activeParty.status === "Active"
+                      activeParty.status === "ACTIVE"
                         ? "ri-forbid-2-line"
                         : "ri-checkbox-circle-line"
                     }
@@ -798,12 +911,12 @@ export default function Parties() {
                 </span>
                 <div>
                   <div className="party-modal-name">
-                    {activeParty.status === "Active"
+                    {activeParty.status === "ACTIVE"
                       ? "Block Party"
                       : "Activate Party"}
                   </div>
                   <div className="party-modal-sub">
-                    {activeParty.status === "Active"
+                    {activeParty.status === "ACTIVE"
                       ? `Are you sure you want to block "${activeParty.name}"? This will prevent them from participating in the election.`
                       : `Are you sure you want to activate "${activeParty.name}"? This will allow them to participate in the election.`}
                   </div>
@@ -819,11 +932,11 @@ export default function Parties() {
               </button>
               <button
                 className={`admin-button wide ${
-                  activeParty.status === "Active" ? "primary" : "success"
+                  activeParty.status === "ACTIVE" ? "primary" : "success"
                 }`}
                 onClick={confirmBlock}
               >
-                {activeParty.status === "Active"
+                {activeParty.status === "ACTIVE"
                   ? "Block Party"
                   : "Activate Party"}
               </button>

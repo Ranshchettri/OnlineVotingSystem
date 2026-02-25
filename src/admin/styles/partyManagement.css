@@ -192,6 +192,36 @@
   font-size: 14px;
 }
 
+.party-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 2px;
+}
+
+.party-status-tag {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.party-status-tag.active {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.party-status-tag.blocked {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.party-status-tag.pending {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
 .party-meta {
   font-size: 11px;
   color: var(--admin-muted);
@@ -276,16 +306,10 @@
 .party-actions {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   align-items: flex-start;
   grid-column: 2;
   grid-row: 2;
-}
-
-.party-status {
-  position: absolute;
-  top: 16px;
-  right: 16px;
 }
 
 .party-actions-row {
@@ -297,21 +321,6 @@
 
 .party-actions-row .admin-button {
   font-weight: 500;
-}
-
-.party-status {
-  align-self: flex-start;
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  background: #dcfce7;
-  color: #15803d;
-}
-
-.party-status.blocked {
-  background: #fee2e2;
-  color: #b91c1c;
 }
 
 .party-form label {

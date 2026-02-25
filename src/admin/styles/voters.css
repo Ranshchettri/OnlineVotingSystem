@@ -451,6 +451,30 @@
   gap: 12px;
 }
 
+.voter-details {
+  width: min(680px, 96vw);
+}
+
+.details-grid.edit-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.details-grid.edit-grid input {
+  padding: 9px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--admin-border);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.edit-photo-upload input[type="file"] {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+}
+
 .voter-details .admin-modal-actions {
   justify-content: flex-start;
 }
