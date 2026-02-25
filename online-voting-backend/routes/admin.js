@@ -18,6 +18,7 @@ const {
   broadcastNotification,
   getLiveTracking,
   getAuditLogs,
+  forceLogoutAllSessions,
 } = require("../controllers/adminController");
 
 // Dashboard
@@ -53,5 +54,6 @@ router.get("/live-tracking/:electionId", protect, adminOnly, getLiveTracking);
 
 // Audit logs
 router.get("/audit-logs", protect, adminOnly, getAuditLogs);
+router.post("/sessions/force-logout", protect, adminOnly, forceLogoutAllSessions);
 
 module.exports = router;

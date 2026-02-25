@@ -8,6 +8,7 @@ const Notification = require("../models/Notification");
 const AuditLog = require("../models/AuditLog");
 const Analytics = require("../models/Analytics");
 const AppError = require("../utils/AppError");
+const { markForceLogout, getForceLogoutAfter } = require("../utils/sessionControl");
 
 const deriveElectionStatus = (election = {}, now = new Date()) => {
   const start = election.startDate ? new Date(election.startDate) : null;
@@ -663,6 +664,34 @@ const getAuditLogs = async (req, res, next) => {
   }
 };
 
+// POST /api/admin/sessions/force-logout
+const forceLogoutAllSessions = async (req, res, next) => {
+  try {
+    const forcedAt = markForceLogout();
+
+    await logActivity({
+      action: "Admin forced logout for all sessions",
+      user: req.user?.fullName || "Admin",
+      userId: req.user?._id,
+      icon: "ri-logout-circle-r-line",
+      color: "amber",
+    });
+
+    await logAudit(req, "force_logout_all", {
+      forcedAt,
+      forceLogoutAfter: getForceLogoutAfter(),
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "All active sessions have been invalidated",
+      forcedAt,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getDashboardStats,
   getLiveVotes,
@@ -680,5 +709,6 @@ module.exports = {
   broadcastNotification,
   getLiveTracking,
   getAuditLogs,
+  forceLogoutAllSessions,
   logAudit,
 };

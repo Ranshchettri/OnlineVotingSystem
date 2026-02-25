@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const { shouldInvalidateToken } = require("../utils/sessionControl");
 
 const protect = async (req, res, next) => {
   let token;
@@ -35,6 +36,9 @@ const protect = async (req, res, next) => {
 
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      if (shouldInvalidateToken(decoded)) {
+        return res.status(401).json({ message: "Session expired. Please log in again." });
+      }
 
       // Find user from token
       req.user = await User.findById(decoded.id).select("-password");
