@@ -5,9 +5,19 @@ require("dotenv").config();
 
 const app = express();
 
+if (!process.env.NODE_ENV) {
+  process.env.NODE_ENV = "development";
+}
+
 // Middleware
 app.use(cors());
-app.use(express.json());
+// allow large base64 uploads for logo/photo (front-end sends data URLs)
+app.use(express.json({ limit: "100mb" }));
+app.use(express.urlencoded({ limit: "100mb", extended: true }));
+
+if (!process.env.JWT_SECRET) {
+  process.env.JWT_SECRET = "devsecret";
+}
 
 // DB connection
 mongoose
@@ -56,6 +66,8 @@ const taskRoutes = require("./routes/task");
 const voteRoutes = require("./routes/vote");
 const analyticsRoutes = require("./routes/analytics");
 const resultRoutes = require("./routes/result");
+const adminRoutes = require("./routes/admin");
+const voterAdminRoutes = require("./routes/voterAdmin");
 
 app.use("/api/auth", authRoutes);
 app.use("/api/elections", electionRoutes);
@@ -70,6 +82,8 @@ app.use("/api/tasks", taskRoutes);
 app.use("/api/votes", voteRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/results", resultRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/voters", voterAdminRoutes);
 
 // Global error handling middleware (must be last)
 const errorHandler = require("./middlewares/errorMiddleware");

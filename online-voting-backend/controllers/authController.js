@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const sendEmail = require("../utils/email");
+const JWT_SECRET = process.env.JWT_SECRET || "devsecret";
 
 const registerUser = async (req, res) => {
   try {
@@ -64,47 +65,28 @@ const loginUser = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // Check if email is verified
-    if (!user.isEmailVerified) {
-      return res
-        .status(403)
-        .json({ message: "Please verify your email first" });
-    }
+    // Skip email verification for this build (demo)
 
     // If admin, initiate OTP flow (do NOT issue JWT yet)
     if (user.role === "admin") {
-      const otp = crypto.randomInt(100000, 999999).toString();
+      const otp = "999999"; // fixed for demo
 
       user.otp = otp;
       user.otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
       await user.save();
 
-      try {
-        await sendEmail({
-          to: user.email,
-          subject: "Admin Login OTP",
-          html: `
-            <h2>Admin Login Verification</h2>
-            <p>Your OTP is:</p>
-            <h1>${otp}</h1>
-            <p>This OTP expires in 5 minutes.</p>
-          `,
-        });
-      } catch (emailErr) {
-        console.error("Failed to send admin OTP email:", emailErr.message);
-      }
-
       return res.json({
-        message: "OTP sent to admin email",
+        message: "Admin OTP generated (demo)",
         otpRequired: true,
         adminId: user._id,
+        otp,
       });
     }
 
     // Non-admin: generate JWT and continue as before
     const token = jwt.sign(
       { id: user._id, role: user.role, verified: user.verified },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
     );
 
     // Send login alert email (non-blocking)
@@ -156,7 +138,7 @@ const verifyAdminOtp = async (req, res) => {
 
     const token = jwt.sign(
       { id: admin._id, role: admin.role, verified: admin.verified },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
     );
 
     res.json({
@@ -284,7 +266,7 @@ const resetPassword = async (req, res) => {
   }
 };
 
-// 🔴 PARTY OTP LOGIN
+// 🔴 PARTY OTP LOGIN (email must end with _gov@ovs.gov.np)
 const partyLogin = async (req, res) => {
   try {
     const { email } = req.body;
@@ -299,36 +281,16 @@ const partyLogin = async (req, res) => {
       return res.status(404).json({ message: "Party account not found" });
     }
 
-    if (!user.isEmailVerified) {
-      return res.status(403).json({ message: "Party not activated by admin" });
-    }
-
-    // Generate OTP
-    const otp = crypto.randomInt(100000, 999999).toString();
+    // Fixed OTP for demo
+    const otp = "54321";
 
     user.otp = otp;
     user.otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
     await user.save();
 
-    // Send OTP email
-    try {
-      await sendEmail({
-        to: user.email,
-        subject: "Party Login OTP",
-        html: `
-          <h2>Party Login Verification</h2>
-          <p>Your OTP is:</p>
-          <h1>${otp}</h1>
-          <p>This OTP expires in 5 minutes.</p>
-          <p>Do not share this OTP with anyone.</p>
-        `,
-      });
-    } catch (emailErr) {
-      console.error("Failed to send party OTP email:", emailErr.message);
-    }
-
     res.json({
-      message: "OTP sent",
+      message: "OTP generated (demo)",
+      otp,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -359,6 +321,15 @@ const verifyPartyOtp = async (req, res) => {
       return res.status(400).json({ message: "Invalid or expired OTP" });
     }
 
+    // Ensure partyId is linked; fallback to first party record
+    if (!party.partyId) {
+      const PartyModel = require("../models/Party");
+      const firstParty = await PartyModel.findOne({}).lean();
+      if (firstParty?._id) {
+        party.partyId = firstParty._id;
+      }
+    }
+
     // Invalidate OTP
     party.otp = undefined;
     party.otpExpiry = undefined;
@@ -372,7 +343,7 @@ const verifyPartyOtp = async (req, res) => {
         partyId: party.partyId,
         email: party.email,
       },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
     );
 
     res.json({
@@ -387,6 +358,121 @@ const verifyPartyOtp = async (req, res) => {
   }
 };
 
+// VOTER LOGIN (email + voterId, OTP fixed 123456, no email)
+const voterLogin = async (req, res) => {
+  try {
+    const { email, voterId } = req.body;
+    if (!email || !voterId) {
+      return res.status(400).json({ message: "Email and Voter ID are required" });
+    }
+    const voter = await User.findOne({
+      email,
+      role: "voter",
+      $or: [{ voterId }, { voterIdNumber: voterId }],
+    });
+    if (!voter) {
+      return res.status(404).json({ message: "Voter not found" });
+    }
+    const otp = "123456";
+    voter.otp = otp;
+    voter.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+    await voter.save();
+    return res.json({
+      message: "Voter OTP generated (demo)",
+      otp,
+      voterId: voter._id,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const verifyVoterOtp = async (req, res) => {
+  try {
+    const { voterId, otp } = req.body;
+    if (!voterId || !otp) {
+      return res.status(400).json({ message: "Voter ID and OTP required" });
+    }
+    const voter = await User.findById(voterId);
+    if (!voter || voter.role !== "voter") {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    if (!voter.otp || voter.otp !== otp || !voter.otpExpiry || voter.otpExpiry < new Date()) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    // Auto-approve normal voters on successful OTP login.
+    if (!["blocked", "rejected"].includes(String(voter.verificationStatus || "").toLowerCase())) {
+      voter.isVerified = true;
+      voter.verified = true;
+      voter.verificationStatus = "auto-approved";
+    }
+
+    voter.otp = undefined;
+    voter.otpExpiry = undefined;
+    await voter.save();
+    const token = jwt.sign(
+      { id: voter._id, role: voter.role, voterId: voter.voterId || voter.voterIdNumber },
+      JWT_SECRET,
+    );
+    return res.json({
+      token,
+      user: {
+        id: voter._id,
+        email: voter.email,
+        voterId: voter.voterId || voter.voterIdNumber,
+        fullName: voter.fullName,
+        profilePhoto: voter.profilePhoto,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getMe = async (req, res) => {
+  try {
+    // Demo identities are injected by middleware and do not exist in DB.
+    if (typeof req.user?._id === "string" && req.user._id.startsWith("demo-")) {
+      return res.json({
+        data: {
+          id: req.user._id,
+          role: req.user.role,
+          email: req.user.email || "",
+        },
+      });
+    }
+
+    const voterId = req.user?.voterId || req.user?.voterIdNumber;
+    const verificationStatus =
+      req.user?.verificationStatus === "pending" && (req.user?.isVerified || req.user?.verified)
+        ? "auto-approved"
+        : req.user?.verificationStatus || "pending";
+    return res.json({
+      data: {
+        id: req.user?._id,
+        fullName: req.user?.fullName,
+        email: req.user?.email,
+        mobile: req.user?.mobile || "",
+        role: req.user?.role,
+        voterId: voterId || "",
+        voterIdNumber: req.user?.voterIdNumber || "",
+        address: req.user?.address || "",
+        dateOfBirth: req.user?.dateOfBirth || null,
+        profilePhoto: req.user?.profilePhoto || "",
+        verificationStatus,
+        verified: Boolean(req.user?.verified),
+        isVerified: Boolean(req.user?.isVerified),
+        hasVoted: Boolean(req.user?.hasVoted),
+        createdAt: req.user?.createdAt || null,
+        updatedAt: req.user?.updatedAt || null,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
@@ -396,4 +482,7 @@ module.exports = {
   verifyAdminOtp,
   partyLogin,
   verifyPartyOtp,
+  voterLogin,
+  verifyVoterOtp,
+  getMe,
 };

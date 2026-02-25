@@ -7,6 +7,10 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
 
+    mobile: {
+      type: String,
+    },
+
     email: {
       type: String,
       required: true,
@@ -24,10 +28,21 @@ const userSchema = new mongoose.Schema(
       default: "voter",
     },
 
+    adminLevel: {
+      type: String,
+      enum: ["super", "moderator"],
+      default: "moderator",
+    },
+
     partyId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Party",
       default: null,
+    },
+
+    partyRole: {
+      type: String,
+      enum: ["admin", "member"],
     },
 
     isStudent: {
@@ -35,10 +50,32 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
 
+    voterId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+
     voterIdNumber: {
       type: String,
-      required: true,
       unique: true,
+    },
+
+    dateOfBirth: {
+      type: Date,
+    },
+
+    address: {
+      type: String,
+    },
+
+    profilePhoto: {
+      type: String, // Base64 or URL
+    },
+
+    faceEmbedding: {
+      type: [Number], // 512-d vector
+      default: undefined,
     },
 
     voterCardImage: {
@@ -47,13 +84,32 @@ const userSchema = new mongoose.Schema(
 
     verificationStatus: {
       type: String,
-      enum: ["auto-approved", "pending", "rejected"],
+      enum: ["auto-approved", "pending", "rejected", "blocked"],
       default: "pending",
     },
 
     verified: {
       type: Boolean,
       default: false,
+    },
+
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    hasVoted: {
+      type: Boolean,
+      default: false,
+    },
+
+    votedElectionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Election",
+    },
+
+    votedAt: {
+      type: Date,
     },
 
     isEmailVerified: {
@@ -88,5 +144,7 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+userSchema.index({ role: 1 });
 
 module.exports = mongoose.model("User", userSchema);

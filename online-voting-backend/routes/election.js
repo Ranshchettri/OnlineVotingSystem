@@ -10,8 +10,9 @@ const {
 } = require("../controllers/electionController");
 
 router.post("/", protect, adminOnly, validateElection, createElection);
-router.get("/", protect, getElections);
-router.get("/active", protect, getActiveElections);
+// Public read endpoints for voter/party dashboards
+router.get("/", getElections);
+router.get("/active", getActiveElections);
 router.patch("/:id/toggle", protect, adminOnly, toggleElectionStatus);
 
 module.exports = router;

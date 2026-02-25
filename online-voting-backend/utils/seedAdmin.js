@@ -11,27 +11,30 @@ const seedAdmin = async () => {
       return;
     }
 
-    const adminExists = await User.findOne({ email: adminEmail });
-
-    if (adminExists) {
-      console.log(" Admin already exists");
-      return;
-    }
-
+    const existingAdmin = await User.findOne({ role: "admin" });
     const hashedPassword = await bcrypt.hash(adminPassword, 12);
 
-    await User.create({
-      fullName: "System Admin",
-      email: adminEmail,
-      password: hashedPassword,
-      role: "admin",
-      voterIdNumber: "ADMIN-0001",
-      verified: true,
-      verificationStatus: "auto-approved",
-      isEmailVerified: true,
-    });
-
-    console.log(" Admin account seeded successfully");
+    if (existingAdmin) {
+      existingAdmin.email = adminEmail;
+      existingAdmin.password = hashedPassword;
+      existingAdmin.isEmailVerified = true;
+      existingAdmin.verified = true;
+      existingAdmin.verificationStatus = "auto-approved";
+      await existingAdmin.save();
+      console.log(" Admin account updated with .env credentials");
+    } else {
+      await User.create({
+        fullName: "System Admin",
+        email: adminEmail,
+        password: hashedPassword,
+        role: "admin",
+        voterIdNumber: "ADMIN-0001",
+        verified: true,
+        verificationStatus: "auto-approved",
+        isEmailVerified: true,
+      });
+      console.log(" Admin account seeded successfully");
+    }
   } catch (error) {
     console.error("Admin seeding failed:", error.message);
   }

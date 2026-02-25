@@ -6,7 +6,11 @@ const handleCastErrorDB = (err) => {
 };
 
 const handleDuplicateFieldsDB = (err) => {
-  const value = err.errmsg.match(/(["'])(\\?.)*?\1/)[0];
+  const value =
+    (err.keyValue && Object.values(err.keyValue)[0]) ||
+    (typeof err.errmsg === "string" &&
+      (err.errmsg.match(/(["'])(\\?.)*?\1/) || [null])[0]) ||
+    "duplicate value";
   const message = `Duplicate field value: ${value}. Please use another value!`;
   return new AppError(message, 400);
 };
@@ -45,7 +49,7 @@ const sendErrorProd = (err, res) => {
 
     res.status(500).json({
       status: "error",
-      message: "Something went wrong!",
+      message: err.message || "Something went wrong!",
     });
   }
 };

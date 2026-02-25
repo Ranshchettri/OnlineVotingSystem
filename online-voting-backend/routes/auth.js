@@ -9,7 +9,11 @@ const {
   resetPassword,
   partyLogin,
   verifyPartyOtp,
+  voterLogin,
+  verifyVoterOtp,
+  getMe,
 } = require("../controllers/authController");
+const { protect } = require("../middlewares/authMiddleware");
 const {
   validateRegister,
   validateLogin,
@@ -30,5 +34,10 @@ router.post("/admin/verify-otp", verifyAdminOtp);
 // 🔴 PARTY LOGIN ROUTES
 router.post("/party-login", partyLogin);
 router.post("/party/verify-otp", verifyPartyOtp);
+
+// VOTER LOGIN ROUTES
+router.post("/voter/login", voterLogin);
+router.post("/voter/verify-otp", verifyVoterOtp);
+router.get("/me", protect, getMe);
 
 module.exports = router;

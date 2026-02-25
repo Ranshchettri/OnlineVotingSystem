@@ -17,11 +17,42 @@ const voteSchema = new mongoose.Schema(
     candidateId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Candidate",
-      required: true,
+    },
+
+    partyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Party",
+    },
+
+    // Verification data
+    faceVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    faceMatchScore: {
+      type: Number,
+    },
+
+    otpVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    ipAddress: String,
+    userAgent: String,
+    location: {
+      latitude: Number,
+      longitude: Number,
     },
 
     transactionHash: {
       type: String, // future blockchain
+    },
+
+    votedAt: {
+      type: Date,
+      default: Date.now,
     },
   },
   { timestamps: true },
@@ -29,5 +60,6 @@ const voteSchema = new mongoose.Schema(
 
 //  Prevent double voting
 voteSchema.index({ userId: 1, electionId: 1 }, { unique: true });
+voteSchema.index({ electionId: 1, partyId: 1 });
 
 module.exports = mongoose.model("Vote", voteSchema);

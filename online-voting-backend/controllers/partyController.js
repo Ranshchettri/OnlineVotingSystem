@@ -5,32 +5,46 @@ const Election = require("../models/Election");
 // Get all parties for an election
 const getParties = async (req, res, next) => {
   try {
-    const { electionId } = req.query;
-    console.log(
-      "partyController.getParties called - query:",
-      req.query,
-      "user:",
-      req.user && req.user._id,
-    );
+    const { electionId, status } = req.query;
 
-    // Optional filter by electionId
     const filter = {};
     if (electionId) filter.electionId = electionId;
+    if (status) {
+      // Accept both lower/upper case and Active/Pending wording
+      const normalized = status.toString().toLowerCase();
+      if (normalized === "pending") filter.status = "pending";
+      if (normalized === "approved" || normalized === "active")
+        filter.status = "approved";
+      if (normalized === "rejected" || normalized === "blocked")
+        filter.status = "rejected";
+    }
 
     const parties = await Party.find(filter).sort({ createdAt: -1 });
 
     const formatted = parties.map((p) => ({
       _id: p._id,
+      electionId: p.electionId || null,
       name: p.name,
+      shortName: p.shortName,
+      leader: p.leader,
+      email: p.email,
+      mobile: p.mobile,
       symbol: p.symbol || p.logo || null,
+      logo: p.logo,
       description: p.description || p.vision || p.motivationQuote || "",
       color: p.color || "#7c7cff",
       isActive: p.isActive === undefined ? true : p.isActive,
+      status: (p.status || (p.isActive ? "approved" : "pending")).toUpperCase(),
+      development: p.development ?? p.goodWorkPercent ?? 0,
+      goodWork: p.goodWork ?? p.goodWorkPercent ?? 0,
+      badWork: p.badWork ?? p.badWorkPercent ?? 0,
+      totalVotes: p.currentVotes || 0,
       createdAt: p.createdAt,
     }));
 
     res.status(200).json({ data: { parties: formatted } });
   } catch (error) {
+    console.error("createParty failed", error);
     next(error);
   }
 };
@@ -46,11 +60,24 @@ const getPartyProfile = async (req, res, next) => {
 
     const resp = {
       _id: party._id,
+      electionId: party.electionId || null,
       name: party.name,
+      shortName: party.shortName || "",
+      leader: party.leader || "",
+      email: party.email || "",
+      mobile: party.mobile || "",
       symbol: party.symbol || party.logo || null,
+      logo: party.logo || "",
       description:
         party.description || party.vision || party.motivationQuote || "",
       color: party.color || "#7c7cff",
+      development: party.development ?? party.goodWorkPercent ?? 0,
+      goodWork: party.goodWork ?? party.goodWorkPercent ?? 0,
+      badWork: party.badWork ?? party.badWorkPercent ?? 0,
+      totalVotes: party.currentVotes || 0,
+      vision: party.vision || "",
+      futurePlans: Array.isArray(party.futurePlans) ? party.futurePlans : [],
+      teamMembers: Array.isArray(party.teamMembers) ? party.teamMembers : [],
       isActive: party.isActive,
       createdAt: party.createdAt,
     };
@@ -64,8 +91,20 @@ const getPartyProfile = async (req, res, next) => {
 // Create a new party (admin only)
 const createParty = async (req, res, next) => {
   try {
-    const { electionType, electionId } = req.body;
-    const { name, symbol, description, color, isActive } = req.body;
+    let { electionType, electionId } = req.body;
+    const {
+      name,
+      symbol,
+      description,
+      color,
+      isActive,
+      leader,
+      email,
+      mobile,
+      shortName,
+      logo,
+      documents,
+    } = req.body;
 
     if (!name) {
       return next(new AppError("Name is required", 400));
@@ -79,14 +118,38 @@ const createParty = async (req, res, next) => {
       }
     }
 
+    // Auto-pick latest election if provided; otherwise allow null
+    if (!electionId || electionId === "") {
+      const latestElection = await Election.findOne({}).sort({ startDate: -1 });
+      if (latestElection?._id) {
+        electionId = latestElection._id;
+        if (!electionType)
+          electionType = latestElection.type || latestElection.electionType;
+      }
+    }
+    if (!electionType) {
+      electionType = "Political";
+    }
+
     const party = new Party({
       name,
+      shortName,
+      leader,
+      email,
+      mobile,
       symbol,
+      logo,
       description,
       color,
       isActive: isActive === undefined ? true : isActive,
-      electionId,
+      status: isActive ? "approved" : "pending",
+      electionId: electionId || undefined,
       electionType,
+      documents: Array.isArray(documents)
+        ? documents
+        : documents
+          ? [documents]
+          : [],
     });
 
     await party.save();
@@ -104,6 +167,10 @@ const createParty = async (req, res, next) => {
 
     res.status(201).json({ data: resp });
   } catch (error) {
+    console.error("createParty failed", error);
+    if (error.code === 11000) {
+      return next(new AppError("Party with same name already exists", 409));
+    }
     next(error);
   }
 };
@@ -131,16 +198,40 @@ const updateParty = async (req, res, next) => {
       party[key] = req.body[key];
     });
 
+    if (party.status) {
+      const normalized = party.status.toString().toLowerCase();
+      if (
+        ["approved", "rejected", "pending", "suspended"].includes(normalized)
+      ) {
+        party.status = normalized;
+        if (normalized === "approved") party.isActive = true;
+        if (normalized === "rejected" || normalized === "suspended")
+          party.isActive = false;
+      }
+    }
+
     await party.save();
 
     const resp = {
       _id: party._id,
       name: party.name,
+      shortName: party.shortName,
+      leader: party.leader,
+      email: party.email,
+      mobile: party.mobile,
       symbol: party.symbol || party.logo || null,
+      logo: party.logo,
       description:
         party.description || party.vision || party.motivationQuote || "",
       color: party.color || "#7c7cff",
       isActive: party.isActive,
+      status: (
+        party.status || (party.isActive ? "approved" : "pending")
+      ).toUpperCase(),
+      development: party.development ?? party.goodWorkPercent ?? 0,
+      goodWork: party.goodWork ?? party.goodWorkPercent ?? 0,
+      badWork: party.badWork ?? party.badWorkPercent ?? 0,
+      totalVotes: party.currentVotes || 0,
       createdAt: party.createdAt,
     };
 
@@ -168,10 +259,15 @@ const deleteParty = async (req, res, next) => {
 // 🔴 GET PARTY DASHBOARD (Party Only)
 const getPartyDashboard = async (req, res, next) => {
   try {
-    const partyId = req.user.partyId;
+    let partyId = req.user.partyId;
 
     if (!partyId) {
-      return next(new AppError("Party ID not found in user profile", 400));
+      const first = await Party.findOne({}).sort({ createdAt: -1 });
+      if (first?._id) {
+        partyId = first._id;
+      } else {
+        return next(new AppError("Party ID not found in user profile", 400));
+      }
     }
 
     const party = await Party.findById(partyId).populate("electionId");
@@ -225,10 +321,14 @@ const getPartyDashboard = async (req, res, next) => {
 // 🔴 UPDATE PARTY PROFILE (LIMITED - Party Self Edit Only)
 const updatePartyProfile = async (req, res, next) => {
   try {
-    const partyId = req.user.partyId;
-
+    let partyId = req.user.partyId;
     if (!partyId) {
-      return next(new AppError("Party ID not found in user profile", 400));
+      const first = await Party.findOne({}).sort({ createdAt: -1 });
+      if (first?._id) {
+        partyId = first._id;
+      } else {
+        return next(new AppError("Party ID not found in user profile", 400));
+      }
     }
 
     // Only allow these fields to be updated
@@ -266,10 +366,14 @@ const updatePartyProfile = async (req, res, next) => {
 // 🔴 GET PARTY ANALYTICS (Read-Only)
 const getPartyAnalytics = async (req, res, next) => {
   try {
-    const partyId = req.user.partyId;
-
+    let partyId = req.user.partyId;
     if (!partyId) {
-      return next(new AppError("Party ID not found in user profile", 400));
+      const first = await Party.findOne({}).sort({ createdAt: -1 });
+      if (first?._id) {
+        partyId = first._id;
+      } else {
+        return next(new AppError("Party ID not found in user profile", 400));
+      }
     }
 
     const party = await Party.findById(partyId);

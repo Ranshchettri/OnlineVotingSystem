@@ -9,8 +9,14 @@ const electionSchema = new mongoose.Schema(
 
     type: {
       type: String,
-      enum: ["political", "student"],
+      enum: ["Political", "Local", "Provincial", "political", "student"],
       required: true,
+    },
+
+    status: {
+      type: String,
+      enum: ["Upcoming", "Running", "Ended"],
+      default: "Upcoming",
     },
 
     startDate: {
@@ -28,6 +34,33 @@ const electionSchema = new mongoose.Schema(
       default: false,
     },
 
+    allowVoting: {
+      type: Boolean,
+      default: true,
+    },
+
+    requireFaceVerification: {
+      type: Boolean,
+      default: true,
+    },
+
+    requireOTP: {
+      type: Boolean,
+      default: true,
+    },
+
+    participatingParties: [
+      {
+        partyId: { type: mongoose.Schema.Types.ObjectId, ref: "Party" },
+        votes: { type: Number, default: 0 },
+        percentage: { type: Number, default: 0 },
+      },
+    ],
+
+    totalVoters: { type: Number, default: 0 },
+    totalVotes: { type: Number, default: 0 },
+    turnout: { type: Number, default: 0 },
+
     results: [
       {
         candidateId: { type: mongoose.Schema.Types.ObjectId, ref: "Candidate" },
@@ -41,5 +74,7 @@ const electionSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+electionSchema.index({ status: 1, startDate: 1 });
 
 module.exports = mongoose.model("Election", electionSchema);
