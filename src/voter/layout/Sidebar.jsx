@@ -10,15 +10,17 @@ const navItems = [
 ];
 
 const icons = [
-  "ri-layout-grid-line", // overview
-  "ri-user-line", // profile
-  "ri-bar-chart-line", // results
-  "ri-calendar-event-line", // timeline
-  "ri-file-list-line", // rules
+  "ri-layout-grid-line",
+  "ri-user-line",
+  "ri-bar-chart-line",
+  "ri-calendar-event-line",
+  "ri-file-list-line",
 ];
 
 export default function Sidebar() {
   const voter = getStoredVoter();
+  const name = voter?.fullName || voter?.email || "Voter";
+  const voterId = voter?.voterId || voter?.voterIdNumber || "N/A";
 
   return (
     <aside className="voter-sidebar">
@@ -27,8 +29,8 @@ export default function Sidebar() {
           <i className="ri-user-3-line" aria-hidden="true" />
         </div>
         <div>
-          <p className="voter-profile-name">{voter?.email || "Voter"}</p>
-          <p className="voter-profile-id">ID: {voter?.voterId || "—"}</p>
+          <p className="voter-profile-name">{name}</p>
+          <p className="voter-profile-id">ID: {voterId}</p>
         </div>
       </div>
 

@@ -5,7 +5,7 @@ export const sendVoteOtp = async (partyId) => {
   return res.data;
 };
 
-export const confirmVote = async ({ partyId, otp }) => {
-  const res = await api.post("/voter/confirm-vote", { partyId, otp });
+export const confirmVote = async ({ electionId, partyId }) => {
+  const res = await api.post("/votes", { electionId, partyId });
   return res.data;
 };

@@ -1,50 +1,103 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import api from "../../services/api";
 import { getStoredVoter } from "../utils/user";
+import { formatDate, formatDateTime } from "../utils/election";
 import "../styles/profile.css";
 
 export default function Profile() {
   const stored = getStoredVoter();
+  const [profile, setProfile] = useState(stored || null);
   const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadHistory = async () => {
+    const loadProfile = async () => {
       try {
-        const res = await api.get("/votes/me");
-        setHistory(res.data?.data || res.data || []);
-      } catch {
+        setLoading(true);
+        const [profileRes, historyRes] = await Promise.all([
+          api.get("/auth/me").catch(() => ({ data: { data: null } })),
+          api.get("/votes/me").catch(() => ({ data: { data: [] } })),
+        ]);
+
+        const realProfile = profileRes.data?.data || null;
+        if (realProfile) {
+          setProfile(realProfile);
+          localStorage.setItem(
+            "voter",
+            JSON.stringify({
+              ...(stored || {}),
+              ...realProfile,
+            }),
+          );
+        }
+
+        const voteHistory = Array.isArray(historyRes.data?.data)
+          ? historyRes.data.data
+          : Array.isArray(historyRes.data)
+            ? historyRes.data
+            : [];
+        setHistory(voteHistory);
+      } catch (error) {
+        console.error("Failed to load profile:", error?.response?.data || error.message);
         setHistory([]);
+      } finally {
+        setLoading(false);
       }
     };
-    loadHistory();
+
+    loadProfile();
   }, []);
 
+  const displayProfile = profile || stored || {};
   const photo =
-    stored?.profilePhoto ||
-    stored?.photoUrl ||
+    displayProfile.profilePhoto ||
+    displayProfile.photoUrl ||
     "https://i.pravatar.cc/160?u=voter";
+  const voterId =
+    displayProfile.voterId || displayProfile.voterIdNumber || "N/A";
+  const verificationStatus = String(
+    displayProfile.verificationStatus ||
+      (displayProfile.isVerified || displayProfile.verified ? "auto-approved" : "pending"),
+  )
+    .replace("-", " ")
+    .toUpperCase();
+  const updatedAt = displayProfile.updatedAt
+    ? formatDateTime(displayProfile.updatedAt)
+    : "N/A";
+
+  const sortedHistory = useMemo(
+    () =>
+      [...history].sort(
+        (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0),
+      ),
+    [history],
+  );
 
   return (
     <div className="profile-page">
       <div className="profile-title">
         <h1>My Profile</h1>
-        <p>Manage your voter identity and review voting activity.</p>
+        <p>Live voter identity details from backend profile records.</p>
       </div>
 
       <div className="profile-main-card">
         <div className="profile-hero">
           <div className="profile-hero-photo">
-            {photo ? <img src={photo} alt="Voter" /> : <div className="profile-hero-placeholder" />}
+            {photo ? (
+              <img src={photo} alt="Voter" />
+            ) : (
+              <div className="profile-hero-placeholder" />
+            )}
           </div>
           <div className="profile-hero-info">
-            <h2>{stored?.fullName || "Registered Voter"}</h2>
+            <h2>{displayProfile.fullName || "Registered Voter"}</h2>
             <p>
               <i className="ri-mail-line" aria-hidden="true" />
-              {stored?.email || "Not provided"}
+              {displayProfile.email || "N/A"}
             </p>
             <div className="profile-hero-badge">
               <i className="ri-checkbox-circle-line" aria-hidden="true" />
-              {stored ? "Verified Voter" : "Guest"}
+              {verificationStatus}
             </div>
           </div>
         </div>
@@ -54,19 +107,27 @@ export default function Profile() {
           <div className="profile-info-grid">
             <div className="profile-info-item">
               <span>Voter ID</span>
-              <strong>{stored?.voterId || "—"}</strong>
+              <strong>{voterId}</strong>
             </div>
             <div className="profile-info-item">
               <span>Mobile</span>
-              <strong>{stored?.mobile || "—"}</strong>
+              <strong>{displayProfile.mobile || "N/A"}</strong>
+            </div>
+            <div className="profile-info-item">
+              <span>Date of Birth</span>
+              <strong>{displayProfile.dateOfBirth ? formatDate(displayProfile.dateOfBirth) : "N/A"}</strong>
+            </div>
+            <div className="profile-info-item">
+              <span>Address</span>
+              <strong>{displayProfile.address || "N/A"}</strong>
             </div>
             <div className="profile-info-item">
               <span>Status</span>
-              <strong>{stored ? "ACTIVE" : "GUEST"}</strong>
+              <strong>{verificationStatus}</strong>
             </div>
             <div className="profile-info-item">
               <span>Last Updated</span>
-              <strong>{new Date().toLocaleString()}</strong>
+              <strong>{updatedAt}</strong>
             </div>
           </div>
         </div>
@@ -75,11 +136,13 @@ export default function Profile() {
       <div className="profile-history-card">
         <div className="profile-history-header">
           <h3>Voting History</h3>
-          <p>Latest ballots cast with this voter ID.</p>
+          <p>Ballots linked to this voter account.</p>
         </div>
 
+        {loading ? <p style={{ marginTop: 16 }}>Loading profile data...</p> : null}
+
         <div className="profile-history-list">
-          {history.length === 0 ? (
+          {!loading && sortedHistory.length === 0 ? (
             <div className="profile-history-item">
               <div className="profile-history-top">
                 <h4>No votes recorded yet.</h4>
@@ -89,12 +152,12 @@ export default function Profile() {
               </div>
             </div>
           ) : (
-            history.map((item) => (
+            sortedHistory.map((item) => (
               <div key={item._id} className="profile-history-item">
                 <div className="profile-history-top">
                   <div>
                     <h4>{item.electionName || "Election"}</h4>
-                    <span>{new Date(item.createdAt).toLocaleString()}</span>
+                    <span>{formatDateTime(item.createdAt)}</span>
                   </div>
                   <div className="profile-history-badge">
                     <i className="ri-vote-line" aria-hidden="true" />
@@ -104,7 +167,7 @@ export default function Profile() {
                 <div className="profile-history-grid">
                   <div>
                     <span>Party</span>
-                    <strong>{item.partyName || "—"}</strong>
+                    <strong>{item.partyName || "N/A"}</strong>
                   </div>
                   <div>
                     <span>Ballot ID</span>

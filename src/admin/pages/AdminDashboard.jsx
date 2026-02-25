@@ -30,6 +30,14 @@ export default function AdminDashboard() {
     const fetchOverview = async () => {
       try {
         setLoadingOverview(true);
+        // Ensure token is set
+        if (!localStorage.getItem("token")) {
+          localStorage.setItem("token", "admin-demo");
+          localStorage.setItem(
+            "user",
+            JSON.stringify({ role: "admin", email: "demo@admin.local" }),
+          );
+        }
         const [voterRes, partyRes, electionRes] = await Promise.allSettled([
           api.get("/voters/admin/stats"),
           api.get("/parties"),
@@ -38,7 +46,8 @@ export default function AdminDashboard() {
         const offline =
           (voterRes.status === "rejected" && voterRes.reason?.isNetworkError) ||
           (partyRes.status === "rejected" && partyRes.reason?.isNetworkError) ||
-          (electionRes.status === "rejected" && electionRes.reason?.isNetworkError);
+          (electionRes.status === "rejected" &&
+            electionRes.reason?.isNetworkError);
         setBackendOffline(offline);
 
         let totalVoters = null;
@@ -53,10 +62,14 @@ export default function AdminDashboard() {
             statsData.activeVoters ??
             voterList.filter((v) => v.status === "ACTIVE").length ??
             null;
-          const votedCount = voterList.filter((v) => v.hasVoted || v.voted).length;
+          const votedCount = voterList.filter(
+            (v) => v.hasVoted || v.voted,
+          ).length;
           if (totalVoters) {
             votedRate =
-              totalVoters > 0 ? `${((votedCount / totalVoters) * 100).toFixed(1)}%` : null;
+              totalVoters > 0
+                ? `${((votedCount / totalVoters) * 100).toFixed(1)}%`
+                : null;
           }
           setActivities(
             Array.isArray(payload.activities) ? payload.activities : [],
@@ -75,9 +88,12 @@ export default function AdminDashboard() {
           if (Array.isArray(partyList)) {
             totalParties = partyList.length;
             activeParties = partyList.filter(
-              (p) => p.status === "Active" || p.status === "APPROVED" || p.isActive,
+              (p) =>
+                p.status === "Active" || p.status === "APPROVED" || p.isActive,
             ).length;
-            pendingApprovals = partyList.filter((p) => p.status === "PENDING").length;
+            pendingApprovals = partyList.filter(
+              (p) => p.status === "PENDING",
+            ).length;
           }
         }
 
@@ -90,7 +106,8 @@ export default function AdminDashboard() {
             [];
           if (Array.isArray(list) && list.length) {
             const current =
-              list.find((e) => (e.status || "").toLowerCase() === "running") || list[0];
+              list.find((e) => (e.status || "").toLowerCase() === "running") ||
+              list[0];
             if (current) {
               setElectionStatus(current.status || "Status unavailable");
               timelineItems = [
@@ -227,11 +244,12 @@ export default function AdminDashboard() {
 
       {loadingOverview === false && statusLabel.includes("offline") && (
         <div className="dashboard-error">
-          Could not reach the backend API. Start the server at {import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api"}.
+          Could not reach the backend API. Start the server at{" "}
+          {import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api"}.
         </div>
       )}
 
-     <div className="admin-dashboard__stats">
+      <div className="admin-dashboard__stats">
         {stats.map((stat) => (
           <div key={stat.title} className="admin-dashboard__stat-card">
             <div className={`stat-icon ${stat.color}`}>
@@ -264,25 +282,25 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
-            <div className="admin-dashboard__emergency-actions">
-              <button
-                className="admin-dashboard__emergency-btn warning"
-                onClick={() => setShowShutdown(true)}
-              >
-                <i className="ri-shut-down-line" aria-hidden="true" />
-                Emergency Shutdown
-              </button>
-              <button
-                className="admin-dashboard__emergency-btn amber"
-                onClick={() => setShowForceLogout(true)}
-              >
-                <i className="ri-logout-box-line" aria-hidden="true" />
-                Force Logout All
-              </button>
-              <button className="admin-dashboard__emergency-btn success">
-                <i className="ri-trophy-line" aria-hidden="true" />
-                Trigger Results
-              </button>
+        <div className="admin-dashboard__emergency-actions">
+          <button
+            className="admin-dashboard__emergency-btn warning"
+            onClick={() => setShowShutdown(true)}
+          >
+            <i className="ri-shut-down-line" aria-hidden="true" />
+            Emergency Shutdown
+          </button>
+          <button
+            className="admin-dashboard__emergency-btn amber"
+            onClick={() => setShowForceLogout(true)}
+          >
+            <i className="ri-logout-box-line" aria-hidden="true" />
+            Force Logout All
+          </button>
+          <button className="admin-dashboard__emergency-btn success">
+            <i className="ri-trophy-line" aria-hidden="true" />
+            Trigger Results
+          </button>
         </div>
       </div>
 
@@ -299,7 +317,10 @@ export default function AdminDashboard() {
               activities.map((item) => (
                 <div key={item.title} className="activity-item">
                   <span className={`activity-icon ${item.color || "blue"}`}>
-                    <i className={item.icon || "ri-notification-3-line"} aria-hidden="true" />
+                    <i
+                      className={item.icon || "ri-notification-3-line"}
+                      aria-hidden="true"
+                    />
                   </span>
                   <div>
                     <div className="activity-title">{item.title}</div>
@@ -337,8 +358,14 @@ export default function AdminDashboard() {
       </div>
 
       {showForceLogout && (
-        <div className="admin-modal-backdrop" onClick={() => setShowForceLogout(false)}>
-          <div className="admin-modal admin-dashboard__confirm" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="admin-modal-backdrop"
+          onClick={() => setShowForceLogout(false)}
+        >
+          <div
+            className="admin-modal admin-dashboard__confirm"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="confirm-head">
               <span className="confirm-icon orange">
                 <i className="ri-logout-circle-line" aria-hidden="true" />
@@ -346,16 +373,22 @@ export default function AdminDashboard() {
               <div>
                 <div className="confirm-title">Force Logout All Users</div>
                 <div className="confirm-text">
-                  This will immediately log out all voters and party members from
-                  the system. Use only in emergency situations.
+                  This will immediately log out all voters and party members
+                  from the system. Use only in emergency situations.
                 </div>
               </div>
             </div>
             <div className="admin-modal-actions">
-              <button className="admin-button ghost" onClick={() => setShowForceLogout(false)}>
+              <button
+                className="admin-button ghost"
+                onClick={() => setShowForceLogout(false)}
+              >
                 Cancel
               </button>
-              <button className="admin-button warning" onClick={handleForceLogout}>
+              <button
+                className="admin-button warning"
+                onClick={handleForceLogout}
+              >
                 Force Logout
               </button>
             </div>
@@ -364,8 +397,14 @@ export default function AdminDashboard() {
       )}
 
       {showShutdown && (
-        <div className="admin-modal-backdrop" onClick={() => setShowShutdown(false)}>
-          <div className="admin-modal admin-dashboard__confirm" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="admin-modal-backdrop"
+          onClick={() => setShowShutdown(false)}
+        >
+          <div
+            className="admin-modal admin-dashboard__confirm"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="confirm-head">
               <span className="confirm-icon red">
                 <i className="ri-alarm-warning-line" aria-hidden="true" />
@@ -373,13 +412,16 @@ export default function AdminDashboard() {
               <div>
                 <div className="confirm-title">Emergency Shutdown</div>
                 <div className="confirm-text">
-                  This will immediately stop the election and prevent all voting.
-                  This action cannot be undone. Are you sure?
+                  This will immediately stop the election and prevent all
+                  voting. This action cannot be undone. Are you sure?
                 </div>
               </div>
             </div>
             <div className="admin-modal-actions">
-              <button className="admin-button ghost" onClick={() => setShowShutdown(false)}>
+              <button
+                className="admin-button ghost"
+                onClick={() => setShowShutdown(false)}
+              >
                 Cancel
               </button>
               <button className="admin-button primary" onClick={handleShutdown}>

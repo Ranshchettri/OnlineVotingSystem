@@ -75,5 +75,5 @@ node_modules/
 ehthumbs.db
 Thumbs.db
 # Ignore backend folder (not to be pushed)
-# backend/
+backend/
 

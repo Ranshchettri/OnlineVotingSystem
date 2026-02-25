@@ -85,9 +85,13 @@ export default function Parties() {
           api.get("/elections"),
         ]);
 
-        const list = partyRes.data?.data?.parties || partyRes.data?.data || partyRes.data;
+        const list =
+          partyRes.data?.data?.parties || partyRes.data?.data || partyRes.data;
         if (Array.isArray(list)) {
-          const totalVotes = list.reduce((acc, p) => acc + (p.totalVotes || 0), 0);
+          const totalVotes = list.reduce(
+            (acc, p) => acc + (p.totalVotes || 0),
+            0,
+          );
           const mapped = list.map((party, idx) => ({
             id: party._id || party.id,
             name: party.name || party.partyName,
@@ -98,7 +102,9 @@ export default function Parties() {
             goodWork: party.goodWork ?? 80,
             badWork: party.badWork ?? 20,
             status: party.status || (party.isActive ? "Active" : "Blocked"),
-            share: totalVotes ? `${(((party.totalVotes || 0) / totalVotes) * 100).toFixed(1)}%` : "0%",
+            share: totalVotes
+              ? `${(((party.totalVotes || 0) / totalVotes) * 100).toFixed(1)}%`
+              : "0%",
             rank: idx + 1,
             documents: party.documents || [],
           }));
@@ -109,13 +115,19 @@ export default function Parties() {
           setError("No parties returned from API yet.");
         }
 
-        const electionList = electionRes.data?.data?.elections || electionRes.data?.data || electionRes.data || [];
+        const electionList =
+          electionRes.data?.data?.elections ||
+          electionRes.data?.data ||
+          electionRes.data ||
+          [];
         setElections(electionList);
         if (!registerForm.electionId && electionList.length) {
           setRegisterForm((p) => ({
             ...p,
             electionId: electionList[0]._id || electionList[0].id,
-            electionType: electionList[0].type || p.electionType,
+            electionType:
+              (electionList[0].type || p.electionType).charAt(0).toUpperCase() +
+              (electionList[0].type || p.electionType).slice(1).toLowerCase(),
           }));
         }
       } catch (err) {
@@ -136,9 +148,15 @@ export default function Parties() {
 
   const stats = useMemo(() => {
     const total = parties.length;
-    const active = parties.filter((p) => p.status === "Active" || p.status === "APPROVED" || p.isActive).length;
+    const active = parties.filter(
+      (p) => p.status === "Active" || p.status === "APPROVED" || p.isActive,
+    ).length;
     const blocked = parties.filter(
-      (p) => p.status && p.status !== "Active" && p.status !== "APPROVED" && !p.isActive,
+      (p) =>
+        p.status &&
+        p.status !== "Active" &&
+        p.status !== "APPROVED" &&
+        !p.isActive,
     ).length;
     const pending = parties.filter((p) => p.status === "PENDING").length;
     return { total, active, blocked, pending };
@@ -170,7 +188,9 @@ export default function Parties() {
         documentData: "",
         documentName: "",
         electionId: elections[0]?._id || elections[0]?.id || "",
-        electionType: elections[0]?.type || "Political",
+        electionType:
+          (elections[0]?.type || "Political").charAt(0).toUpperCase() +
+          (elections[0]?.type || "Political").slice(1).toLowerCase(),
       });
       // Refresh list
       const res = await api.get("/parties");
@@ -191,10 +211,9 @@ export default function Parties() {
       );
     } catch (err) {
       console.error("Failed to register party:", err);
-      const msg =
-        err.isNetworkError
-          ? "Backend unavailable: cannot register party right now."
-          : err.response?.data?.message || "Failed to register party";
+      const msg = err.isNetworkError
+        ? "Backend unavailable: cannot register party right now."
+        : err.response?.data?.message || "Failed to register party";
       alert(msg);
     }
   };
@@ -267,7 +286,10 @@ export default function Parties() {
             Register and manage political parties
           </div>
         </div>
-        <button className="admin-button primary register-btn" onClick={() => setShowRegister(true)}>
+        <button
+          className="admin-button primary register-btn"
+          onClick={() => setShowRegister(true)}
+        >
           <i className="ri-flag-line" aria-hidden="true" />
           Register Party
         </button>
@@ -284,7 +306,9 @@ export default function Parties() {
             </span>
           </div>
           <div className="stat-value">{stats.total}</div>
-          <div className="stat-sub">{stats.total ? "Registered parties" : "Awaiting data"}</div>
+          <div className="stat-sub">
+            {stats.total ? "Registered parties" : "Awaiting data"}
+          </div>
         </div>
         <div className="parties-stat-card">
           <div className="stat-top">
@@ -325,26 +349,32 @@ export default function Parties() {
               <i className="ri-database-2-line" />
             </span>
             <div>No parties to display</div>
-            <div className="muted">Register or fetch parties to populate this list.</div>
+            <div className="muted">
+              Register or fetch parties to populate this list.
+            </div>
           </div>
         ) : (
           parties.map((party) => (
             <div key={party.id} className="party-row">
-            <div className="party-info">
-              <div className="party-logo">
-                {party.logo && (party.logo.startsWith("data:") || party.logo.startsWith("http"))
-                  ? <img src={party.logo} alt={party.name} />
-                  : (party.logo || "P")}
-              </div>
-              <div>
-                <div className="party-name">{party.name}</div>
-                <div className="party-meta line">
-                  <span className="label">Leader:</span>
-                  <span className="value">{party.leader || "—"}</span>
+              <div className="party-info">
+                <div className="party-logo">
+                  {party.logo &&
+                  (party.logo.startsWith("data:") ||
+                    party.logo.startsWith("http")) ? (
+                    <img src={party.logo} alt={party.name} />
+                  ) : (
+                    party.logo || "P"
+                  )}
                 </div>
-                <div className="party-meta muted">{party.email || "—"}</div>
+                <div>
+                  <div className="party-name">{party.name}</div>
+                  <div className="party-meta line">
+                    <span className="label">Leader:</span>
+                    <span className="value">{party.leader || "—"}</span>
+                  </div>
+                  <div className="party-meta muted">{party.email || "—"}</div>
+                </div>
               </div>
-            </div>
               <div className="party-metrics">
                 <div className="metric">
                   <div className="metric-label">Development</div>
@@ -369,19 +399,30 @@ export default function Parties() {
                 </div>
               </div>
               <div className="party-actions">
-                <span className={`party-status ${party.status === "Active" ? "active" : "blocked"}`}>
+                <span
+                  className={`party-status ${party.status === "Active" ? "active" : "blocked"}`}
+                >
                   {party.status || "—"}
                 </span>
                 <div className="party-actions-row">
-                  <button className="admin-button ghost" onClick={() => openDocs(party)}>
+                  <button
+                    className="admin-button ghost"
+                    onClick={() => openDocs(party)}
+                  >
                     <i className="ri-file-list-line" aria-hidden="true" />
                     View Documents
                   </button>
-                  <button className="admin-button ghost" onClick={() => openEdit(party)}>
+                  <button
+                    className="admin-button ghost"
+                    onClick={() => openEdit(party)}
+                  >
                     <i className="ri-edit-line" aria-hidden="true" />
                     Edit Analytics
                   </button>
-                  <button className="admin-button primary" onClick={() => openBlock(party)}>
+                  <button
+                    className="admin-button primary"
+                    onClick={() => openBlock(party)}
+                  >
                     <i
                       className={
                         party.status === "Active"
@@ -390,7 +431,9 @@ export default function Parties() {
                       }
                       aria-hidden="true"
                     />
-                    {party.status === "Active" ? "Block Party" : "Activate Party"}
+                    {party.status === "Active"
+                      ? "Block Party"
+                      : "Activate Party"}
                   </button>
                 </div>
               </div>
@@ -400,15 +443,23 @@ export default function Parties() {
       </div>
 
       {showRegister && (
-        <div className="admin-modal-backdrop" onClick={() => setShowRegister(false)}>
-          <div className="admin-modal party-modal" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="admin-modal-backdrop"
+          onClick={() => setShowRegister(false)}
+        >
+          <div
+            className="admin-modal party-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3>Register New Party</h3>
             <form className="party-form" onSubmit={handleRegisterSubmit}>
               <label>
                 Party Name
                 <input
                   value={registerForm.name}
-                  onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
+                  onChange={(e) =>
+                    setRegisterForm({ ...registerForm, name: e.target.value })
+                  }
                   placeholder="Enter party name"
                   required
                 />
@@ -419,7 +470,10 @@ export default function Parties() {
                   <input
                     value={registerForm.leader}
                     onChange={(e) =>
-                      setRegisterForm({ ...registerForm, leader: e.target.value })
+                      setRegisterForm({
+                        ...registerForm,
+                        leader: e.target.value,
+                      })
                     }
                     placeholder="Leader name"
                     required
@@ -430,7 +484,10 @@ export default function Parties() {
                   <input
                     value={registerForm.email}
                     onChange={(e) =>
-                      setRegisterForm({ ...registerForm, email: e.target.value })
+                      setRegisterForm({
+                        ...registerForm,
+                        email: e.target.value,
+                      })
                     }
                     placeholder="party_gov@ovs.test"
                     required
@@ -470,9 +527,14 @@ export default function Parties() {
                 <small>PNG, JPG up to 2MB</small>
                 {registerForm.logo && (
                   <div className="upload-preview">
-                    <i className="ri-image-line" aria-hidden="true" /> {registerForm.logo.name}
+                    <i className="ri-image-line" aria-hidden="true" />{" "}
+                    {registerForm.logo.name}
                     {registerForm.logoPreview ? (
-                      <img src={registerForm.logoPreview} alt="Logo preview" className="upload-thumb" />
+                      <img
+                        src={registerForm.logoPreview}
+                        alt="Logo preview"
+                        className="upload-thumb"
+                      />
                     ) : null}
                   </div>
                 )}
@@ -509,12 +571,17 @@ export default function Parties() {
                 <small>PDF, DOC up to 10MB</small>
                 {registerForm.documents && (
                   <div className="upload-preview">
-                    <i className="ri-file-pdf-2-line" aria-hidden="true" /> {registerForm.documents.name}
+                    <i className="ri-file-pdf-2-line" aria-hidden="true" />{" "}
+                    {registerForm.documents.name}
                   </div>
                 )}
               </label>
               <div className="admin-modal-actions">
-                <button className="admin-button ghost" type="button" onClick={() => setShowRegister(false)}>
+                <button
+                  className="admin-button ghost"
+                  type="button"
+                  onClick={() => setShowRegister(false)}
+                >
                   Cancel
                 </button>
                 <button className="admin-button primary" type="submit">
@@ -534,8 +601,14 @@ export default function Parties() {
       )}
 
       {showDocs && activeParty && (
-        <div className="admin-modal-backdrop" onClick={() => setShowDocs(false)}>
-          <div className="admin-modal party-docs-modal" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="admin-modal-backdrop"
+          onClick={() => setShowDocs(false)}
+        >
+          <div
+            className="admin-modal party-docs-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="party-modal-head">
               <div className="party-modal-title">
                 <span className="party-logo">{activeParty.logo}</span>
@@ -544,7 +617,10 @@ export default function Parties() {
                   <div className="party-modal-sub">Party Documents</div>
                 </div>
               </div>
-              <button className="modal-close" onClick={() => setShowDocs(false)}>
+              <button
+                className="modal-close"
+                onClick={() => setShowDocs(false)}
+              >
                 <i className="ri-close-line" aria-hidden="true" />
               </button>
             </div>
@@ -555,7 +631,9 @@ export default function Parties() {
                     <i className="ri-inbox-line" aria-hidden="true" />
                   </span>
                   <div>No documents uploaded yet</div>
-                  <div className="doc-meta">Party files will appear here once submitted.</div>
+                  <div className="doc-meta">
+                    Party files will appear here once submitted.
+                  </div>
                 </div>
               ) : (
                 documents.map((doc) => (
@@ -572,7 +650,9 @@ export default function Parties() {
                       </div>
                     </div>
                     <div className="doc-actions">
-                      <span className={`doc-status ${(doc.status || "pending").toLowerCase()}`}>
+                      <span
+                        className={`doc-status ${(doc.status || "pending").toLowerCase()}`}
+                      >
                         {doc.status || "Pending"}
                       </span>
                       <button className="admin-button ghost doc-btn">
@@ -585,7 +665,10 @@ export default function Parties() {
               )}
             </div>
             <div className="admin-modal-actions">
-              <button className="admin-button ghost wide" onClick={() => setShowDocs(false)}>
+              <button
+                className="admin-button ghost wide"
+                onClick={() => setShowDocs(false)}
+              >
                 Close
               </button>
             </div>
@@ -594,8 +677,14 @@ export default function Parties() {
       )}
 
       {showEdit && activeParty && (
-        <div className="admin-modal-backdrop" onClick={() => setShowEdit(false)}>
-          <div className="admin-modal party-edit-modal" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="admin-modal-backdrop"
+          onClick={() => setShowEdit(false)}
+        >
+          <div
+            className="admin-modal party-edit-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="party-modal-head">
               <div className="party-modal-title">
                 <span className="modal-icon amber">
@@ -606,44 +695,62 @@ export default function Parties() {
                   <div className="party-modal-sub">{activeParty.name}</div>
                 </div>
               </div>
-              <button className="modal-close" onClick={() => setShowEdit(false)}>
+              <button
+                className="modal-close"
+                onClick={() => setShowEdit(false)}
+              >
                 <i className="ri-close-line" aria-hidden="true" />
               </button>
             </div>
 
             <div className="slider-group">
-              <div className="slider-label">Development Score: {editValues.development}%</div>
+              <div className="slider-label">
+                Development Score: {editValues.development}%
+              </div>
               <input
                 type="range"
                 min="0"
                 max="100"
                 value={editValues.development}
                 onChange={(e) =>
-                  setEditValues((p) => ({ ...p, development: Number(e.target.value) }))
+                  setEditValues((p) => ({
+                    ...p,
+                    development: Number(e.target.value),
+                  }))
                 }
               />
             </div>
             <div className="slider-group">
-              <div className="slider-label">Good Work: {editValues.goodWork}%</div>
+              <div className="slider-label">
+                Good Work: {editValues.goodWork}%
+              </div>
               <input
                 type="range"
                 min="0"
                 max="100"
                 value={editValues.goodWork}
                 onChange={(e) =>
-                  setEditValues((p) => ({ ...p, goodWork: Number(e.target.value) }))
+                  setEditValues((p) => ({
+                    ...p,
+                    goodWork: Number(e.target.value),
+                  }))
                 }
               />
             </div>
             <div className="slider-group">
-              <div className="slider-label">Bad Work: {editValues.badWork}%</div>
+              <div className="slider-label">
+                Bad Work: {editValues.badWork}%
+              </div>
               <input
                 type="range"
                 min="0"
                 max="100"
                 value={editValues.badWork}
                 onChange={(e) =>
-                  setEditValues((p) => ({ ...p, badWork: Number(e.target.value) }))
+                  setEditValues((p) => ({
+                    ...p,
+                    badWork: Number(e.target.value),
+                  }))
                 }
               />
             </div>
@@ -652,7 +759,10 @@ export default function Parties() {
               Changes will be visible to the party and all voters immediately.
             </div>
             <div className="admin-modal-actions">
-              <button className="admin-button ghost wide" onClick={() => setShowEdit(false)}>
+              <button
+                className="admin-button ghost wide"
+                onClick={() => setShowEdit(false)}
+              >
                 Cancel
               </button>
               <button className="admin-button success wide" onClick={saveEdit}>
@@ -664,11 +774,19 @@ export default function Parties() {
       )}
 
       {showBlock && activeParty && (
-        <div className="admin-modal-backdrop" onClick={() => setShowBlock(false)}>
-          <div className="admin-modal party-confirm-modal" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="admin-modal-backdrop"
+          onClick={() => setShowBlock(false)}
+        >
+          <div
+            className="admin-modal party-confirm-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="party-modal-head">
               <div className="party-modal-title">
-                <span className={`modal-icon ${activeParty.status === "Active" ? "red" : "green"}`}>
+                <span
+                  className={`modal-icon ${activeParty.status === "Active" ? "red" : "green"}`}
+                >
                   <i
                     className={
                       activeParty.status === "Active"
@@ -680,7 +798,9 @@ export default function Parties() {
                 </span>
                 <div>
                   <div className="party-modal-name">
-                    {activeParty.status === "Active" ? "Block Party" : "Activate Party"}
+                    {activeParty.status === "Active"
+                      ? "Block Party"
+                      : "Activate Party"}
                   </div>
                   <div className="party-modal-sub">
                     {activeParty.status === "Active"
@@ -691,7 +811,10 @@ export default function Parties() {
               </div>
             </div>
             <div className="admin-modal-actions">
-              <button className="admin-button ghost wide" onClick={() => setShowBlock(false)}>
+              <button
+                className="admin-button ghost wide"
+                onClick={() => setShowBlock(false)}
+              >
                 Cancel
               </button>
               <button
@@ -700,7 +823,9 @@ export default function Parties() {
                 }`}
                 onClick={confirmBlock}
               >
-                {activeParty.status === "Active" ? "Block Party" : "Activate Party"}
+                {activeParty.status === "Active"
+                  ? "Block Party"
+                  : "Activate Party"}
               </button>
             </div>
           </div>

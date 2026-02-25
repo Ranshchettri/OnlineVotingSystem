@@ -1,17 +1,25 @@
 import { Link } from "react-router-dom";
 import ProgressBar from "./ProgressBar";
 
-export default function PartyCard({ party, hasVoted, isVotedParty, onVote }) {
-  const isDisabled = hasVoted && !isVotedParty;
+export default function PartyCard({
+  party,
+  hasVoted,
+  isVotedParty,
+  disableVoting = false,
+  onVote,
+}) {
+  const isDisabled = (hasVoted && !isVotedParty) || disableVoting;
   const voteLabel = isVotedParty
     ? "Your Vote"
     : hasVoted
       ? "Already Voted"
-      : "Vote for This Party";
+      : disableVoting
+        ? "Voting Closed"
+        : "Vote for This Party";
 
   const voteClass = isVotedParty
     ? "voted"
-    : hasVoted
+    : hasVoted || disableVoting
       ? "disabled"
       : "";
 
@@ -62,9 +70,9 @@ export default function PartyCard({ party, hasVoted, isVotedParty, onVote }) {
 
         <button
           type="button"
-          onClick={() => (hasVoted ? null : onVote(party))}
+          onClick={() => (isDisabled ? null : onVote(party))}
           className={`party-vote-btn ${voteClass}`}
-          disabled={hasVoted && !isVotedParty}
+          disabled={isDisabled}
         >
           <span className="party-vote-icon">
             <i

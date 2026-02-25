@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import StatCard from "../components/StatCard";
 import VoteBanner from "../components/VoteBanner";
 import PartyCard from "../components/PartyCard";
@@ -10,6 +10,11 @@ import FaceVerifyModal from "../components/FaceVerifyModal";
 import api from "../../services/api";
 import { confirmVote } from "../services/voteApi";
 import { getStoredVoter } from "../utils/user";
+import {
+  formatDateTime,
+  normalizeElectionStatus,
+  pickCurrentElection,
+} from "../utils/election";
 import "../styles/overview.css";
 
 export default function Overview() {
@@ -22,86 +27,166 @@ export default function Overview() {
   const [voteStep, setVoteStep] = useState(null);
   const [faceVerified, setFaceVerified] = useState(false);
   const [parties, setParties] = useState([]);
+  const [currentElection, setCurrentElection] = useState(null);
   const [electionOverview, setElectionOverview] = useState({
     title: "Election Overview",
-    subtitle: "Live election data",
+    subtitle: "Loading live election data",
     electionName: "",
     activeLabel: "",
     activeEnds: "",
-    statusTitle: "Election Status",
-    statusText: "",
-    statusEnds: "",
   });
   const [stats, setStats] = useState([
-    { key: "votes", label: "Total Votes Cast", value: "–", tone: "green" },
-    { key: "leading", label: "Currently Leading", value: "–", size: "sm", tone: "yellow" },
-    { key: "parties", label: "Active Parties", value: "–", tone: "orange" },
-    { key: "status", label: "Your Status", value: "Not Voted", size: "sm", tone: "red" },
+    { key: "votes", label: "Total Votes Cast", value: "N/A", tone: "green" },
+    {
+      key: "leading",
+      label: "Currently Leading",
+      value: "N/A",
+      size: "sm",
+      tone: "yellow",
+    },
+    { key: "parties", label: "Active Parties", value: "N/A", tone: "orange" },
+    {
+      key: "status",
+      label: "Your Status",
+      value: "Not Voted",
+      size: "sm",
+      tone: "red",
+    },
   ]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const loadLive = async () => {
-      try {
-        setLoading(true);
-        const [partiesRes, electionsRes] = await Promise.all([
-          api.get("/parties"),
-          api.get("/elections"),
-        ]);
-        const liveParties = partiesRes.data?.data || partiesRes.data || [];
-        setParties(liveParties);
+  const loadLive = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [partiesRes, electionsRes, votesRes] = await Promise.all([
+        api.get("/parties"),
+        api.get("/elections"),
+        api.get("/votes/me").catch(() => ({ data: { data: [] } })),
+      ]);
 
-        const active = (electionsRes.data?.data || electionsRes.data || []).find(
-          (e) => (e.status || "").toLowerCase() === "running",
-        );
-        if (active) {
-          setElectionOverview({
-            title: active.title || "Election Overview",
-            subtitle: active.type || "",
-            electionName: active.title,
-            activeLabel: `Status: ${active.status}`,
-            activeEnds: active.endDate ? `Ends: ${new Date(active.endDate).toLocaleString()}` : "",
-            statusTitle: "Election Status",
-            statusText: active.status || "",
-            statusEnds: active.endDate ? `Ends: ${new Date(active.endDate).toLocaleString()}` : "",
-          });
-          setStats((prev) => [
-            {
-              key: "votes",
-              label: "Total Votes Cast",
-              value: active.totalVotes?.toLocaleString?.() || active.totalVotes || "–",
-              tone: "green",
-            },
-            {
-              key: "leading",
-              label: "Currently Leading",
-              value: liveParties[0]?.name || "–",
-              size: "sm",
-              tone: "yellow",
-            },
-            {
-              key: "parties",
-              label: "Active Parties",
-              value: liveParties.length ? String(liveParties.length) : "–",
-              tone: "orange",
-            },
-            {
-              key: "status",
-              label: "Your Status",
-              value: hasVoted ? "Voted ✓" : "Not Voted",
-              size: "sm",
-              tone: hasVoted ? "green" : "red",
-            },
-          ]);
-        }
-      } catch (err) {
-        console.error("Failed to load live data; keeping placeholders", err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+      const electionList = Array.isArray(electionsRes.data?.data)
+        ? electionsRes.data.data
+        : Array.isArray(electionsRes.data)
+          ? electionsRes.data
+          : [];
+
+      const selectedElection = pickCurrentElection(electionList);
+      const selectedElectionId =
+        selectedElection?._id?.toString?.() || selectedElection?.id?.toString?.();
+      const selectedStatus = normalizeElectionStatus(selectedElection);
+      const statusLabel = selectedStatus.toUpperCase();
+
+      const partyListRaw = Array.isArray(partiesRes.data?.data?.parties)
+        ? partiesRes.data.data.parties
+        : Array.isArray(partiesRes.data?.data)
+          ? partiesRes.data.data
+          : Array.isArray(partiesRes.data)
+            ? partiesRes.data
+            : [];
+
+      const partyList = partyListRaw
+        .filter((party) => {
+          const partyElectionId =
+            party.electionId?._id?.toString?.() ||
+            party.electionId?.toString?.() ||
+            null;
+          if (!selectedElectionId) return true;
+          return !partyElectionId || partyElectionId === selectedElectionId;
+        })
+        .map((party) => ({
+          id: (party._id || party.id || "").toString(),
+          name: party.name || "Unnamed Party",
+          leader: party.leader || "N/A",
+          votes: Number(party.totalVotes || party.currentVotes || 0),
+          score: Number(party.development || party.goodWork || 0),
+          short:
+            party.shortName || party.symbol || party.name?.slice(0, 3) || "PRT",
+          color: party.color || "#2563eb",
+        }))
+        .sort((a, b) => (b.score === a.score ? b.votes - a.votes : b.score - a.score))
+        .map((party, index) => ({ ...party, rank: index + 1 }));
+
+      const electionVotes = Number(selectedElection?.totalVotes || 0);
+      const partiesWithShare = partyList.map((party) => {
+        const share =
+          electionVotes > 0
+            ? `${((party.votes / electionVotes) * 100).toFixed(1)}%`
+            : "0.0%";
+        return { ...party, share };
+      });
+      setParties(partiesWithShare);
+      setCurrentElection(selectedElection || null);
+
+      const voteList = Array.isArray(votesRes.data?.data)
+        ? votesRes.data.data
+        : Array.isArray(votesRes.data)
+          ? votesRes.data
+          : [];
+      const relevantVote = selectedElectionId
+        ? voteList.find(
+            (vote) =>
+              vote.electionId?.toString?.() === selectedElectionId ||
+              vote.electionId === selectedElectionId,
+          )
+        : voteList[0];
+
+      const voted = Boolean(relevantVote);
+      const votedParty =
+        relevantVote?.partyId?.toString?.() || relevantVote?.partyId || null;
+      setHasVoted(voted);
+      setVotedPartyId(votedParty);
+
+      setElectionOverview({
+        title: selectedElection?.title || "Election Overview",
+        subtitle: selectedElection
+          ? `${selectedElection.type || "Election"} election`
+          : "No active election available",
+        electionName: selectedElection?.title || "",
+        activeLabel: selectedElection ? `Status: ${statusLabel}` : "Status: N/A",
+        activeEnds: selectedElection?.endDate
+          ? `Ends: ${formatDateTime(selectedElection.endDate)}`
+          : "",
+      });
+
+      setStats([
+        {
+          key: "votes",
+          label: "Total Votes Cast",
+          value: Number.isFinite(electionVotes) ? electionVotes.toLocaleString() : "0",
+          tone: "green",
+        },
+        {
+          key: "leading",
+          label: "Currently Leading",
+          value: partiesWithShare[0]?.name || "N/A",
+          size: "sm",
+          tone: "yellow",
+        },
+        {
+          key: "parties",
+          label: "Active Parties",
+          value: String(partiesWithShare.length),
+          tone: "orange",
+        },
+        {
+          key: "status",
+          label: "Your Status",
+          value: voted ? "Voted" : "Not Voted",
+          size: "sm",
+          tone: voted ? "green" : "red",
+        },
+      ]);
+    } catch (err) {
+      console.error("Failed to load voter overview:", err?.response?.data || err.message);
+      setParties([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
     loadLive();
-  }, [hasVoted]);
+  }, [loadLive]);
 
   useEffect(() => {
     if (!showEmailBanner) return undefined;
@@ -113,13 +198,19 @@ export default function Overview() {
     () =>
       stats.map((stat) =>
         stat.key === "status"
-          ? { ...stat, value: hasVoted ? "Voted ✓" : "Not Voted" }
+          ? { ...stat, value: hasVoted ? "Voted" : "Not Voted" }
           : stat,
       ),
-    [hasVoted],
+    [hasVoted, stats],
   );
 
   const handleVote = (party) => {
+    const status = normalizeElectionStatus(currentElection);
+    if (!currentElection || status !== "running") {
+      setOtpError("Voting is not open right now.");
+      return;
+    }
+
     setSelectedParty(party);
     setOtp("");
     setOtpError("");
@@ -139,20 +230,26 @@ export default function Overview() {
 
   const submitFinalVote = async () => {
     try {
-      if (!selectedParty) return;
+      const electionId = currentElection?._id || currentElection?.id;
+      if (!selectedParty || !electionId) return;
+
       await confirmVote({
+        electionId,
         partyId: selectedParty._id || selectedParty.id,
-        otp,
       });
+
       setHasVoted(true);
       setVotedPartyId(selectedParty._id || selectedParty.id);
       setSelectedParty(null);
       setShowEmailBanner(true);
       setVoteStep(null);
+      await loadLive();
     } catch (err) {
       setOtpError(err.response?.data?.message || "Vote confirmation failed");
     }
   };
+
+  const isVotingOpen = normalizeElectionStatus(currentElection) === "running";
 
   return (
     <div>
@@ -178,7 +275,9 @@ export default function Overview() {
       <EmailBanner
         visible={showEmailBanner}
         partyName={
-          parties.find((party) => party.id === votedPartyId)?.name || ""
+          parties.find(
+            (party) => party.id?.toString?.() === votedPartyId?.toString?.(),
+          )?.name || ""
         }
       />
 
@@ -194,7 +293,7 @@ export default function Overview() {
         ))}
       </div>
 
-      <VoteBanner hasVoted={hasVoted} />
+      <VoteBanner hasVoted={hasVoted} isVotingOpen={isVotingOpen} />
 
       <div className="overview-section">
         <h3>Active Political Parties</h3>
@@ -204,14 +303,17 @@ export default function Overview() {
       <div className="overview-party-list">
         {parties.map((party) => (
           <PartyCard
-            key={party.name}
+            key={party.id}
             party={party}
             hasVoted={hasVoted}
-            isVotedParty={party.id === votedPartyId}
+            isVotedParty={party.id?.toString?.() === votedPartyId?.toString?.()}
+            disableVoting={!isVotingOpen}
             onVote={handleVote}
           />
         ))}
       </div>
+
+      {loading ? <p style={{ marginTop: 12 }}>Refreshing live data...</p> : null}
 
       <WarningNotice />
 
