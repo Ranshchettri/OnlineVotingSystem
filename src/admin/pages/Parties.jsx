@@ -154,7 +154,7 @@ export default function Parties() {
         logo: registerForm.logoData,
         symbol: registerForm.logoData || registerForm.name?.slice(0, 2),
         documents: registerForm.documentData ? [registerForm.documentData] : [],
-        electionId: registerForm.electionId,
+        electionId: registerForm.electionId || undefined,
         electionType: registerForm.electionType || "Political",
       };
       await api.post("/parties", payload);

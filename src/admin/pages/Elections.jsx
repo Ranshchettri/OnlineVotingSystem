@@ -120,6 +120,20 @@ export default function Elections() {
     setShowExport(true);
   };
 
+  const handleStopElection = async (electionId) => {
+    try {
+      await api.put(`/admin/elections/${electionId}/stop`);
+      setElections((prev) =>
+        prev.map((e) =>
+          e.id === electionId ? { ...e, status: "Ended", autoClose: false, autoResults: true } : e,
+        ),
+      );
+    } catch (err) {
+      console.error("Failed to stop election", err);
+      alert("Failed to stop election");
+    }
+  };
+
   const generateCSV = (election) => {
     if (!election) return;
     const parties = election.parties || [];
@@ -377,7 +391,10 @@ export default function Elections() {
                     Preview
                   </button>
                   {election.status?.toLowerCase() === "running" && (
-                    <button className="admin-button primary btn-danger">
+                    <button
+                      className="admin-button primary btn-danger"
+                      onClick={() => handleStopElection(election.id)}
+                    >
                       <i className="ri-stop-circle-line icon-stop" aria-hidden="true" />
                       Stop
                     </button>

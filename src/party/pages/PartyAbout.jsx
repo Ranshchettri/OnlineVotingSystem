@@ -30,6 +30,10 @@ export default function PartyAbout() {
           <h1>{party?.name || "Party"}</h1>
           <p>{party?.vision || party?.manifesto || "Vision not provided."}</p>
         </div>
+        <button className="party-btn outline" type="button">
+          <i className="ri-edit-line" aria-hidden="true" />
+          Edit Plans
+        </button>
       </div>
 
       <div className="about-section">

@@ -246,8 +246,8 @@ export default function Voters() {
     [voters],
   );
 
-  const statsCards = useMemo(
-    () => {
+    const statsCards = useMemo(
+      () => {
       const total = Number(stats.totalRegistered || 0);
       const activeRate = total
         ? ((stats.activeVoters / total) * 100).toFixed(1)
@@ -634,6 +634,14 @@ export default function Voters() {
                         {selectedVoter.province || "—"}
                       </div>
                     </div>
+                    <div>
+                      <div className="stat-label">Created</div>
+                      <div className="stat-number">
+                        {selectedVoter.createdAt
+                          ? new Date(selectedVoter.createdAt).toLocaleString()
+                          : "—"}
+                      </div>
+                    </div>
                   </div>
                   <div className="admin-modal-actions">
                     {status === "PENDING" ? (
@@ -651,6 +659,13 @@ export default function Voters() {
                           Reject
                         </button>
                       </>
+                    ) : status === "BLOCKED" ? (
+                      <button
+                        className="admin-button success"
+                        onClick={() => handleApproveVoter(selectedVoter._id)}
+                      >
+                        Unblock Voter
+                      </button>
                     ) : (
                       <button
                         className="admin-button primary danger-full"

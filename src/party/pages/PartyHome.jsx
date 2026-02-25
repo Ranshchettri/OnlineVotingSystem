@@ -57,8 +57,22 @@ export default function PartyHome() {
   };
 
   const saveEdit = () => {
-    setSaved(clone(draft));
+    const next = clone(draft);
+    setSaved(next);
     setIsEditing(false);
+    // Persist to backend
+    api
+      .put("/party/profile/full", {
+        name: next.name,
+        leader: next.leader,
+        vision: next.vision,
+        manifesto: next.vision,
+        logo: next.logoImage,
+        teamMembers: next.team,
+      })
+      .catch((err) => {
+        console.error("Failed to save party profile", err.message);
+      });
   };
 
   const updateField = (field, value) => {
@@ -67,8 +81,11 @@ export default function PartyHome() {
 
   const handleLogo = (file) => {
     if (!file) return;
-    const preview = URL.createObjectURL(file);
-    updateField("logoImage", preview);
+    const reader = new FileReader();
+    reader.onload = () => {
+      updateField("logoImage", reader.result);
+    };
+    reader.readAsDataURL(file);
   };
 
   const updateMember = (id, field, value) => {
@@ -106,8 +123,11 @@ export default function PartyHome() {
 
   const handlePhoto = (id, file) => {
     if (!file) return;
-    const preview = URL.createObjectURL(file);
-    updateMember(id, "photo", preview);
+    const reader = new FileReader();
+    reader.onload = () => {
+      updateMember(id, "photo", reader.result);
+    };
+    reader.readAsDataURL(file);
   };
 
   return (

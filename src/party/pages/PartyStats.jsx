@@ -10,7 +10,16 @@ const TimelineIcon = ({ label }) => {
 };
 
 export default function PartyStats() {
-  const [current, setCurrent] = useState(null);
+  const [current, setCurrent] = useState({
+    name: "Current Election",
+    votes: 0,
+    position: 0,
+    share: 0,
+    lead: 0,
+    status: "PENDING",
+    startDate: null,
+    endDate: null,
+  });
   const [rankings, setRankings] = useState([]);
   const [timeline, setTimeline] = useState([]);
   const [lastUpdated, setLastUpdated] = useState("");
@@ -25,13 +34,14 @@ export default function PartyStats() {
 
         const statsData = statsRes.data?.data || {};
         setCurrent({
-          name: statsData.currentElection?.title || "Election",
+          name: statsData.currentElection?.title || "Current Election",
           votes: statsData.stats?.ownVotes || 0,
           position: statsData.stats?.ownPosition || 0,
           share: statsData.stats?.voteShare || 0,
           lead: statsData.stats?.leadOverSecond || 0,
           status: statsData.currentElection?.status || "PENDING",
-          ends: statsData.currentElection?.endDate,
+          startDate: statsData.currentElection?.startDate,
+          endDate: statsData.currentElection?.endDate,
         });
 
         const partyList = partyRes.data?.data?.parties || partyRes.data?.data || partyRes.data || [];
@@ -64,20 +74,12 @@ export default function PartyStats() {
     load();
   }, []);
 
-  if (!current) {
-    return (
-      <div className="party-page party-page--stats">
-        <p>Loading stats...</p>
-      </div>
-    );
-  }
-
   return (
     <div className="party-page party-page--stats">
       <div className="party-page-header">
         <div>
-          <h1>Party Live Stats</h1>
-          <p>{current.name}</p>
+          <h1>Current Election Stats</h1>
+          <p>Live performance overview for your party</p>
         </div>
         <span className="party-pill green">Live Data</span>
       </div>
@@ -89,7 +91,7 @@ export default function PartyStats() {
             <span className="stats-hero-label">Your Party - Live Data</span>
             <div className="stats-hero-title">
               <div className="stats-hero-logo">
-                {rankings[0]?.short || "CPN"}
+                {rankings[0]?.short || "PRT"}
               </div>
               <div>
                 <strong>{current.name}</strong>
@@ -105,7 +107,7 @@ export default function PartyStats() {
           </div>
           <div>
             <span>Current Position</span>
-            <strong>{current.position}</strong>
+            <strong>{current.position || "—"}</strong>
           </div>
           <div>
             <span>Vote Share</span>
@@ -202,9 +204,9 @@ export default function PartyStats() {
                   </span>
                   <span>{item.label}</span>
                   <strong>
-                    {item.value
+                    {item.value && item.value !== "Live"
                       ? new Date(item.value).toLocaleString()
-                      : "Live"}
+                      : item.value || "Live"}
                   </strong>
                 </div>
               );

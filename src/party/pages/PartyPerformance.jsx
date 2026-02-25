@@ -13,60 +13,53 @@ const StatIcon = ({ type }) => {
 };
 
 export default function PartyPerformance() {
-  const [current, setCurrent] = useState({
-    votes: 0,
-    position: 0,
-    share: 0,
-    lead: 0,
-    election: "Current Election",
+  const [summary, setSummary] = useState({
+    totalWins: 0,
+    averageVotes: 0,
+    winRate: "0%",
   });
   const [history, setHistory] = useState([]);
-  const [summary, setSummary] = useState({ totalWins: 0, averageVotes: 0, winRate: "0%" });
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [currentRes, pastRes] = await Promise.all([
-          api.get("/party/current-stats"),
-          api.get("/party/past-performance"),
-        ]);
-
-        const currentData = currentRes.data?.data || {};
-        setCurrent({
-          votes: currentData.stats?.ownVotes || 0,
-          position: currentData.stats?.ownPosition || 0,
-          share: currentData.stats?.voteShare || 0,
-          lead: currentData.stats?.leadOverSecond || 0,
-          election: currentData.currentElection?.title || "Current Election",
-        });
-
-        const past = pastRes.data?.data || {};
-        setHistory(past.pastElections || []);
-        setSummary(past.summary || { totalWins: 0, averageVotes: 0, winRate: "0%" });
+        const res = await api.get("/party/past-performance");
+        const data = res.data?.data || {};
+        setSummary(data.summary || { totalWins: 0, averageVotes: 0, winRate: "0%" });
+        setHistory(data.pastElections || []);
       } catch (err) {
         console.error("Failed to load performance data", err.message);
+        setSummary({ totalWins: 0, averageVotes: 0, winRate: "0%" });
+        setHistory([]);
       }
     };
     load();
   }, []);
 
   const stats = [
-    { label: "Total Votes", value: current.votes.toLocaleString(), icon: "votes" },
-    { label: "Current Position", value: current.position || "—", icon: "trophy" },
-    { label: "Vote Share", value: `${current.share}%`, icon: "trend" },
+    { label: "Total Wins", value: summary.totalWins || 0, icon: "trophy" },
+    {
+      label: "Average Votes",
+      value:
+        summary.averageVotes > 1000
+          ? `${(summary.averageVotes / 1000).toFixed(1)}K`
+          : summary.averageVotes || 0,
+      icon: "votes",
+    },
+    { label: "Win Rate", value: summary.winRate || "0%", icon: "trend" },
   ];
 
   return (
     <div className="party-page">
       <div className="party-page-header">
         <div>
-          <h1>Performance</h1>
-          <p>{current.election}</p>
+          <h1>Past Performance</h1>
+          <p>Historical election results from the last 5 elections</p>
         </div>
       </div>
 
       <div className="performance-stats">
-        {stats.map((stat, index) => (
+        {stats.map((stat) => (
           <div key={stat.label} className="performance-stat">
             <div className="performance-stat-icon">
               <StatIcon type={stat.icon} />
@@ -82,18 +75,17 @@ export default function PartyPerformance() {
       <div className="performance-history party-card">
         <div className="performance-history-header">
           <h3>Election History</h3>
-          <div className="performance-summary">
-            <span>Wins: {summary.totalWins}</span>
-            <span>Avg Votes: {summary.averageVotes.toLocaleString?.() || summary.averageVotes}</span>
-            <span>Win Rate: {summary.winRate}</span>
-          </div>
         </div>
         <div className="performance-history-list">
           {history.length === 0 ? (
-            <div className="performance-empty">No past elections found.</div>
+            <div className="performance-history-item">
+              <div className="performance-history-top">
+                <h4>No past elections found.</h4>
+              </div>
+            </div>
           ) : (
             history.map((item) => (
-              <div key={`${item.year}-${item.election}`} className="performance-history-item">
+              <div key={`${item.year}-${item.election || item.title}`} className="performance-history-item">
                 <div className="performance-history-head">
                   <div>
                     <h4>{item.election || item.title || "Election"}</h4>
@@ -104,6 +96,9 @@ export default function PartyPerformance() {
                       item.position === 1 || item.won ? "success" : "neutral"
                     }`}
                   >
+                    {item.position === 1 || item.won ? (
+                      <i className="ri-trophy-line" aria-hidden="true" />
+                    ) : null}
                     {item.position === 1 || item.won ? "Winner" : "Participated"}
                   </span>
                 </div>
@@ -135,9 +130,9 @@ export default function PartyPerformance() {
           Performance Insights
         </div>
         <ul>
-          <li>Live numbers are pulled from the current election stats endpoint.</li>
-          <li>Past performance reflects saved historical data for this party.</li>
-          <li>Update analytics in admin to keep these charts accurate.</li>
+          <li>Live metrics are mirrored from admin analytics.</li>
+          <li>Update party analytics in admin to change these numbers.</li>
+          <li>History shows last 5 elections; newer results will appear automatically.</li>
         </ul>
       </div>
     </div>

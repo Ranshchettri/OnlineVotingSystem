@@ -1,14 +1,19 @@
+import { usePartyData } from "../hooks/usePartyData";
 import Emblem from "../../assets/nepal-emblem.svg";
 
 export default function PartyHeader() {
+  const { party } = usePartyData();
+  const logo = party?.logo || party?.symbol || Emblem;
+  const title = party?.name || "Party Portal";
+
   return (
     <header className="party-topbar">
       <div className="party-brand">
         <div className="party-brand-logo">
-          <img src={Emblem} alt="Government of Nepal" />
+          <img src={logo} alt={title} />
         </div>
         <div>
-          <div className="party-brand-title">Party Portal</div>
+          <div className="party-brand-title">{title}</div>
           <div className="party-brand-sub">Political Party Management</div>
         </div>
       </div>
