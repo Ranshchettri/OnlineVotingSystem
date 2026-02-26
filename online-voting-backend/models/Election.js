@@ -70,6 +70,11 @@ const electionSchema = new mongoose.Schema(
 
     winnerIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Candidate" }],
 
+    resultsPublishedAt: {
+      type: Date,
+      default: null,
+    },
+
     isEnded: { type: Boolean, default: false },
   },
   { timestamps: true },

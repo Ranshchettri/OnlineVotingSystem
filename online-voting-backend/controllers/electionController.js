@@ -1,6 +1,7 @@
 const Election = require("../models/Election");
 const User = require("../models/User");
 const sendEmail = require("../utils/email");
+const { notifyElectionToParties } = require("../utils/electionPartyNotifications");
 
 const deriveElectionState = (election, now = new Date()) => {
   const start = election.startDate ? new Date(election.startDate) : null;
@@ -43,6 +44,7 @@ const deriveElectionState = (election, now = new Date()) => {
 };
 
 const syncElectionState = async (election, now = new Date()) => {
+  const previousStatus = String(election.status || "").toLowerCase();
   const derived = deriveElectionState(election, now);
   const changed =
     election.status !== derived.status ||
@@ -56,6 +58,21 @@ const syncElectionState = async (election, now = new Date()) => {
     election.isEnded = derived.isEnded;
     election.allowVoting = derived.allowVoting;
     await election.save();
+
+    const nextStatus = String(derived.status || "").toLowerCase();
+    if (previousStatus !== "running" && nextStatus === "running") {
+      await notifyElectionToParties(election, {
+        type: "success",
+        title: "Election started",
+        message: `${election.title} is now running. Live voting has started.`,
+      }, { includeActiveFallback: true });
+    } else if (previousStatus !== "ended" && nextStatus === "ended") {
+      await notifyElectionToParties(election, {
+        type: "warning",
+        title: "Election ended",
+        message: `${election.title} has ended. Results will be published soon.`,
+      }, { includeActiveFallback: true });
+    }
   }
 
   return election;
@@ -98,6 +115,14 @@ const createElection = async (req, res) => {
     });
 
     await election.save();
+    await notifyElectionToParties(election, {
+      type: "info",
+      title: "New election created",
+      message:
+        election.status === "Running"
+          ? `${election.title} is now running.`
+          : `${election.title} has been scheduled and will start on ${start.toLocaleString()}.`,
+    }, { includeActiveFallback: true });
 
     // Send email notification to all verified voters
     const users = await User.find({ verified: true });
@@ -174,6 +199,18 @@ const toggleElectionStatus = async (req, res) => {
     }
     await election.save();
 
+    await notifyElectionToParties(election, {
+      type: election.status === "Running" ? "success" : "warning",
+      title:
+        election.status === "Running"
+          ? "Election activated"
+          : "Election ended",
+      message:
+        election.status === "Running"
+          ? `${election.title} is now running.`
+          : `${election.title} has ended. Results will be published soon.`,
+    }, { includeActiveFallback: true });
+
     res.json({
       message: `Election ${election.isActive ? "activated" : "deactivated"} successfully`,
       election,
@@ -188,4 +225,5 @@ module.exports = {
   getElections,
   getActiveElections,
   toggleElectionStatus,
+  syncElectionState,
 };

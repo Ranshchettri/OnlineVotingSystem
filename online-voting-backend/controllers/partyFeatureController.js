@@ -36,10 +36,62 @@ const isEditingLocked = (election) => {
   return diffMs <= 24 * 60 * 60 * 1000; // 24 hours
 };
 
+const deriveElectionStatus = (election = {}, now = new Date()) => {
+  const start = election.startDate ? new Date(election.startDate) : null;
+  const end = election.endDate ? new Date(election.endDate) : null;
+  const raw = String(election.status || "").toLowerCase();
+
+  if (raw === "ended" || election.isEnded || election.allowVoting === false) return "Ended";
+  if (end && now > end) return "Ended";
+  if (start && now < start) return "Upcoming";
+  if (start && end && now >= start && now <= end && election.allowVoting !== false) {
+    return "Running";
+  }
+  if (raw === "running" || raw === "upcoming") return raw[0].toUpperCase() + raw.slice(1);
+  return "Upcoming";
+};
+
+const findRelevantElectionForParty = async (party, now = new Date()) => {
+  if (party?.electionId) {
+    const linkedElection = await Election.findById(party.electionId);
+    if (linkedElection && deriveElectionStatus(linkedElection, now) !== "Ended") {
+      return linkedElection;
+    }
+  }
+
+  const runningElection = await Election.findOne({
+    startDate: { $lte: now },
+    endDate: { $gte: now },
+    allowVoting: { $ne: false },
+    isEnded: { $ne: true },
+  }).sort({ startDate: -1 });
+  if (runningElection) return runningElection;
+
+  const upcomingElection = await Election.findOne({
+    startDate: { $gt: now },
+    isEnded: { $ne: true },
+  }).sort({ startDate: 1 });
+  return upcomingElection || null;
+};
+
+const sanitizeTeamMembers = (teamMembers = []) => {
+  if (!Array.isArray(teamMembers)) return [];
+  return teamMembers
+    .map((member = {}) => ({
+      name: String(member.name || "").trim(),
+      role: String(member.role || member.position || "").trim(),
+      position: String(member.position || member.role || "").trim(),
+      photo: member.photo || "",
+      bio: String(member.bio || "").trim(),
+    }))
+    .filter((member) => Boolean(member.name));
+};
+
 // GET /api/party/profile/:partyId?
 const getPartyProfileFull = async (req, res, next) => {
   try {
     const party = await resolveParty(req);
+    const election = await findRelevantElectionForParty(party);
     res.json({
       data: {
         id: party._id,
@@ -49,7 +101,7 @@ const getPartyProfileFull = async (req, res, next) => {
         manifesto: party.manifesto,
         logo: party.logo,
         teamMembers: party.teamMembers || [],
-        isEditingLocked: false, // computed client-side after fetching election if needed
+        isEditingLocked: isEditingLocked(election),
       },
     });
   } catch (error) {
@@ -61,7 +113,7 @@ const getPartyProfileFull = async (req, res, next) => {
 const updatePartyProfileFull = async (req, res, next) => {
   try {
     const party = await resolveParty(req);
-    const election = await Election.findById(party.electionId);
+    const election = await findRelevantElectionForParty(party);
     if (isEditingLocked(election)) {
       return next(new AppError("Editing locked within 24 hours of election start", 403));
     }
@@ -69,7 +121,11 @@ const updatePartyProfileFull = async (req, res, next) => {
     const allowed = ["name", "leader", "vision", "manifesto", "teamMembers", "logo"];
     allowed.forEach((field) => {
       if (req.body[field] !== undefined) {
-        party[field] = req.body[field];
+        if (field === "teamMembers") {
+          party.teamMembers = sanitizeTeamMembers(req.body.teamMembers);
+        } else {
+          party[field] = req.body[field];
+        }
       }
     });
 
@@ -84,7 +140,7 @@ const updatePartyProfileFull = async (req, res, next) => {
 const getFuturePlans = async (req, res, next) => {
   try {
     const party = await resolveParty(req);
-    const election = await Election.findById(party.electionId);
+    const election = await findRelevantElectionForParty(party);
     res.json({
       data: {
         futurePlans: party.futurePlans || [],
@@ -100,7 +156,7 @@ const getFuturePlans = async (req, res, next) => {
 const updateFuturePlans = async (req, res, next) => {
   try {
     const party = await resolveParty(req);
-    const election = await Election.findById(party.electionId);
+    const election = await findRelevantElectionForParty(party);
     if (isEditingLocked(election)) {
       return next(new AppError("Editing locked within 24 hours of election start", 403));
     }
@@ -157,7 +213,7 @@ const getPastPerformance = async (req, res, next) => {
     let electionHistory = [];
     if (endedElectionIds.length) {
       const voteAgg = await Vote.aggregate([
-        { $match: { electionId: { $in: endedElectionIds } } },
+        { $match: { electionId: { $in: endedElectionIds }, partyId: { $ne: null } } },
         {
           $group: {
             _id: {
@@ -257,24 +313,22 @@ const getPastPerformance = async (req, res, next) => {
 const getCurrentStats = async (req, res, next) => {
   try {
     const party = await resolveParty(req);
+    const now = new Date();
 
-    const election =
-      (await Election.findOne({
-        _id: party.electionId,
-        status: { $in: ["Running", "Upcoming"] },
-      })) ||
-      (await Election.findOne({ status: "Running" }).sort({ startDate: -1 }));
+    const election = await findRelevantElectionForParty(party, now);
 
     if (!election) {
+      const emptyStats = {
+        ownVotes: 0,
+        ownPosition: 0,
+        voteShare: 0,
+        leadOverSecond: 0,
+      };
       return res.json({
         data: {
           currentElection: null,
-          metrics: {
-            ownVotes: 0,
-            ownPosition: 0,
-            voteShare: 0,
-            leadOverSecond: 0,
-          },
+          stats: emptyStats,
+          metrics: emptyStats,
           allParties: [],
           totalVotes: 0,
         },
@@ -282,7 +336,12 @@ const getCurrentStats = async (req, res, next) => {
     }
 
     const voteAgg = await Vote.aggregate([
-      { $match: { electionId: new mongoose.Types.ObjectId(election._id) } },
+      {
+        $match: {
+          electionId: new mongoose.Types.ObjectId(election._id),
+          partyId: { $ne: null },
+        },
+      },
       { $group: { _id: "$partyId", votes: { $sum: 1 } } },
       { $sort: { votes: -1 } },
     ]);
@@ -291,9 +350,27 @@ const getCurrentStats = async (req, res, next) => {
       voteAgg.map((row) => [row._id?.toString(), Number(row.votes || 0)]),
     );
 
-    const electionParties = await Party.find({
-      $or: [{ electionId: election._id }, { _id: party._id }],
-    }).lean();
+    const fromParticipatingList = Array.isArray(election.participatingParties)
+      ? election.participatingParties
+          .map((row) => row?.partyId?.toString?.() || row?.partyId || null)
+          .filter(Boolean)
+      : [];
+
+    const requestedPartyIds = [...new Set([...fromParticipatingList, party._id.toString()])];
+    let electionParties = requestedPartyIds.length
+      ? await Party.find({ _id: { $in: requestedPartyIds } }).lean()
+      : [];
+
+    if (!electionParties.length) {
+      electionParties = await Party.find({
+        $or: [{ electionId: election._id }, { _id: party._id }],
+      }).lean();
+    }
+
+    if (!electionParties.find((item) => item._id?.toString() === party._id.toString())) {
+      const ownParty = await Party.findById(party._id).lean();
+      if (ownParty?._id) electionParties.push(ownParty);
+    }
 
     const partiesWithNames = electionParties.map((item) => ({
       partyId: item._id,
@@ -327,7 +404,7 @@ const getCurrentStats = async (req, res, next) => {
         currentElection: {
           id: election._id,
           title: election.title || election.name || "Election",
-          status: election.status,
+          status: deriveElectionStatus(election, now),
           startDate: election.startDate,
           endDate: election.endDate,
         },

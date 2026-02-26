@@ -28,6 +28,16 @@ mongoose
     const seedAdmin = require("./utils/seedAdmin");
     await seedAdmin();
 
+    const syncElectionLifecycle = async () => {
+      const Election = require("./models/Election");
+      const { syncElectionState } = require("./controllers/electionController");
+      const elections = await Election.find({});
+      const now = new Date();
+      for (const election of elections) {
+        await syncElectionState(election, now);
+      }
+    };
+
     // Auto-close ended elections
     const autoCloseElections = async () => {
       const Election = require("./models/Election");
@@ -48,8 +58,18 @@ mongoose
         );
       }
     };
-    await autoCloseElections();
-    setInterval(autoCloseElections, 60 * 1000); // Check every 1 minute
+
+    const runElectionMaintenance = async () => {
+      try {
+        await syncElectionLifecycle();
+        await autoCloseElections();
+      } catch (error) {
+        console.error("Election maintenance failed:", error.message);
+      }
+    };
+
+    await runElectionMaintenance();
+    setInterval(runElectionMaintenance, 60 * 1000); // Check every 1 minute
   })
   .catch((err) => console.log(err));
 

@@ -9,6 +9,7 @@ const AuditLog = require("../models/AuditLog");
 const Analytics = require("../models/Analytics");
 const AppError = require("../utils/AppError");
 const { markForceLogout, getForceLogoutAfter } = require("../utils/sessionControl");
+const { notifyElectionToParties } = require("../utils/electionPartyNotifications");
 
 const deriveElectionStatus = (election = {}, now = new Date()) => {
   const start = election.startDate ? new Date(election.startDate) : null;
@@ -328,6 +329,17 @@ const createElection = async (req, res, next) => {
       color: "blue",
     });
 
+    await notifyElectionToParties(election, {
+      type: election.status === "Running" ? "success" : "info",
+      title: "New election created",
+      message:
+        election.status === "Running"
+          ? `${election.title} is now running. Live voting has started.`
+          : `${election.title} has been scheduled and will start on ${new Date(
+              election.startDate,
+            ).toLocaleString()}.`,
+    }, { includeActiveFallback: true });
+
     res.status(201).json({ success: true, electionId: election._id });
   } catch (error) {
     next(error);
@@ -355,6 +367,12 @@ const stopElection = async (req, res, next) => {
       icon: "ri-stop-circle-line",
       color: "red",
     });
+
+    await notifyElectionToParties(election, {
+      type: "warning",
+      title: "Election ended",
+      message: `${election.title} has ended. Results will be published soon.`,
+    }, { includeActiveFallback: true });
 
     res.json({ success: true, message: "Election stopped" });
   } catch (error) {
