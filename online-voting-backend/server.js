@@ -93,11 +93,13 @@ const notificationRoutes = require("./routes/notification");
 app.use("/api/auth", authRoutes);
 app.use("/api/elections", electionRoutes);
 app.use("/api/candidates", candidateRoutes);
-// Debug logging for incoming parties requests
-app.use("/api/parties", (req, res, next) => {
-  console.log("[DEBUG] Incoming /api/parties", req.method, req.path, req.query);
-  next();
-});
+// Optional debug logging for incoming party requests
+if (process.env.DEBUG_PARTY_ROUTES === "true") {
+  app.use("/api/parties", (req, res, next) => {
+    console.log("[DEBUG] Incoming /api/parties", req.method, req.path, req.query);
+    next();
+  });
+}
 app.use("/api/parties", partyRoutes);
 app.use("/api/party", partyRoutes); // backward-compatible alias used by older frontend files
 app.use("/api/tasks", taskRoutes);

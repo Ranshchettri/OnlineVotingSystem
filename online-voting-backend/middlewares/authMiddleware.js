@@ -47,8 +47,11 @@ const protect = async (req, res, next) => {
         return res.status(401).json({ message: "User not found" });
       }
 
-      // Check if email is verified (skip for auth routes that don't require verification)
+      // Keep strict email-verification gate only for admin web login flows.
+      // Party and voter users authenticate via OTP in this project.
+      const requireEmailVerified = req.user.role === "admin";
       if (
+        requireEmailVerified &&
         !req.user.isEmailVerified &&
         !req.path.includes("/verify-email") &&
         !req.path.includes("/forgot-password") &&

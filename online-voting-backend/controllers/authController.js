@@ -475,6 +475,7 @@ const verifyVoterOtp = async (req, res) => {
       voter.verified = true;
       voter.verificationStatus = "auto-approved";
     }
+    voter.isEmailVerified = true;
 
     voter.otp = undefined;
     voter.otpExpiry = undefined;

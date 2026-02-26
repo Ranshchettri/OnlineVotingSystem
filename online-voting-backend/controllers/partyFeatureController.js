@@ -10,16 +10,16 @@ const escapeRegex = (value = "") => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 const resolveParty = async (req) => {
   let partyId = req.params.partyId || null;
 
-  if (req.user?.role === "party" && req.user?.email) {
+  if (!partyId) {
+    partyId = req.user?.partyId || null;
+  }
+
+  if (!partyId && req.user?.role === "party" && req.user?.email) {
     const emailRegex = new RegExp(`^${escapeRegex(normalizeEmail(req.user.email))}$`, "i");
     const partyByEmail = await Party.findOne({ email: emailRegex }).sort({ createdAt: -1 });
     if (partyByEmail?._id) {
       partyId = partyByEmail._id;
     }
-  }
-
-  if (!partyId) {
-    partyId = req.user?.partyId || null;
   }
 
   if (!partyId) throw new AppError("Party ID not found", 400);
