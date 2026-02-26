@@ -78,6 +78,7 @@ app.use("/api/parties", (req, res, next) => {
   next();
 });
 app.use("/api/parties", partyRoutes);
+app.use("/api/party", partyRoutes); // backward-compatible alias used by older frontend files
 app.use("/api/tasks", taskRoutes);
 app.use("/api/votes", voteRoutes);
 app.use("/api/analytics", analyticsRoutes);

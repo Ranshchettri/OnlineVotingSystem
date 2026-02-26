@@ -1,4 +1,7 @@
 const Party = require("../models/Party");
+const User = require("../models/User");
+const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 const AppError = require("../utils/AppError");
 const Election = require("../models/Election");
 
@@ -6,6 +9,70 @@ const estimateDataUrlSize = (dataUrl = "") => {
   if (!dataUrl || typeof dataUrl !== "string" || !dataUrl.includes(",")) return 0;
   const base64 = dataUrl.split(",")[1] || "";
   return Math.ceil((base64.length * 3) / 4);
+};
+
+const normalizeEmail = (email = "") => String(email || "").trim().toLowerCase();
+const escapeRegex = (value = "") => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const findUserByEmail = async (email) => {
+  const normalized = normalizeEmail(email);
+  if (!normalized) return null;
+  return User.findOne({
+    email: { $regex: `^${escapeRegex(normalized)}$`, $options: "i" },
+  });
+};
+
+const ensurePartyAuthAccount = async (party) => {
+  const normalizedEmail = normalizeEmail(party?.email);
+  if (!party?._id || !normalizedEmail) return null;
+
+  const linkedPartyUser = await User.findOne({
+    role: "party",
+    partyId: party._id,
+  });
+  const emailUser = await findUserByEmail(normalizedEmail);
+
+  if (emailUser && emailUser.role !== "party") {
+    throw new AppError("Email is already used by another non-party account", 409);
+  }
+
+  const targetUser = linkedPartyUser || emailUser;
+  const isActiveParty =
+    party.isActive !== false && String(party.status || "").toLowerCase() !== "rejected";
+
+  if (targetUser) {
+    targetUser.fullName = party.leader || party.name || targetUser.fullName;
+    targetUser.email = normalizedEmail;
+    targetUser.role = "party";
+    targetUser.partyId = party._id;
+    targetUser.isEmailVerified = true;
+    targetUser.isVerified = isActiveParty;
+    targetUser.verified = isActiveParty;
+    targetUser.verificationStatus = isActiveParty ? "auto-approved" : "blocked";
+    if (!targetUser.voterIdNumber) {
+      targetUser.voterIdNumber = `PRTY-${party._id.toString().slice(-8).toUpperCase()}`;
+    }
+    await targetUser.save();
+    return targetUser;
+  }
+
+  const randomPassword = crypto.randomBytes(18).toString("hex");
+  const hashedPassword = await bcrypt.hash(randomPassword, 10);
+
+  const createdUser = await User.create({
+    fullName: party.leader || party.name || "Party Account",
+    email: normalizedEmail,
+    password: hashedPassword,
+    role: "party",
+    partyId: party._id,
+    voterIdNumber: `PRTY-${party._id.toString().slice(-8).toUpperCase()}`,
+    isEmailVerified: true,
+    isVerified: isActiveParty,
+    verified: isActiveParty,
+    verificationStatus: isActiveParty ? "auto-approved" : "blocked",
+  });
+
+  return createdUser;
 };
 
 const normalizePartyDocuments = (documents = []) => {
@@ -86,6 +153,7 @@ const formatPartyPayload = (party, index = 0) => ({
   totalVotes: party.currentVotes || 0,
   documents: normalizePartyDocuments(party.documents || []),
   createdAt: party.createdAt,
+  registeredAt: party.createdAt,
   rank: index + 1,
 });
 
@@ -156,9 +224,20 @@ const createParty = async (req, res, next) => {
       logo,
       documents,
     } = req.body;
+    const normalizedEmail = normalizeEmail(email);
 
     if (!name) {
       return next(new AppError("Name is required", 400));
+    }
+    if (!normalizedEmail) {
+      return next(new AppError("Email is required", 400));
+    }
+
+    if (normalizedEmail) {
+      const conflictingUser = await findUserByEmail(normalizedEmail);
+      if (conflictingUser && conflictingUser.role !== "party") {
+        return next(new AppError("Email is already used by another non-party account", 409));
+      }
     }
 
     // prevent duplicate names for same election if electionId provided
@@ -189,7 +268,7 @@ const createParty = async (req, res, next) => {
       name,
       shortName,
       leader,
-      email,
+      email: normalizedEmail,
       mobile,
       symbol,
       logo,
@@ -203,6 +282,7 @@ const createParty = async (req, res, next) => {
     });
 
     await party.save();
+    await ensurePartyAuthAccount(party);
     res.status(201).json({ data: formatPartyPayload(party) });
   } catch (error) {
     console.error("createParty failed", error);
@@ -231,6 +311,19 @@ const updateParty = async (req, res, next) => {
       party[key] = req.body[key];
     });
 
+    if (req.body.email !== undefined) {
+      party.email = normalizeEmail(req.body.email);
+      if (!party.email) {
+        return next(new AppError("Email is required", 400));
+      }
+      if (party.email) {
+        const conflictingUser = await findUserByEmail(party.email);
+        if (conflictingUser && conflictingUser.role !== "party") {
+          return next(new AppError("Email is already used by another non-party account", 409));
+        }
+      }
+    }
+
     if (party.status) {
       const normalized = party.status.toString().toLowerCase();
       if (["approved", "rejected", "pending", "blocked"].includes(normalized)) {
@@ -254,6 +347,7 @@ const updateParty = async (req, res, next) => {
     }
 
     await party.save();
+    await ensurePartyAuthAccount(party);
     res.status(200).json({ data: formatPartyPayload(party) });
   } catch (error) {
     next(error);
@@ -269,6 +363,8 @@ const deleteParty = async (req, res, next) => {
 
     if (!party) return next(new AppError("Party not found", 404));
 
+    await User.deleteMany({ role: "party", partyId: party._id });
+
     res.status(200).json({ message: "Party deleted" });
   } catch (error) {
     next(error);
@@ -276,17 +372,28 @@ const deleteParty = async (req, res, next) => {
 };
 
 // 🔴 GET PARTY DASHBOARD (Party Only)
+const resolvePartyIdForUser = async (user = {}) => {
+  if (user?.partyId) return user.partyId;
+  const normalizedEmail = normalizeEmail(user?.email);
+  if (!normalizedEmail) return null;
+
+  const partyByEmail = await Party.findOne({
+    email: { $regex: `^${escapeRegex(normalizedEmail)}$`, $options: "i" },
+  }).sort({ createdAt: -1 });
+
+  if (!partyByEmail?._id) return null;
+
+  await User.findByIdAndUpdate(user._id, { partyId: partyByEmail._id }).catch(
+    () => {},
+  );
+  return partyByEmail._id;
+};
+
 const getPartyDashboard = async (req, res, next) => {
   try {
-    let partyId = req.user.partyId;
-
+    const partyId = await resolvePartyIdForUser(req.user);
     if (!partyId) {
-      const first = await Party.findOne({}).sort({ createdAt: -1 });
-      if (first?._id) {
-        partyId = first._id;
-      } else {
-        return next(new AppError("Party ID not found in user profile", 400));
-      }
+      return next(new AppError("Party ID not found in user profile", 400));
     }
 
     const party = await Party.findById(partyId).populate("electionId");
@@ -340,14 +447,9 @@ const getPartyDashboard = async (req, res, next) => {
 // 🔴 UPDATE PARTY PROFILE (LIMITED - Party Self Edit Only)
 const updatePartyProfile = async (req, res, next) => {
   try {
-    let partyId = req.user.partyId;
+    const partyId = await resolvePartyIdForUser(req.user);
     if (!partyId) {
-      const first = await Party.findOne({}).sort({ createdAt: -1 });
-      if (first?._id) {
-        partyId = first._id;
-      } else {
-        return next(new AppError("Party ID not found in user profile", 400));
-      }
+      return next(new AppError("Party ID not found in user profile", 400));
     }
 
     // Only allow these fields to be updated
@@ -385,14 +487,9 @@ const updatePartyProfile = async (req, res, next) => {
 // 🔴 GET PARTY ANALYTICS (Read-Only)
 const getPartyAnalytics = async (req, res, next) => {
   try {
-    let partyId = req.user.partyId;
+    const partyId = await resolvePartyIdForUser(req.user);
     if (!partyId) {
-      const first = await Party.findOne({}).sort({ createdAt: -1 });
-      if (first?._id) {
-        partyId = first._id;
-      } else {
-        return next(new AppError("Party ID not found in user profile", 400));
-      }
+      return next(new AppError("Party ID not found in user profile", 400));
     }
 
     const party = await Party.findById(partyId);
@@ -454,7 +551,7 @@ const getPartyAnalytics = async (req, res, next) => {
 // 🔴 GET PARTY RESULTS
 const getPartyResults = async (req, res, next) => {
   try {
-    const partyId = req.user.partyId;
+    const partyId = await resolvePartyIdForUser(req.user);
 
     if (!partyId) {
       return next(new AppError("Party ID not found in user profile", 400));

@@ -1,9 +1,75 @@
 const User = require("../models/User");
+const Party = require("../models/Party");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const sendEmail = require("../utils/email");
 const JWT_SECRET = process.env.JWT_SECRET || "devsecret";
+
+const normalizeEmail = (email = "") => String(email || "").trim().toLowerCase();
+const escapeRegex = (value = "") => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const resolvePartyLoginContext = async (email) => {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) {
+    return { normalizedEmail: "", partyUser: null, partyProfile: null };
+  }
+
+  const emailRegex = new RegExp(`^${escapeRegex(normalizedEmail)}$`, "i");
+  let partyUser = await User.findOne({ email: emailRegex, role: "party" });
+  let partyProfile = await Party.findOne({ email: emailRegex }).sort({
+    createdAt: -1,
+  });
+
+  if (!partyUser && partyProfile) {
+    const randomPassword = crypto.randomBytes(18).toString("hex");
+    const hashedPassword = await bcrypt.hash(randomPassword, 10);
+    const isActiveParty =
+      partyProfile.isActive !== false &&
+      String(partyProfile.status || "").toLowerCase() !== "rejected";
+
+    partyUser = await User.create({
+      fullName: partyProfile.leader || partyProfile.name || "Party Account",
+      email: normalizedEmail,
+      password: hashedPassword,
+      role: "party",
+      partyId: partyProfile._id,
+      voterIdNumber: `PRTY-${partyProfile._id.toString().slice(-8).toUpperCase()}`,
+      isEmailVerified: true,
+      isVerified: isActiveParty,
+      verified: isActiveParty,
+      verificationStatus: isActiveParty ? "auto-approved" : "blocked",
+    });
+  }
+
+  if (partyUser?.partyId && !partyProfile) {
+    partyProfile = await Party.findById(partyUser.partyId);
+  }
+
+  if (partyUser && partyProfile) {
+    const isActiveParty =
+      partyProfile.isActive !== false &&
+      String(partyProfile.status || "").toLowerCase() !== "rejected";
+
+    partyUser.fullName =
+      partyProfile.leader || partyProfile.name || partyUser.fullName;
+    partyUser.email = normalizedEmail;
+    partyUser.partyId = partyProfile._id;
+    partyUser.isEmailVerified = true;
+    partyUser.isVerified = isActiveParty;
+    partyUser.verified = isActiveParty;
+    partyUser.verificationStatus = isActiveParty ? "auto-approved" : "blocked";
+    if (!partyUser.voterIdNumber) {
+      partyUser.voterIdNumber = `PRTY-${partyProfile._id
+        .toString()
+        .slice(-8)
+        .toUpperCase()}`;
+    }
+    await partyUser.save();
+  }
+
+  return { normalizedEmail, partyUser, partyProfile };
+};
 
 const registerUser = async (req, res) => {
   try {
@@ -275,22 +341,25 @@ const partyLogin = async (req, res) => {
       return res.status(400).json({ message: "Email is required" });
     }
 
-    const user = await User.findOne({ email, role: "party" });
+    const { partyUser, partyProfile, normalizedEmail } =
+      await resolvePartyLoginContext(email);
 
-    if (!user) {
+    if (!partyUser) {
       return res.status(404).json({ message: "Party account not found" });
     }
 
     // Fixed OTP for demo
     const otp = "54321";
 
-    user.otp = otp;
-    user.otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-    await user.save();
+    partyUser.otp = otp;
+    partyUser.otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+    await partyUser.save();
 
     res.json({
       message: "OTP generated (demo)",
       otp,
+      email: normalizedEmail,
+      partyId: partyProfile?._id || partyUser.partyId || null,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -306,42 +375,38 @@ const verifyPartyOtp = async (req, res) => {
       return res.status(400).json({ message: "Email and OTP required" });
     }
 
-    const party = await User.findOne({ email, role: "party" });
+    const { partyUser, partyProfile, normalizedEmail } =
+      await resolvePartyLoginContext(email);
 
-    if (!party) {
+    if (!partyUser) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
     if (
-      !party.otp ||
-      party.otp !== otp ||
-      !party.otpExpiry ||
-      party.otpExpiry < new Date()
+      !partyUser.otp ||
+      partyUser.otp !== otp ||
+      !partyUser.otpExpiry ||
+      partyUser.otpExpiry < new Date()
     ) {
       return res.status(400).json({ message: "Invalid or expired OTP" });
     }
 
-    // Ensure partyId is linked; fallback to first party record
-    if (!party.partyId) {
-      const PartyModel = require("../models/Party");
-      const firstParty = await PartyModel.findOne({}).lean();
-      if (firstParty?._id) {
-        party.partyId = firstParty._id;
-      }
+    if (!partyUser.partyId && partyProfile?._id) {
+      partyUser.partyId = partyProfile._id;
     }
 
     // Invalidate OTP
-    party.otp = undefined;
-    party.otpExpiry = undefined;
-    await party.save();
+    partyUser.otp = undefined;
+    partyUser.otpExpiry = undefined;
+    await partyUser.save();
 
     // Generate JWT
     const token = jwt.sign(
       {
-        id: party._id,
-        role: party.role,
-        partyId: party.partyId,
-        email: party.email,
+        id: partyUser._id,
+        role: partyUser.role,
+        partyId: partyUser.partyId,
+        email: partyUser.email,
       },
       JWT_SECRET,
     );
@@ -349,8 +414,11 @@ const verifyPartyOtp = async (req, res) => {
     res.json({
       token,
       user: {
-        name: party.fullName,
-        email: party.email,
+        id: partyUser._id,
+        name: partyUser.fullName,
+        email: normalizedEmail || partyUser.email,
+        partyId: partyUser.partyId || partyProfile?._id || null,
+        partyName: partyProfile?.name || partyUser.fullName,
       },
     });
   } catch (error) {
@@ -448,24 +516,34 @@ const getMe = async (req, res) => {
       req.user?.verificationStatus === "pending" && (req.user?.isVerified || req.user?.verified)
         ? "auto-approved"
         : req.user?.verificationStatus || "pending";
+
+    const baseData = {
+      id: req.user?._id,
+      fullName: req.user?.fullName,
+      email: req.user?.email,
+      mobile: req.user?.mobile || "",
+      role: req.user?.role,
+      partyId: req.user?.partyId || null,
+      verificationStatus,
+      verified: Boolean(req.user?.verified),
+      isVerified: Boolean(req.user?.isVerified),
+      createdAt: req.user?.createdAt || null,
+      updatedAt: req.user?.updatedAt || null,
+    };
+
+    if (req.user?.role !== "voter") {
+      return res.json({ data: baseData });
+    }
+
     return res.json({
       data: {
-        id: req.user?._id,
-        fullName: req.user?.fullName,
-        email: req.user?.email,
-        mobile: req.user?.mobile || "",
-        role: req.user?.role,
+        ...baseData,
         voterId: voterId || "",
         voterIdNumber: req.user?.voterIdNumber || "",
         address: req.user?.address || "",
         dateOfBirth: req.user?.dateOfBirth || null,
         profilePhoto: req.user?.profilePhoto || "",
-        verificationStatus,
-        verified: Boolean(req.user?.verified),
-        isVerified: Boolean(req.user?.isVerified),
         hasVoted: Boolean(req.user?.hasVoted),
-        createdAt: req.user?.createdAt || null,
-        updatedAt: req.user?.updatedAt || null,
       },
     });
   } catch (error) {

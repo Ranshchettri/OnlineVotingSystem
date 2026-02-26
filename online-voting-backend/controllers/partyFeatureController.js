@@ -4,16 +4,22 @@ const Election = require("../models/Election");
 const Vote = require("../models/Vote");
 const AppError = require("../utils/AppError");
 
+const normalizeEmail = (email = "") => String(email || "").trim().toLowerCase();
+const escapeRegex = (value = "") => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 const resolveParty = async (req) => {
-  let partyId = req.user?.partyId || req.params.partyId;
-  // Fallback: pick the first party if none is linked (demo/dev flow)
-  if (!partyId) {
-    const first = await Party.findOne({}).sort({ createdAt: -1 });
-    if (first?._id) {
-      partyId = first._id;
+  let partyId = req.user?.partyId || req.params.partyId || null;
+
+  if (!partyId && req.user?.role === "party" && req.user?.email) {
+    const emailRegex = new RegExp(`^${escapeRegex(normalizeEmail(req.user.email))}$`, "i");
+    const partyByEmail = await Party.findOne({ email: emailRegex }).sort({ createdAt: -1 });
+    if (partyByEmail?._id) {
+      partyId = partyByEmail._id;
     }
   }
+
   if (!partyId) throw new AppError("Party ID not found", 400);
+
   const party = await Party.findById(partyId);
   if (!party) throw new AppError("Party not found", 404);
   return party;
@@ -245,7 +251,7 @@ const getCurrentStats = async (req, res, next) => {
       data: {
         currentElection: {
           id: election._id,
-          title: election.title,
+          title: election.title || election.name || "Election",
           status: election.status,
           startDate: election.startDate,
           endDate: election.endDate,

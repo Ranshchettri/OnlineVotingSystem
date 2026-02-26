@@ -17,6 +17,8 @@ router.post("/admin/:id/reject", protect, adminOnly, rejectVoter);
 router.post("/admin", protect, adminOnly, createVoter);
 router.put("/admin/:id", protect, adminOnly, updateVoter);
 router.patch("/admin/:id", protect, adminOnly, updateVoter);
+router.put("/:id", protect, adminOnly, updateVoter);
+router.patch("/:id", protect, adminOnly, updateVoter);
 router.get("/", protect, adminOnly, getVoterStats);
 
 module.exports = router;
