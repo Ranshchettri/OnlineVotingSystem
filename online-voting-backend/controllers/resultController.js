@@ -201,4 +201,70 @@ const getResults = async (req, res, next) => {
   }
 };
 
-module.exports = { calculateResults, getResults };
+// GET /api/results/party/:electionId
+const getPartyStandings = async (req, res, next) => {
+  try {
+    const { electionId } = req.params;
+    const election = await Election.findById(electionId).select("_id title totalVotes");
+    if (!election) return next(new AppError("Election not found", 404));
+
+    const partyVotes = await Vote.aggregate([
+      { $match: { electionId: election._id, partyId: { $ne: null } } },
+      { $group: { _id: "$partyId", votes: { $sum: 1 } } },
+      { $sort: { votes: -1 } },
+    ]);
+
+    if (!partyVotes.length) {
+      return res.status(200).json({
+        status: "success",
+        data: {
+          electionId: election._id,
+          totalVotes: Number(election.totalVotes || 0),
+          parties: [],
+          winner: null,
+          runnerUp: null,
+        },
+      });
+    }
+
+    const partyIds = partyVotes.map((item) => item._id).filter(Boolean);
+    const parties = await Party.find({ _id: { $in: partyIds } })
+      .select("_id name logo symbol color shortName")
+      .lean();
+
+    const byId = new Map(parties.map((item) => [item._id.toString(), item]));
+    const totalVotes = partyVotes.reduce((sum, item) => sum + Number(item.votes || 0), 0);
+
+    const ranked = partyVotes
+      .map((item, index) => {
+        const ref = byId.get(item._id.toString()) || {};
+        const votes = Number(item.votes || 0);
+        return {
+          id: item._id.toString(),
+          rank: index + 1,
+          name: ref.name || "Party",
+          shortName: ref.shortName || "",
+          logo: ref.logo || ref.symbol || "",
+          color: ref.color || "#2563eb",
+          votes,
+          percentage: totalVotes ? Number(((votes / totalVotes) * 100).toFixed(2)) : 0,
+        };
+      })
+      .sort((a, b) => b.votes - a.votes);
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        electionId: election._id,
+        totalVotes,
+        parties: ranked,
+        winner: ranked[0] || null,
+        runnerUp: ranked[1] || null,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { calculateResults, getResults, getPartyStandings };

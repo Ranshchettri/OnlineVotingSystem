@@ -96,6 +96,15 @@ const castVote = async (req, res, next) => {
       });
       if (partyId) {
         await Party.findByIdAndUpdate(partyId, { $inc: { currentVotes: 1 } });
+        const matched = await Election.updateOne(
+          { _id: electionId, "participatingParties.partyId": partyId },
+          { $inc: { "participatingParties.$.votes": 1 } },
+        );
+        if (!matched.modifiedCount) {
+          await Election.findByIdAndUpdate(electionId, {
+            $push: { participatingParties: { partyId, votes: 1, percentage: 0 } },
+          });
+        }
       }
       await User.findByIdAndUpdate(userId, {
         hasVoted: true,

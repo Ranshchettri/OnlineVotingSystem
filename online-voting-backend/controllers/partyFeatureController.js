@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const Party = require("../models/Party");
 const Election = require("../models/Election");
 const Vote = require("../models/Vote");
+const Notification = require("../models/Notification");
 const AppError = require("../utils/AppError");
 
 const normalizeEmail = (email = "") => String(email || "").trim().toLowerCase();
@@ -130,6 +131,14 @@ const updatePartyProfileFull = async (req, res, next) => {
     });
 
     await party.save();
+    if (req.user?._id) {
+      await Notification.create({
+        userId: req.user._id,
+        type: "info",
+        title: "Profile updated",
+        message: "Your party profile has been updated.",
+      }).catch(() => {});
+    }
     res.json({ success: true, message: "Profile updated" });
   } catch (error) {
     next(error);
@@ -171,6 +180,14 @@ const updateFuturePlans = async (req, res, next) => {
 
     party.futurePlans = futurePlans.filter((p) => p && p.trim());
     await party.save();
+    if (req.user?._id) {
+      await Notification.create({
+        userId: req.user._id,
+        type: "info",
+        title: "Future plans updated",
+        message: "Your future plans have been updated.",
+      }).catch(() => {});
+    }
     res.json({ success: true, count: party.futurePlans.length });
   } catch (error) {
     next(error);
@@ -357,20 +374,47 @@ const getCurrentStats = async (req, res, next) => {
       : [];
 
     const requestedPartyIds = [...new Set([...fromParticipatingList, party._id.toString()])];
-    let electionParties = requestedPartyIds.length
-      ? await Party.find({ _id: { $in: requestedPartyIds } }).lean()
-      : [];
+    const votedPartyIds = [...votesByPartyId.keys()];
+    const electionTypeRegex = election?.type
+      ? new RegExp(`^${escapeRegex(String(election.type))}$`, "i")
+      : null;
 
-    if (!electionParties.length) {
-      electionParties = await Party.find({
-        $or: [{ electionId: election._id }, { _id: party._id }],
-      }).lean();
+    const partiesById = new Map();
+    const mergeParties = (items = []) => {
+      items.forEach((item) => {
+        const id = item?._id?.toString?.();
+        if (id) partiesById.set(id, item);
+      });
+    };
+
+    if (requestedPartyIds.length) {
+      const linkedParties = await Party.find({ _id: { $in: requestedPartyIds } }).lean();
+      mergeParties(linkedParties);
     }
 
-    if (!electionParties.find((item) => item._id?.toString() === party._id.toString())) {
+    if (votedPartyIds.length) {
+      const votedParties = await Party.find({ _id: { $in: votedPartyIds } }).lean();
+      mergeParties(votedParties);
+    }
+
+    if (partiesById.size <= 1) {
+      const fallbackFilter = {
+        status: { $ne: "rejected" },
+        $or: [{ electionId: election._id }, { isActive: true }],
+      };
+      if (electionTypeRegex) {
+        fallbackFilter.$or.push({ electionType: electionTypeRegex });
+      }
+      const fallbackParties = await Party.find(fallbackFilter).lean();
+      mergeParties(fallbackParties);
+    }
+
+    if (!partiesById.has(party._id.toString())) {
       const ownParty = await Party.findById(party._id).lean();
-      if (ownParty?._id) electionParties.push(ownParty);
+      if (ownParty?._id) mergeParties([ownParty]);
     }
+
+    const electionParties = [...partiesById.values()];
 
     const partiesWithNames = electionParties.map((item) => ({
       partyId: item._id,
