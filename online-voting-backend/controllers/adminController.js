@@ -73,12 +73,19 @@ const getDashboardStats = async (req, res, next) => {
         Party.countDocuments({ status: "pending" }),
       ]);
 
+    const now = new Date();
     const currentElection =
       (await Election.findOne({ status: "Running" }).sort({ startDate: -1 })) ||
       (await Election.findOne({
         isActive: true,
-        startDate: { $lte: new Date() },
-        endDate: { $gte: new Date() },
+        startDate: { $lte: now },
+        endDate: { $gte: now },
+      }).sort({ startDate: -1 })) ||
+      (await Election.findOne({
+        startDate: { $lte: now },
+        endDate: { $gte: now },
+        isEnded: { $ne: true },
+        allowVoting: { $ne: false },
       }).sort({ startDate: -1 }));
 
     let currentElectionVotes = 0;

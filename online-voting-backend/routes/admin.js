@@ -20,6 +20,7 @@ const {
   getAuditLogs,
   forceLogoutAllSessions,
 } = require("../controllers/adminController");
+const { updateVoter } = require("../controllers/voterAdminController");
 
 // Dashboard
 router.get("/dashboard", protect, adminOnly, getDashboardStats);
@@ -36,6 +37,8 @@ router.put("/elections/:id/stop", protect, adminOnly, stopElection);
 router.get("/voters", protect, adminOnly, getVoters);
 router.put("/voters/:id/verify", protect, adminOnly, verifyVoter);
 router.post("/voter/:id/approve", protect, adminOnly, verifyVoter); // alias
+router.put("/voters/:id", protect, adminOnly, updateVoter);
+router.patch("/voters/:id", protect, adminOnly, updateVoter);
 router.delete("/voters/:id", protect, adminOnly, deleteVoter);
 
 // Parties
