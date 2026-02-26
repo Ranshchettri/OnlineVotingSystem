@@ -55,5 +55,7 @@ router.get("/live-tracking/:electionId", protect, adminOnly, getLiveTracking);
 // Audit logs
 router.get("/audit-logs", protect, adminOnly, getAuditLogs);
 router.post("/sessions/force-logout", protect, adminOnly, forceLogoutAllSessions);
+router.post("/sessions/logout-all", protect, adminOnly, forceLogoutAllSessions);
+router.post("/force-logout", protect, adminOnly, forceLogoutAllSessions);
 
 module.exports = router;

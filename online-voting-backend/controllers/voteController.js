@@ -2,6 +2,7 @@ const Vote = require("../models/Vote");
 const Election = require("../models/Election");
 const Candidate = require("../models/Candidate");
 const Party = require("../models/Party");
+const User = require("../models/User");
 const AppError = require("../utils/AppError");
 
 // POST /api/votes
@@ -96,6 +97,11 @@ const castVote = async (req, res, next) => {
       if (partyId) {
         await Party.findByIdAndUpdate(partyId, { $inc: { currentVotes: 1 } });
       }
+      await User.findByIdAndUpdate(userId, {
+        hasVoted: true,
+        votedElectionId: electionId,
+        votedAt: new Date(),
+      });
     } catch (err) {
       console.error("Failed to update vote counters", err.message);
     }
