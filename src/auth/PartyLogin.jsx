@@ -7,7 +7,7 @@ export default function PartyLogin() {
   const nav = useNavigate();
   const [step, setStep] = useState("login");
   const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("54321");
+  const [otp, setOtp] = useState("");
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -19,8 +19,8 @@ export default function PartyLogin() {
       const normalizedEmail = email.trim().toLowerCase();
       const res = await api.post("/auth/party-login", { email: normalizedEmail });
       setEmail(normalizedEmail);
-      setOtp(res.data?.otp || "54321");
-      setStatus("Demo OTP generated (no email).");
+      setOtp(res.data?.otp || "");
+      setStatus("OTP generated successfully.");
       setStep("otp");
     } catch (err) {
       setStatus(err.response?.data?.message || "Failed to send OTP");
@@ -57,7 +57,7 @@ export default function PartyLogin() {
         </div>
         <form className="auth-form" onSubmit={step === "login" ? sendOtp : verifyOtp}>
           <h1>Party sign in</h1>
-          <p className="subtitle">Enter official party email, then confirm with demo OTP 54321.</p>
+          <p className="subtitle">Enter official party email and verify using the OTP code.</p>
           {status && <div className="preview-chip">{status}</div>}
 
           {step === "login" && (
@@ -80,7 +80,7 @@ export default function PartyLogin() {
           {step === "otp" && (
             <>
               <div className="auth-field">
-                <label>OTP (demo)</label>
+                <label>OTP</label>
                 <input
                   type="text"
                   value={otp}
@@ -89,7 +89,6 @@ export default function PartyLogin() {
                   required
                 />
               </div>
-              <div className="auth-status">Demo OTP: {otp || "54321"}</div>
               <button className="auth-btn" type="submit" disabled={loading}>
                 {loading ? "Verifying..." : "Verify & Enter"}
               </button>

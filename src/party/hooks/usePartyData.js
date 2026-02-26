@@ -22,13 +22,14 @@ export function usePartyData() {
     setLoading(true);
     try {
       const sessionParty = getSessionParty();
-      const fallbackEmail = normalizeEmail(sessionParty.email);
+      let fallbackEmail = normalizeEmail(sessionParty.email);
       let partyId = sessionParty.partyId || sessionParty.id || "";
 
       if (!partyId) {
         const meRes = await api.get("/auth/me");
         const me = meRes.data?.data || {};
         partyId = me.partyId || "";
+        if (!fallbackEmail) fallbackEmail = normalizeEmail(me.email);
       }
 
       if (partyId) {
@@ -47,14 +48,14 @@ export function usePartyData() {
       const list = Array.isArray(allParties) ? allParties : [];
 
       if (!fallbackEmail) {
-        setParty(list[0] || null);
+        setParty(null);
         return;
       }
 
       const matched = list.find(
         (item) => normalizeEmail(item?.email) === fallbackEmail,
       );
-      setParty(matched || list[0] || null);
+      setParty(matched || null);
     } catch (err) {
       console.error("Failed to load party data", err?.message || err);
       setParty(null);
@@ -71,4 +72,3 @@ export function usePartyData() {
 
   return { party, loading, refreshParty: load };
 }
-

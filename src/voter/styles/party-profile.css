@@ -60,6 +60,13 @@
   font-weight: 700;
 }
 
+.party-hero-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
 .party-hero-title {
   font-size: 26px;
   font-weight: 700;

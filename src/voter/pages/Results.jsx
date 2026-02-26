@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "../../services/api";
-import { formatDate, getTimeLeft, normalizeElectionStatus, pickCurrentElection } from "../utils/election";
+import { getPartyLogoSrc, getPartyShortLabel } from "../../shared/utils/partyDisplay";
+import { getTimeLeft, normalizeElectionStatus, pickCurrentElection } from "../utils/election";
 import "../styles/results.css";
 
 const mapParty = (party) => ({
@@ -8,9 +9,9 @@ const mapParty = (party) => ({
   electionId:
     party.electionId?._id?.toString?.() || party.electionId?.toString?.() || "",
   name: party.name || "Unnamed Party",
-  short: party.shortName || party.symbol || party.name?.slice(0, 3) || "PRT",
+  short: getPartyShortLabel(party, "PRT"),
   color: party.color || "#2563eb",
-  logo: party.logo || party.symbol || "",
+  logo: getPartyLogoSrc(party),
   votes: Number(party.totalVotes || party.currentVotes || 0),
 });
 
@@ -209,7 +210,7 @@ export default function Results() {
                     {winner?.logo ? (
                       <img src={winner.logo} alt={winner.name} className="result-logo-img" />
                     ) : (
-                      <span>{winner?.short || "N/A"}</span>
+                      <span>{getPartyShortLabel(winner, "N/A")}</span>
                     )}
                   </div>
 

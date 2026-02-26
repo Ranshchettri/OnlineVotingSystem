@@ -1,12 +1,6 @@
-import { usePartyData } from "../hooks/usePartyData";
 import Emblem from "../../assets/nepal-emblem.svg";
 
 export default function PartyHeader() {
-  const { party } = usePartyData();
-  const logo = party?.logo || party?.symbol || Emblem;
-  const title = party?.name || "Party Portal";
-  const showImage = typeof logo === "string" && (logo.startsWith("data:") || logo.startsWith("http"));
-
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("party");
@@ -17,10 +11,10 @@ export default function PartyHeader() {
     <header className="party-topbar">
       <div className="party-brand">
         <div className="party-brand-logo">
-          {showImage ? <img src={logo} alt={title} /> : <span>{party?.shortName || party?.symbol || "P"}</span>}
+          <img src={Emblem} alt="Nepal emblem" />
         </div>
         <div>
-          <div className="party-brand-title">{title}</div>
+          <div className="party-brand-title">Party Portal</div>
           <div className="party-brand-sub">Political Party Management</div>
         </div>
       </div>

@@ -1,5 +1,64 @@
-import { partyRules } from "../data/fakePartyData";
 import "../styles/rules.css";
+
+const partyRulesContent = {
+  title: "Party Rules & Guidelines",
+  subtitle: "Important rules for political parties",
+  rules: [
+    "Only government-issued email addresses are allowed for party accounts.",
+    "Party profiles must be activated by the Election Commission Admin.",
+    "Profile editing is locked 24 hours before election start time.",
+    "Development percentages and analytics are controlled by Admin only.",
+    "Parties cannot edit or manipulate performance metrics.",
+    "Maximum 50 future plans can be added in About section.",
+    "All party information must be accurate and verifiable.",
+    "Parties with development score below 40% may be auto-blocked.",
+    "Vote counts are updated in real-time and are read-only.",
+    "Results are automatically calculated when election ends.",
+  ],
+  bestPractices: {
+    title: "Best Practices",
+    subtitle: "Guidelines for success",
+    sections: [
+      {
+        title: "Profile Management",
+        items: [
+          "Keep party logo and team photos updated.",
+          "Write clear and realistic future plans.",
+          "Update vision and motivation regularly.",
+          "Ensure all team member information is accurate.",
+        ],
+      },
+      {
+        title: "During Elections",
+        items: [
+          "Monitor vote count in real-time.",
+          "Check competitor standings for strategy.",
+          "Respond to voter concerns promptly.",
+          "Maintain transparency in all communications.",
+        ],
+      },
+      {
+        title: "Performance Metrics",
+        items: [
+          "Development scores are based on policy implementation.",
+          "Good work and bad work are evaluated by feedback.",
+          "Historical performance affects voter trust.",
+          "Focus on consistent positive impact.",
+        ],
+      },
+    ],
+  },
+  restrictions: [
+    "Editing development percentages or analytics",
+    "Manipulating vote counts or election data",
+    "Editing profile after deadline",
+    "Sharing false or misleading information",
+  ],
+  help: {
+    phone: "01-4200000",
+    email: "party-support@ovs.gov.np",
+  },
+};
 
 const IconDoc = () => <i className="ri-file-list-line" aria-hidden="true" />;
 const IconBulb = () => <i className="ri-lightbulb-line" aria-hidden="true" />;
@@ -15,8 +74,8 @@ export default function PartyRules() {
     <div className="party-page">
       <div className="party-page-header">
         <div>
-          <h1>{partyRules.title}</h1>
-          <p>{partyRules.subtitle}</p>
+          <h1>{partyRulesContent.title}</h1>
+          <p>{partyRulesContent.subtitle}</p>
         </div>
       </div>
 
@@ -31,7 +90,7 @@ export default function PartyRules() {
           </div>
         </div>
         <div className="rules-list">
-          {partyRules.rules.map((rule, index) => (
+          {partyRulesContent.rules.map((rule, index) => (
             <div key={rule} className="rules-item">
               <span className="rules-index">{index + 1}</span>
               {rule}
@@ -46,12 +105,12 @@ export default function PartyRules() {
             <IconBulb />
           </div>
           <div>
-            <h3>{partyRules.bestPractices.title}</h3>
-            <p>{partyRules.bestPractices.subtitle}</p>
+            <h3>{partyRulesContent.bestPractices.title}</h3>
+            <p>{partyRulesContent.bestPractices.subtitle}</p>
           </div>
         </div>
         <div className="rules-best-list">
-          {partyRules.bestPractices.sections.map((section) => (
+          {partyRulesContent.bestPractices.sections.map((section) => (
             <div key={section.title} className="rules-best-section">
               <h4>{section.title}</h4>
               <ul>
@@ -80,7 +139,7 @@ export default function PartyRules() {
           </div>
         </div>
         <ul>
-          {partyRules.restrictions.map((item) => (
+          {partyRulesContent.restrictions.map((item) => (
             <li key={item}>
               <span>
                 <IconClose />
@@ -103,10 +162,10 @@ export default function PartyRules() {
         </div>
         <div className="rules-help-list">
           <span>
-            <IconPhone /> Helpline: {partyRules.help.phone}
+            <IconPhone /> Helpline: {partyRulesContent.help.phone}
           </span>
           <span>
-            <IconMail /> Email: {partyRules.help.email}
+            <IconMail /> Email: {partyRulesContent.help.email}
           </span>
         </div>
       </div>

@@ -7,6 +7,14 @@
   font-size: 12px;
 }
 
+.progress-warning strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #b45309;
+}
+
 .progress-warning p {
   margin-top: 4px;
   font-size: 11px;
@@ -85,6 +93,7 @@
   font-size: 11px;
   display: flex;
   justify-content: space-between;
+  align-items: center;
 }
 
 .progress-bar-row.success {

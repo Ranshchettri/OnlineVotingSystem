@@ -182,3 +182,12 @@
   display: grid;
   gap: 6px;
 }
+
+.about-message {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #fdba74;
+  background: #fff7ed;
+  color: #b45309;
+  font-size: 12px;
+}

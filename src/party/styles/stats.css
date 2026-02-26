@@ -55,6 +55,13 @@
   color: #fff;
 }
 
+.stats-hero-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
 .stats-hero-title span {
   display: block;
   font-size: 16px;
@@ -186,6 +193,13 @@
   align-items: center;
   justify-content: center;
   border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.stats-rank-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
 }
 
 .stats-rank-name {

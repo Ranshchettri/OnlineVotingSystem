@@ -10,6 +10,7 @@ import FaceVerifyModal from "../components/FaceVerifyModal";
 import api from "../../services/api";
 import { confirmVote } from "../services/voteApi";
 import { getStoredVoter } from "../utils/user";
+import { getPartyLogoSrc, getPartyShortLabel } from "../../shared/utils/partyDisplay";
 import {
   formatDateTime,
   getTimeLeft,
@@ -113,9 +114,10 @@ export default function Overview() {
           leader: party.leader || "N/A",
           votes: Number(party.totalVotes || party.currentVotes || 0),
           score: Number(party.development || party.goodWork || 0),
-          short:
-            party.shortName || party.symbol || party.name?.slice(0, 3) || "PRT",
-          logo: party.logo || party.symbol || "",
+          short: getPartyShortLabel(party, "PRT"),
+          shortName: party.shortName || "",
+          symbol: party.symbol || "",
+          logo: getPartyLogoSrc(party),
           color: party.color || "#2563eb",
         }))
         .sort((a, b) => (b.score === a.score ? b.votes - a.votes : b.score - a.score))

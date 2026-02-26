@@ -2,91 +2,141 @@ import { useEffect, useState } from "react";
 import api from "../../services/api";
 import "../styles/notifications.css";
 
+const formatRelativeTime = (value) => {
+  if (!value) return "just now";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "just now";
+
+  const diffMs = Date.now() - date.getTime();
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+
+  if (diffMs < minute) return "just now";
+  if (diffMs < hour) return `${Math.floor(diffMs / minute)} min ago`;
+  if (diffMs < day) return `${Math.floor(diffMs / hour)} hour${Math.floor(diffMs / hour) > 1 ? "s" : ""} ago`;
+  return `${Math.floor(diffMs / day)} day${Math.floor(diffMs / day) > 1 ? "s" : ""} ago`;
+};
+
 const Icon = ({ type }) => {
   if (type === "warning") return <i className="ri-error-warning-line" aria-hidden="true" />;
   if (type === "success") return <i className="ri-checkbox-circle-line" aria-hidden="true" />;
+  if (type === "error") return <i className="ri-close-circle-line" aria-hidden="true" />;
   return <i className="ri-information-line" aria-hidden="true" />;
 };
 
 export default function PartyNotifications() {
   const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [error, setError] = useState("");
+
+  const load = async () => {
+    try {
+      const res = await api.get("/notifications");
+      const payload = res.data?.data || {};
+      const notifications = Array.isArray(payload.notifications) ? payload.notifications : [];
+      setItems(notifications);
+      setUnreadCount(Number(payload.unreadCount || 0));
+      setError("");
+    } catch (err) {
+      setItems([]);
+      setUnreadCount(0);
+      setError(err.response?.data?.message || "Failed to load notifications.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        // Build notifications from live stats
-        const res = await api.get("/parties/current-stats");
-        const data = res.data?.data || {};
-        const totalVotes = data.totalVotes || data.stats?.ownVotes || 0;
-        const yourShare = data.stats?.voteShare || 0;
-        const lead = data.stats?.leadOverSecond || 0;
-        setItems([
-          {
-            id: "live",
-            type: "info",
-            title: "Live vote update",
-            text: `You currently have ${totalVotes} votes with ${yourShare}% share.`,
-            time: new Date().toLocaleTimeString(),
-          },
-          {
-            id: "lead",
-            type: lead > 0 ? "success" : "warning",
-            title: lead > 0 ? "You are leading" : "Lead not established",
-            text:
-              lead > 0
-                ? `You are ahead by ${lead} votes.`
-                : "Keep campaigning to secure the lead.",
-            time: new Date().toLocaleTimeString(),
-          },
-        ]);
-      } catch (err) {
-        console.error("Failed to load notifications", err.message);
-        setItems([
-          {
-            id: "fallback",
-            type: "warning",
-            title: "Unable to fetch live notifications",
-            text: "Backend may be offline. Data will refresh automatically once available.",
-            time: new Date().toLocaleTimeString(),
-          },
-        ]);
-      }
-    };
     load();
     const interval = setInterval(load, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  const markAllAsRead = async () => {
+    try {
+      await api.patch("/notifications/read-all");
+      setItems((prev) => prev.map((item) => ({ ...item, isRead: true })));
+      setUnreadCount(0);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to mark notifications as read.");
+    }
+  };
+
+  const markSingleRead = async (item) => {
+    const id = item?.id;
+    if (!id || item?.isRead) return;
+    try {
+      await api.patch(`/notifications/${id}/read`);
+      setItems((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, isRead: true } : item)),
+      );
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to update notification.");
+    }
+  };
 
   return (
     <div className="party-page">
       <div className="party-page-header">
         <div>
           <h1>Notifications</h1>
-          <p>Live updates derived from current stats.</p>
+          <p>Stay updated with election news and system updates</p>
         </div>
       </div>
 
+      {error ? <div className="notif-error">{error}</div> : null}
+
       <div className="notif-card party-card">
         <div className="notif-card-head">
-          <div className="notif-card-title">Recent Notifications</div>
-          <button className="notif-mark" type="button" onClick={() => setItems([])}>
+          <div className="notif-card-title">
+            Recent Notifications
+            {unreadCount > 0 ? ` (${unreadCount} unread)` : ""}
+          </div>
+          <button
+            className="notif-mark"
+            type="button"
+            onClick={markAllAsRead}
+            disabled={items.length === 0 || unreadCount === 0}
+          >
             Mark all as read
           </button>
         </div>
         <div className="notif-list">
-          {items.map((item) => (
-            <div key={item.id} className={`notif-item ${item.type}`}>
+          {loading ? (
+            <div className="notif-item info">
+              <div className="notif-icon">
+                <i className="ri-loader-4-line" aria-hidden="true" />
+              </div>
+              <div className="notif-body">
+                <strong>Loading notifications...</strong>
+                <p>Please wait while we fetch latest updates.</p>
+              </div>
+              <span className="notif-time">now</span>
+            </div>
+          ) : null}
+
+          {!loading && items.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={`notif-item ${item.type || "info"} ${item.isRead ? "" : "unread"}`}
+              onClick={() => markSingleRead(item)}
+            >
               <div className="notif-icon">
                 <Icon type={item.type} />
               </div>
               <div className="notif-body">
-                <strong>{item.title}</strong>
-                <p>{item.text}</p>
+                <strong>{item.title || "Notification"}</strong>
+                <p>{item.message || "-"}</p>
               </div>
-              <span className="notif-time">{item.time}</span>
-            </div>
+              <span className="notif-time">{formatRelativeTime(item.createdAt)}</span>
+            </button>
           ))}
-          {items.length === 0 && (
+
+          {!loading && items.length === 0 ? (
             <div className="notif-item info">
               <div className="notif-icon">
                 <i className="ri-information-line" aria-hidden="true" />
@@ -95,9 +145,9 @@ export default function PartyNotifications() {
                 <strong>No notifications</strong>
                 <p>Everything is up to date.</p>
               </div>
-              <span className="notif-time">{new Date().toLocaleTimeString()}</span>
+              <span className="notif-time">now</span>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
 
@@ -108,14 +158,9 @@ export default function PartyNotifications() {
           </span>
           <div>
             <strong>Email Notifications</strong>
-            <p>Important updates will also be sent to your registered email.</p>
+            <p>Important updates are also delivered through your registered email.</p>
           </div>
         </div>
-        <ul>
-          <li>Live vote snapshots</li>
-          <li>Result publications</li>
-          <li>System alerts & maintenance</li>
-        </ul>
       </div>
     </div>
   );

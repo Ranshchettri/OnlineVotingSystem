@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../services/api";
+import { getPartyLogoSrc, getPartyShortLabel } from "../../shared/utils/partyDisplay";
 import "../styles/party-profile.css";
 
 const clampPercent = (value) => {
@@ -19,13 +20,19 @@ export default function PartyProfile() {
     const loadParty = async () => {
       try {
         setLoading(true);
-        const [profileRes, statsRes] = await Promise.all([
+        const [profileRes, statsRes, plansRes] = await Promise.all([
           api.get(`/parties/${partyId}`),
           api.get(`/parties/${partyId}/stats`).catch(() => ({ data: { data: {} } })),
+          api.get(`/parties/${partyId}/future-plans`).catch(() => ({ data: { data: {} } })),
         ]);
         const profileData = profileRes.data?.data?.party || null;
         const stats = statsRes.data?.data || {};
-        setParty(profileData ? { ...profileData, ...stats } : null);
+        const plans = Array.isArray(plansRes.data?.data?.futurePlans)
+          ? plansRes.data.data.futurePlans
+          : Array.isArray(profileData?.futurePlans)
+            ? profileData.futurePlans
+            : [];
+        setParty(profileData ? { ...profileData, ...stats, futurePlans: plans } : null);
       } catch (error) {
         console.error("Failed to load party profile:", error?.response?.data || error.message);
         setParty(null);
@@ -43,7 +50,8 @@ export default function PartyProfile() {
   const goodWork = clampPercent(party.goodWork);
   const badWork = clampPercent(party.badWork);
   const partyColor = party.color || "#2563eb";
-  const short = party.shortName || party.symbol || party.name?.slice(0, 3) || "PRT";
+  const short = getPartyShortLabel(party, "PRT");
+  const logoSrc = getPartyLogoSrc(party);
   const team = Array.isArray(party.teamMembers) ? party.teamMembers : [];
   const plans = Array.isArray(party.futurePlans) ? party.futurePlans : [];
 
@@ -60,7 +68,9 @@ export default function PartyProfile() {
 
       <div className="party-hero">
         <div className="party-hero-header" style={{ background: partyColor }}>
-          <div className="party-hero-logo">{short}</div>
+          <div className="party-hero-logo">
+            {logoSrc ? <img src={logoSrc} alt={party.name} /> : short}
+          </div>
           <div className="party-hero-info">
             <h1 className="party-hero-title">{party.name}</h1>
             <p>Leader: {party.leader || "N/A"}</p>

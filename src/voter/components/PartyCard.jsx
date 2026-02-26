@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import ProgressBar from "./ProgressBar";
+import { getPartyLogoSrc, getPartyShortLabel } from "../../shared/utils/partyDisplay";
 
 export default function PartyCard({
   party,
@@ -22,6 +23,8 @@ export default function PartyCard({
     : hasVoted || disableVoting
       ? "disabled"
       : "";
+  const logoSrc = getPartyLogoSrc(party);
+  const shortLabel = getPartyShortLabel(party, "PRT");
 
   return (
     <div
@@ -30,11 +33,11 @@ export default function PartyCard({
       }`}
     >
       <div className="party-logo" style={{ background: party.color }}>
-        {party.logo ? (
-          <img src={party.logo} alt={party.name} className="party-logo-img" />
+        {logoSrc ? (
+          <img src={logoSrc} alt={party.name} className="party-logo-img" />
         ) : (
           <span className="party-logo-text">
-            {party.short || party.shortName || party.symbol || party.name?.slice(0, 3)}
+            {shortLabel}
           </span>
         )}
         <span className="party-rank">#{party.rank}</span>

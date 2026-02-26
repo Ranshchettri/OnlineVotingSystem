@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../../services/api";
+import { getPartyLogoSrc, getPartyShortLabel } from "../../shared/utils/partyDisplay";
 import "../styles/stats.css";
 
 const TimelineIcon = ({ label }) => {
@@ -11,14 +12,16 @@ const TimelineIcon = ({ label }) => {
 
 export default function PartyStats() {
   const [current, setCurrent] = useState({
-    name: "Current Election",
+    electionName: "Current Election",
+    partyName: "",
     votes: 0,
     position: 0,
     share: 0,
     lead: 0,
     status: "PENDING",
-    startDate: null,
-    endDate: null,
+    short: "PRT",
+    logoSrc: "",
+    color: "#dc2626",
   });
   const [rankings, setRankings] = useState([]);
   const [timeline, setTimeline] = useState([]);
@@ -27,36 +30,63 @@ export default function PartyStats() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [statsRes, partyRes] = await Promise.all([
-          api.get("/parties/current-stats"),
-          api.get("/parties"),
-        ]);
+        const statsRes = await api.get("/parties/current-stats");
 
         const statsData = statsRes.data?.data || {};
+        const ownStats = statsData.stats || {};
+        const totalVotes = Number(statsData.totalVotes || 0);
+
+        const allParties = Array.isArray(statsData.allParties) ? statsData.allParties : [];
+        const rankingData = allParties
+          .map((item, index) => {
+            const votes = Number(item.votes || 0);
+            const shareValue = totalVotes ? Number(((votes / totalVotes) * 100).toFixed(1)) : 0;
+            return {
+              rank: Number(item.position || index + 1),
+              name: item.name || "Party",
+              short: getPartyShortLabel(
+                {
+                  name: item.name,
+                  shortName: item.shortName,
+                  short: item.short,
+                  symbol: item.logo,
+                },
+                "PRT",
+              ),
+              logoSrc: getPartyLogoSrc({ logo: item.logo, symbol: item.symbol }),
+              votes,
+              share: `${shareValue}%`,
+              shareWidth: `${shareValue}%`,
+              color: item.color || "#7c7cff",
+              isOwn: Boolean(item.isOwn),
+              highlight: Boolean(item.isOwn),
+            };
+          })
+          .sort((a, b) => a.rank - b.rank);
+
+        const ownParty =
+          rankingData.find((item) => item.isOwn) ||
+          rankingData.find((item) => item.rank === Number(ownStats.ownPosition || 0)) ||
+          {
+            name: "Your Party",
+            short: "PRT",
+            logoSrc: "",
+            color: "#dc2626",
+          };
+
         setCurrent({
-          name: statsData.currentElection?.title || "Current Election",
-          votes: statsData.stats?.ownVotes || 0,
-          position: statsData.stats?.ownPosition || 0,
-          share: statsData.stats?.voteShare || 0,
-          lead: statsData.stats?.leadOverSecond || 0,
+          electionName: statsData.currentElection?.title || "Current Election",
+          partyName: ownParty?.name || "Your Party",
+          votes: Number(ownStats.ownVotes || 0),
+          position: Number(ownStats.ownPosition || 0),
+          share: Number(ownStats.voteShare || 0),
+          lead: Number(ownStats.leadOverSecond || 0),
           status: statsData.currentElection?.status || "PENDING",
-          startDate: statsData.currentElection?.startDate,
-          endDate: statsData.currentElection?.endDate,
+          short: ownParty?.short || "PRT",
+          logoSrc: ownParty?.logoSrc || "",
+          color: ownParty?.color || "#dc2626",
         });
 
-        const partyList = partyRes.data?.data?.parties || partyRes.data?.data || partyRes.data || [];
-        const totalVotes = partyList.reduce((acc, p) => acc + (p.totalVotes || 0), 0);
-        const rankingData = partyList
-          .sort((a, b) => (b.totalVotes || 0) - (a.totalVotes || 0))
-          .map((p, idx) => ({
-            rank: idx + 1,
-            name: p.name,
-            short: p.shortName || p.symbol || p.name?.slice(0, 3),
-            votes: p.totalVotes || 0,
-            share: totalVotes ? `${(((p.totalVotes || 0) / totalVotes) * 100).toFixed(1)}%` : "0%",
-            color: p.color || "#7c7cff",
-            highlight: idx === 0,
-          }));
         setRankings(rankingData);
         setLastUpdated(new Date().toLocaleString());
 
@@ -71,6 +101,7 @@ export default function PartyStats() {
         console.error("Failed to load party stats", err.message);
       }
     };
+
     load();
     const interval = setInterval(load, 30000);
     return () => clearInterval(interval);
@@ -92,11 +123,18 @@ export default function PartyStats() {
           <div>
             <span className="stats-hero-label">Your Party - Live Data</span>
             <div className="stats-hero-title">
-              <div className="stats-hero-logo">
-                {rankings[0]?.short || "PRT"}
+              <div
+                className="stats-hero-logo"
+                style={current.logoSrc ? { background: "#fff" } : { background: current.color }}
+              >
+                {current.logoSrc ? (
+                  <img src={current.logoSrc} alt={current.partyName} />
+                ) : (
+                  current.short
+                )}
               </div>
               <div>
-                <strong>{current.name}</strong>
+                <strong>{current.partyName}</strong>
                 <span>{current.status}</span>
               </div>
             </div>
@@ -109,7 +147,7 @@ export default function PartyStats() {
           </div>
           <div>
             <span>Current Position</span>
-            <strong>{current.position || "—"}</strong>
+            <strong>{current.position || "-"}</strong>
           </div>
           <div>
             <span>Vote Share</span>
@@ -133,7 +171,7 @@ export default function PartyStats() {
         <div className="stats-rank-list">
           {rankings.map((item) => (
             <div
-              key={item.rank}
+              key={`${item.rank}-${item.name}`}
               className={`stats-rank-item ${item.highlight ? "highlight" : ""}`}
             >
               <div className="stats-rank-left">
@@ -142,14 +180,18 @@ export default function PartyStats() {
                 </div>
                 <div
                   className="stats-rank-logo"
-                  style={{ background: item.color }}
+                  style={item.logoSrc ? { background: "#fff" } : { background: item.color }}
                 >
-                  {item.short}
+                  {item.logoSrc ? (
+                    <img src={item.logoSrc} alt={item.name} />
+                  ) : (
+                    item.short
+                  )}
                 </div>
                 <div>
                   <div className="stats-rank-name">
                     {item.name}
-                    {item.rank === 1 ? <span>Leading</span> : null}
+                    {item.isOwn ? <span>Your Party</span> : item.rank === 1 ? <span>Leading</span> : null}
                   </div>
                   <div className="stats-rank-sub">Vote share</div>
                 </div>
@@ -159,7 +201,7 @@ export default function PartyStats() {
                 <span>{item.share} share</span>
               </div>
               <div className="stats-rank-bar">
-                <span style={{ width: item.share, background: item.color }} />
+                <span style={{ width: item.shareWidth, background: item.color }} />
               </div>
             </div>
           ))}
@@ -177,8 +219,8 @@ export default function PartyStats() {
               </span>
               <strong>{current.votes}</strong>
             </div>
-            {rankings.slice(1, 3).map((item) => (
-              <div key={item.rank} className="stats-compare-item">
+            {rankings.filter((item) => !item.isOwn).slice(0, 2).map((item) => (
+              <div key={`${item.rank}-${item.name}`} className="stats-compare-item">
                 <span className="stats-compare-label">
                   <span className="stats-compare-dot" />
                   {item.name}
@@ -223,8 +265,7 @@ export default function PartyStats() {
           <div>
             <strong>Real-Time Data</strong>
             <p>
-              Vote counts are updated live from the backend. To change numbers,
-              cast votes or adjust party analytics via admin.
+              Vote counts are updated live from backend database and admin-controlled metrics.
             </p>
           </div>
         </div>
