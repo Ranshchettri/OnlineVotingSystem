@@ -4,37 +4,11 @@ import { getPartyLogoSrc, getPartyShortLabel } from "../../shared/utils/partyDis
 import { getTimeLeft, normalizeElectionStatus, pickCurrentElection } from "../utils/election";
 import "../styles/results.css";
 
-const mapParty = (party) => ({
-  id: (party._id || party.id || "").toString(),
-  electionId:
-    party.electionId?._id?.toString?.() || party.electionId?.toString?.() || "",
-  name: party.name || "Unnamed Party",
-  short: getPartyShortLabel(party, "PRT"),
-  color: party.color || "#2563eb",
-  logo: getPartyLogoSrc(party),
-  votes: Number(party.totalVotes || party.currentVotes || 0),
-});
-
-const resolveElectionStandings = (election, partiesByElection, partyById) => {
+const resolveElectionStandings = (election, standingsByElection) => {
   const electionId = (election._id || election.id || "").toString();
-  let standings = partiesByElection[electionId] || [];
-
-  if (standings.length === 0 && Array.isArray(election.participatingParties)) {
-    standings = election.participatingParties
-      .map((entry) => {
-        const partyId = entry.partyId?._id?.toString?.() || entry.partyId?.toString?.() || "";
-        const ref = partyById[partyId] || {};
-        return {
-          id: partyId || ref.id || "",
-          name: ref.name || "Party",
-          short: ref.short || "PRT",
-          color: ref.color || "#2563eb",
-          logo: ref.logo || "",
-          votes: Number(entry.votes || 0),
-        };
-      })
-      .filter((party) => party.id || party.name);
-  }
+  const standings = Array.isArray(standingsByElection[electionId])
+    ? standingsByElection[electionId]
+    : [];
 
   if (standings.length === 0) {
     return {
@@ -70,37 +44,51 @@ const resolveElectionStandings = (election, partiesByElection, partyById) => {
 
 export default function Results() {
   const [elections, setElections] = useState([]);
-  const [parties, setParties] = useState([]);
+  const [standingsByElection, setStandingsByElection] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       try {
         setLoading(true);
-        const [electionsRes, partiesRes] = await Promise.all([
-          api.get("/elections"),
-          api.get("/parties"),
-        ]);
+        const electionsRes = await api.get("/elections");
 
         const electionList = Array.isArray(electionsRes.data?.data)
           ? electionsRes.data.data
           : Array.isArray(electionsRes.data)
             ? electionsRes.data
             : [];
-        const partyListRaw = Array.isArray(partiesRes.data?.data?.parties)
-          ? partiesRes.data.data.parties
-          : Array.isArray(partiesRes.data?.data)
-            ? partiesRes.data.data
-            : Array.isArray(partiesRes.data)
-              ? partiesRes.data
-              : [];
 
         setElections(electionList);
-        setParties(partyListRaw.map(mapParty));
+
+        const electionIds = electionList
+          .map((election) => (election._id || election.id || "").toString())
+          .filter(Boolean);
+
+        if (electionIds.length === 0) {
+          setStandingsByElection({});
+          return;
+        }
+
+        const standingsEntries = await Promise.all(
+          electionIds.map(async (id) => {
+            try {
+              const response = await api.get(`/results/party/${id}`);
+              const parties = Array.isArray(response.data?.data?.parties)
+                ? response.data.data.parties
+                : [];
+              return [id, parties];
+            } catch {
+              return [id, []];
+            }
+          }),
+        );
+
+        setStandingsByElection(Object.fromEntries(standingsEntries));
       } catch (error) {
         console.error("Failed to load results:", error?.response?.data || error.message);
         setElections([]);
-        setParties([]);
+        setStandingsByElection({});
       } finally {
         setLoading(false);
       }
@@ -117,27 +105,6 @@ export default function Results() {
         .filter((election) => normalizeElectionStatus(election) === "ended")
         .sort((a, b) => new Date(b.endDate || 0) - new Date(a.endDate || 0)),
     [elections],
-  );
-
-  const partiesByElection = useMemo(
-    () =>
-      parties.reduce((acc, party) => {
-        const electionId =
-          party.electionId?._id?.toString?.() || party.electionId?.toString?.() || "unassigned";
-        if (!acc[electionId]) acc[electionId] = [];
-        acc[electionId].push(party);
-        return acc;
-      }, {}),
-    [parties],
-  );
-
-  const partyById = useMemo(
-    () =>
-      parties.reduce((acc, party) => {
-        acc[party.id] = party;
-        return acc;
-      }, {}),
-    [parties],
   );
 
   return (
@@ -194,7 +161,7 @@ export default function Results() {
             winnerVotes,
             marginVotes,
             winnerShare,
-          } = resolveElectionStandings(election, partiesByElection, partyById);
+          } = resolveElectionStandings(election, standingsByElection);
 
           return (
             <div key={election._id || election.id} className="result-card">

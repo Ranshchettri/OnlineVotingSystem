@@ -39,7 +39,7 @@
 
 .party-notifications-page .notif-card-title {
   margin: 0;
-  font-size: 42px;
+  font-size: 28px;
   font-weight: 750;
   line-height: 1.05;
 }
@@ -179,7 +179,7 @@
 
 .party-notifications-page .notif-email-title strong {
   display: block;
-  font-size: 32px;
+  font-size: 24px;
   font-weight: 750;
   line-height: 1.05;
 }
@@ -206,7 +206,7 @@
 @media (max-width: 1100px) {
   .party-notifications-page .notif-card-title,
   .party-notifications-page .notif-email-title strong {
-    font-size: 22px;
+    font-size: 20px;
   }
 
   .party-notifications-page .notif-body strong {

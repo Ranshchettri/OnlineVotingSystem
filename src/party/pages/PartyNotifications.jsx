@@ -79,6 +79,38 @@ const buildDeadlineNotification = (startDate) => {
   };
 };
 
+const buildElectionStatusNotification = (election = {}) => {
+  const status = String(election?.status || "").toLowerCase();
+  const title = election?.title || "Election";
+  if (!status) return null;
+
+  if (status === "running") {
+    return {
+      id: `synthetic-election-running-${election?.id || "current"}`,
+      synthetic: true,
+      isRead: false,
+      type: "success",
+      title: "Election Started",
+      message: `${title} is now running. Voting is open.`,
+      createdAt: election?.startDate || new Date().toISOString(),
+    };
+  }
+
+  if (status === "ended") {
+    return {
+      id: `synthetic-election-ended-${election?.id || "current"}`,
+      synthetic: true,
+      isRead: false,
+      type: "warning",
+      title: "Election Ended",
+      message: `${title} has ended. Results will be published soon.`,
+      createdAt: election?.endDate || new Date().toISOString(),
+    };
+  }
+
+  return null;
+};
+
 const Icon = ({ item }) => {
   const text = `${item?.title || ""} ${item?.message || ""}`.toLowerCase();
   if (text.includes("election started")) return <i className="ri-notification-3-line" aria-hidden="true" />;
@@ -116,8 +148,10 @@ export default function PartyNotifications() {
         type: normalizeType(item),
       }));
 
-      const startDate = statsRes?.data?.data?.currentElection?.startDate || null;
+      const currentElection = statsRes?.data?.data?.currentElection || null;
+      const startDate = currentElection?.startDate || null;
       const deadlineNotice = buildDeadlineNotification(startDate);
+      const electionNotice = buildElectionStatusNotification(currentElection);
 
       const hasDeadline = normalized.some((item) =>
         String(item.title || "").toLowerCase().includes("profile editing deadline"),
@@ -125,6 +159,7 @@ export default function PartyNotifications() {
 
       const merged = [
         ...normalized,
+        ...(electionNotice ? [electionNotice] : []),
         ...(deadlineNotice && !hasDeadline ? [deadlineNotice] : []),
       ].sort((a, b) => {
         const aTime = new Date(a.createdAt || 0).getTime();

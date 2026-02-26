@@ -169,42 +169,46 @@ export default function PartyStats() {
           <span>{lastUpdated}</span>
         </div>
         <div className="stats-rank-list">
-          {rankings.map((item) => (
-            <div
-              key={`${item.rank}-${item.name}`}
-              className={`stats-rank-item ${item.highlight ? "highlight" : ""}`}
-            >
-              <div className="stats-rank-left">
-                <div className={`stats-rank-number rank-${item.rank}`}>
-                  {item.rank}
-                </div>
-                <div
-                  className="stats-rank-logo"
-                  style={item.logoSrc ? { background: "#fff" } : { background: item.color }}
-                >
-                  {item.logoSrc ? (
-                    <img src={item.logoSrc} alt={item.name} />
-                  ) : (
-                    item.short
-                  )}
-                </div>
-                <div>
-                  <div className="stats-rank-name">
-                    {item.name}
-                    {item.isOwn ? <span>Your Party</span> : item.rank === 1 ? <span>Leading</span> : null}
+          {rankings.length === 0 ? (
+            <div className="stats-empty">No live ranking data available yet.</div>
+          ) : (
+            rankings.map((item) => (
+              <div
+                key={`${item.rank}-${item.name}`}
+                className={`stats-rank-item ${item.highlight ? "highlight" : ""}`}
+              >
+                <div className="stats-rank-left">
+                  <div className={`stats-rank-number rank-${item.rank}`}>
+                    {item.rank}
                   </div>
-                  <div className="stats-rank-sub">Vote share</div>
+                  <div
+                    className="stats-rank-logo"
+                    style={item.logoSrc ? { background: "#fff" } : { background: item.color }}
+                  >
+                    {item.logoSrc ? (
+                      <img src={item.logoSrc} alt={item.name} />
+                    ) : (
+                      item.short
+                    )}
+                  </div>
+                  <div>
+                    <div className="stats-rank-name">
+                      {item.name}
+                      {item.isOwn ? <span>Your Party</span> : item.rank === 1 ? <span>Leading</span> : null}
+                    </div>
+                    <div className="stats-rank-sub">Vote share</div>
+                  </div>
+                </div>
+                <div className="stats-rank-right">
+                  <strong>{item.votes}</strong>
+                  <span>{item.share} share</span>
+                </div>
+                <div className="stats-rank-bar">
+                  <span style={{ width: item.shareWidth, background: item.color }} />
                 </div>
               </div>
-              <div className="stats-rank-right">
-                <strong>{item.votes}</strong>
-                <span>{item.share} share</span>
-              </div>
-              <div className="stats-rank-bar">
-                <span style={{ width: item.shareWidth, background: item.color }} />
-              </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
 
@@ -233,7 +237,7 @@ export default function PartyStats() {
         <div className="stats-card">
           <h3>Election Timeline</h3>
           <div className="stats-timeline">
-            {timeline.map((item) => {
+            {(timeline.length ? timeline : [{ label: "Timeline unavailable", value: "-" }]).map((item) => {
               const status = item.label.includes("Start")
                 ? "start"
                 : item.label.includes("Progress")
