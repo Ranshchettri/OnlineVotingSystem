@@ -8,14 +8,18 @@ const normalizeEmail = (email = "") => String(email || "").trim().toLowerCase();
 const escapeRegex = (value = "") => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const resolveParty = async (req) => {
-  let partyId = req.user?.partyId || req.params.partyId || null;
+  let partyId = req.params.partyId || null;
 
-  if (!partyId && req.user?.role === "party" && req.user?.email) {
+  if (req.user?.role === "party" && req.user?.email) {
     const emailRegex = new RegExp(`^${escapeRegex(normalizeEmail(req.user.email))}$`, "i");
     const partyByEmail = await Party.findOne({ email: emailRegex }).sort({ createdAt: -1 });
     if (partyByEmail?._id) {
       partyId = partyByEmail._id;
     }
+  }
+
+  if (!partyId) {
+    partyId = req.user?.partyId || null;
   }
 
   if (!partyId) throw new AppError("Party ID not found", 400);
@@ -141,33 +145,94 @@ const getProgress = async (req, res, next) => {
 const getPastPerformance = async (req, res, next) => {
   try {
     const party = await resolveParty(req);
-    const history = party.historicalData || [];
+    const manualHistory = Array.isArray(party.historicalData) ? party.historicalData : [];
 
-    // If history empty, try aggregate from ended elections
-    let aggregated = history;
-    if (!history.length) {
-      const endedElections = await Election.find({ status: "Ended" }).select("_id title endDate");
-      const endedIds = endedElections.map((e) => e._id);
+    const endedElections = await Election.find({
+      $or: [{ status: "Ended" }, { isEnded: true }],
+    })
+      .select("_id title endDate")
+      .lean();
+    const endedElectionIds = endedElections.map((item) => item._id);
+
+    let electionHistory = [];
+    if (endedElectionIds.length) {
       const voteAgg = await Vote.aggregate([
-        { $match: { partyId: { $in: endedIds.length ? [] : [] } } }, // placeholder no data
+        { $match: { electionId: { $in: endedElectionIds } } },
+        {
+          $group: {
+            _id: {
+              electionId: "$electionId",
+              partyId: "$partyId",
+            },
+            votes: { $sum: 1 },
+          },
+        },
       ]);
-      // Without stored partyId in historical votes we keep history empty
-      aggregated = [];
+
+      const byElection = voteAgg.reduce((acc, row) => {
+        const key = row._id?.electionId?.toString();
+        if (!key) return acc;
+        if (!acc[key]) acc[key] = [];
+        acc[key].push({
+          partyId: row._id?.partyId?.toString(),
+          votes: Number(row.votes || 0),
+        });
+        return acc;
+      }, {});
+
+      electionHistory = endedElections
+        .map((election) => {
+          const rows = byElection[election._id.toString()] || [];
+          if (!rows.length) return null;
+
+          const ranked = [...rows].sort((a, b) => b.votes - a.votes);
+          const ownIndex = ranked.findIndex(
+            (item) => item.partyId === party._id.toString(),
+          );
+          if (ownIndex === -1) return null;
+
+          const yearSource = election.endDate ? new Date(election.endDate) : new Date();
+          return {
+            year: yearSource.getFullYear(),
+            election: election.title || "Election",
+            votes: ranked[ownIndex].votes,
+            position: ownIndex + 1,
+            totalParties: ranked.length,
+            won: ownIndex === 0,
+          };
+        })
+        .filter(Boolean);
     }
 
-    const pastElections = aggregated.slice(-5).map((item) => ({
-      year: item.year,
-      election: item.election || item.title || item.year,
-      votes: item.votes || 0,
-      position: item.position || null,
-      totalParties: item.totalParties || null,
+    const normalizedManualHistory = manualHistory.map((item, index) => ({
+      year: item.year || new Date().getFullYear() - index,
+      election: item.election || item.title || `Election ${item.year || index + 1}`,
+      votes: Number(item.votes || 0),
+      position: Number(item.position || 0) || null,
+      totalParties: Number(item.totalParties || 0) || null,
+      won: Boolean(item.won || Number(item.position || 0) === 1),
     }));
 
-    const totalWins = aggregated.filter((h) => h.position === 1 || h.won).length;
+    const mergedMap = new Map();
+    normalizedManualHistory.forEach((item) => {
+      const key = `${item.election}-${item.year}`;
+      mergedMap.set(key, item);
+    });
+    electionHistory.forEach((item) => {
+      const key = `${item.election}-${item.year}`;
+      mergedMap.set(key, item);
+    });
+
+    const aggregated = [...mergedMap.values()]
+      .sort((a, b) => Number(b.year || 0) - Number(a.year || 0))
+      .slice(0, 5);
+
+    const totalWins = aggregated.filter((item) => item.won).length;
     const averageVotes =
       aggregated.length > 0
         ? Math.round(
-            aggregated.reduce((acc, cur) => acc + (cur.votes || 0), 0) / aggregated.length,
+            aggregated.reduce((acc, current) => acc + Number(current.votes || 0), 0) /
+              aggregated.length,
           )
         : 0;
     const winRate =
@@ -175,7 +240,7 @@ const getPastPerformance = async (req, res, next) => {
 
     res.json({
       data: {
-        pastElections,
+        pastElections: aggregated,
         summary: {
           totalWins,
           averageVotes,
@@ -222,21 +287,31 @@ const getCurrentStats = async (req, res, next) => {
       { $sort: { votes: -1 } },
     ]);
 
-    const totalVotes = voteAgg.reduce((acc, cur) => acc + cur.votes, 0);
-
-    const partiesWithNames = await Promise.all(
-      voteAgg.map(async (row) => {
-        const p = await Party.findById(row._id).lean();
-        return {
-          partyId: row._id,
-          name: p?.name || "Unknown",
-          logo: p?.logo || p?.symbol,
-          votes: row.votes,
-        };
-      }),
+    const votesByPartyId = new Map(
+      voteAgg.map((row) => [row._id?.toString(), Number(row.votes || 0)]),
     );
 
-    const sorted = partiesWithNames.sort((a, b) => b.votes - a.votes);
+    const electionParties = await Party.find({
+      $or: [{ electionId: election._id }, { _id: party._id }],
+    }).lean();
+
+    const partiesWithNames = electionParties.map((item) => ({
+      partyId: item._id,
+      name: item.name || "Unknown",
+      logo: item.logo || item.symbol,
+      color: item.color || "#7c7cff",
+      development: item.development ?? item.goodWorkPercent ?? 0,
+      votes: votesByPartyId.get(item._id.toString()) || 0,
+    }));
+
+    const sorted = partiesWithNames.sort((a, b) => {
+      if (b.votes === a.votes) {
+        return String(a.name || "").localeCompare(String(b.name || ""));
+      }
+      return b.votes - a.votes;
+    });
+
+    const totalVotes = sorted.reduce((acc, cur) => acc + Number(cur.votes || 0), 0);
     const own = sorted.find((p) => p.partyId?.toString() === party._id.toString()) || {
       votes: 0,
     };
@@ -268,7 +343,8 @@ const getCurrentStats = async (req, res, next) => {
           position: idx + 1,
           isOwn: p.partyId?.toString() === party._id.toString(),
           logo: p.logo,
-          development: party.development ?? party.goodWorkPercent ?? 0,
+          color: p.color,
+          development: p.development,
         })),
         totalVotes,
       },

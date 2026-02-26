@@ -1,5 +1,6 @@
 const Party = require("../models/Party");
 const User = require("../models/User");
+const Notification = require("../models/Notification");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const AppError = require("../utils/AppError");
@@ -131,6 +132,26 @@ const formatPartyStatus = (party) => {
   const isBlocked = raw === "rejected" || raw === "blocked" || party.isActive === false;
   if (raw === "pending") return "PENDING";
   return isBlocked ? "BLOCKED" : "ACTIVE";
+};
+
+const notifyPartyAccounts = async (partyId, payload = {}) => {
+  try {
+    if (!partyId || !payload.title || !payload.message) return;
+
+    const partyUsers = await User.find({ role: "party", partyId }).select("_id").lean();
+    if (!partyUsers.length) return;
+
+    await Notification.insertMany(
+      partyUsers.map((user) => ({
+        userId: user._id,
+        type: payload.type || "info",
+        title: payload.title,
+        message: payload.message,
+      })),
+    );
+  } catch (error) {
+    console.error("Failed to create party notification:", error.message);
+  }
 };
 
 const formatPartyPayload = (party, index = 0) => ({
@@ -348,6 +369,37 @@ const updateParty = async (req, res, next) => {
 
     await party.save();
     await ensurePartyAuthAccount(party);
+
+    const changedKeys = Object.keys(req.body || {});
+    const changedStatus = changedKeys.includes("status") || changedKeys.includes("isActive");
+    const changedAnalytics = [
+      "development",
+      "goodWork",
+      "badWork",
+      "detailedMetrics",
+    ].some((key) => changedKeys.includes(key));
+
+    if (changedStatus) {
+      const statusLabel = formatPartyStatus(party);
+      await notifyPartyAccounts(party._id, {
+        type: statusLabel === "ACTIVE" ? "success" : "warning",
+        title: "Party status updated",
+        message: `Your party account status is now ${statusLabel}.`,
+      });
+    } else if (changedAnalytics) {
+      await notifyPartyAccounts(party._id, {
+        type: "info",
+        title: "Analytics updated",
+        message: "Party progress analytics were updated by Election Commission Admin.",
+      });
+    } else {
+      await notifyPartyAccounts(party._id, {
+        type: "info",
+        title: "Profile updated",
+        message: "Your party profile information was updated by Election Commission Admin.",
+      });
+    }
+
     res.status(200).json({ data: formatPartyPayload(party) });
   } catch (error) {
     next(error);

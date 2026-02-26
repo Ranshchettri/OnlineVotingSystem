@@ -61,6 +61,25 @@ const logAudit = async (req, action, metadata = {}) => {
   }
 };
 
+const notifyPartyUsers = async (partyId, { type = "info", title, message }) => {
+  try {
+    if (!partyId || !title || !message) return;
+    const users = await User.find({ role: "party", partyId }).select("_id").lean();
+    if (!users.length) return;
+
+    await Notification.insertMany(
+      users.map((user) => ({
+        userId: user._id,
+        type,
+        title,
+        message,
+      })),
+    );
+  } catch (error) {
+    console.error("Failed to create party notification:", error.message);
+  }
+};
+
 // GET /api/admin/dashboard
 const getDashboardStats = async (req, res, next) => {
   try {
@@ -448,6 +467,12 @@ const activateParty = async (req, res, next) => {
       color: "blue",
     });
 
+    await notifyPartyUsers(party._id, {
+      type: "success",
+      title: "Party activated",
+      message: `${party.name} has been activated by Election Commission Admin.`,
+    });
+
     res.json({ success: true, message: "Party activated" });
   } catch (error) {
     next(error);
@@ -516,6 +541,11 @@ const updatePartyAnalyticsDetailed = async (req, res, next) => {
     }
 
     await party.save();
+    await notifyPartyUsers(party._id, {
+      type: "info",
+      title: "Analytics updated",
+      message: "Your progress analytics were updated by Election Commission Admin.",
+    });
 
     res.json({ success: true });
   } catch (error) {

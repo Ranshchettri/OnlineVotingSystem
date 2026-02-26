@@ -68,6 +68,7 @@ const analyticsRoutes = require("./routes/analytics");
 const resultRoutes = require("./routes/result");
 const adminRoutes = require("./routes/admin");
 const voterAdminRoutes = require("./routes/voterAdmin");
+const notificationRoutes = require("./routes/notification");
 
 app.use("/api/auth", authRoutes);
 app.use("/api/elections", electionRoutes);
@@ -85,6 +86,7 @@ app.use("/api/analytics", analyticsRoutes);
 app.use("/api/results", resultRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/voters", voterAdminRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // Global error handling middleware (must be last)
 const errorHandler = require("./middlewares/errorMiddleware");
