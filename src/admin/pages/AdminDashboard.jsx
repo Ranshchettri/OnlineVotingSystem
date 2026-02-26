@@ -23,15 +23,16 @@ const deriveElectionStatus = (election = {}) => {
   const now = Date.now();
   const start = election.startDate ? new Date(election.startDate).getTime() : null;
   const end = election.endDate ? new Date(election.endDate).getTime() : null;
+  const allowVoting = election.allowVoting !== false;
 
-  if (raw === "ended" || election.isEnded || election.allowVoting === false) return "Ended";
-  if (raw === "running" || election.isActive) return "Running";
-  if (raw === "upcoming") return "Upcoming";
+  if (raw === "ended" || election.isEnded || !allowVoting) return "Ended";
+  if (raw === "running" || election.isActive || election.running) return "Running";
 
   if (start && now < start) return "Upcoming";
   if (end && now > end) return "Ended";
   if (start && end && now >= start && now <= end) return "Running";
 
+  if (raw === "upcoming" || election.upcoming) return "Upcoming";
   return "Upcoming";
 };
 
@@ -87,6 +88,37 @@ const extractPartyList = (response) => {
   return Array.isArray(list) ? list : [];
 };
 
+const mapAuditLogToActivity = (entry = {}) => {
+  const action = String(entry.action || "").trim();
+  const humanized = action
+    ? action
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (char) => char.toUpperCase())
+    : "System update";
+  const userLabel = entry.user ? `By ${entry.user}` : entry.role ? `Role: ${entry.role}` : "System";
+
+  let icon = "ri-history-line";
+  let color = "blue";
+  if (/approve|activate|create/i.test(action)) {
+    icon = "ri-check-line";
+    color = "green";
+  } else if (/block|reject|delete|stop|force logout/i.test(action)) {
+    icon = "ri-close-line";
+    color = "red";
+  } else if (/update|edit|sync/i.test(action)) {
+    icon = "ri-refresh-line";
+    color = "blue";
+  }
+
+  return {
+    title: humanized,
+    meta: userLabel,
+    time: formatDateTime(entry.timestamp),
+    icon,
+    color,
+  };
+};
+
 export default function AdminDashboard() {
   const [overview, setOverview] = useState(EMPTY_OVERVIEW);
   const [loadingOverview, setLoadingOverview] = useState(true);
@@ -106,6 +138,7 @@ export default function AdminDashboard() {
       const [
         adminDashboardRes,
         adminActivitiesRes,
+        adminAuditRes,
         adminElectionsRes,
         voterStatsRes,
         partiesRes,
@@ -113,6 +146,7 @@ export default function AdminDashboard() {
       ] = await Promise.allSettled([
         api.get("/admin/dashboard"),
         api.get("/admin/dashboard/activities", { params: { limit: 8 } }),
+        api.get("/admin/audit-logs", { params: { limit: 8 } }),
         api.get("/admin/elections"),
         api.get("/voters/admin/stats"),
         api.get("/parties"),
@@ -249,12 +283,23 @@ export default function AdminDashboard() {
             }))
           : [];
 
+        if (!mapped.length && adminAuditRes.status === "fulfilled") {
+          const logs = adminAuditRes.value?.data?.data?.logs || [];
+          mapped = Array.isArray(logs) ? logs.map(mapAuditLogToActivity) : [];
+        }
+
         if (!mapped.length) {
           mapped = buildFallbackActivities();
         }
         setActivities(mapped);
       } else {
-        setActivities(buildFallbackActivities());
+        if (adminAuditRes.status === "fulfilled") {
+          const logs = adminAuditRes.value?.data?.data?.logs || [];
+          const mapped = Array.isArray(logs) ? logs.map(mapAuditLogToActivity) : [];
+          setActivities(mapped.length ? mapped : buildFallbackActivities());
+        } else {
+          setActivities(buildFallbackActivities());
+        }
       }
 
       const currentElection = pickPrimaryElection(electionList);
@@ -301,36 +346,31 @@ export default function AdminDashboard() {
     refreshDashboard();
   }, [refreshDashboard]);
 
+  useEffect(() => {
+    const timer = setInterval(() => {
+      refreshDashboard();
+    }, 30000);
+    return () => clearInterval(timer);
+  }, [refreshDashboard]);
+
   const findRunningElection = () =>
     elections.find((election) => isElectionRunningNow(election) && election.id);
 
   const handleForceLogout = async () => {
     try {
       setActionBusy("force-logout");
-      const tryForceLogout = async (url) =>
-        api.post(
-          url,
-          {},
-          {
-            validateStatus: (status) => status >= 200 && status < 500,
-          },
-        );
+      const response = await api.post(
+        "/admin/sessions/force-logout",
+        {},
+        {
+          validateStatus: (status) => status >= 200 && status < 500,
+        },
+      );
 
-      const primaryRes = await tryForceLogout("/admin/sessions/force-logout");
-      let success = primaryRes.status >= 200 && primaryRes.status < 300;
-
-      if (!success && primaryRes.status === 404) {
-        const aliasRes = await tryForceLogout("/admin/sessions/logout-all");
-        success = aliasRes.status >= 200 && aliasRes.status < 300;
-        if (!success && aliasRes.status === 404) {
-          const legacyRes = await tryForceLogout("/admin/force-logout");
-          success = legacyRes.status >= 200 && legacyRes.status < 300;
-        }
-      }
-
-      if (!success) {
-        // Fallback for older backend builds where force-logout endpoint is unavailable.
+      if (response.status === 404) {
         localStorage.setItem("force_logout_fallback_at", String(Date.now()));
+      } else if (response.status < 200 || response.status >= 300) {
+        throw new Error(response.data?.message || "Force logout request failed");
       }
       setShowForceLogout(false);
       await refreshDashboard();
@@ -346,16 +386,7 @@ export default function AdminDashboard() {
   const handleShutdown = async () => {
     try {
       setActionBusy("shutdown");
-      let running = findRunningElection();
-      if (!running) {
-        running =
-          elections.find(
-            (election) =>
-              election.id &&
-              deriveElectionStatus(election) !== "Ended" &&
-              election.allowVoting !== false,
-          ) || null;
-      }
+      const running = findRunningElection();
       if (!running || !running.id) {
         alert("No running election found to stop.");
         setShowShutdown(false);
@@ -449,7 +480,12 @@ export default function AdminDashboard() {
     ? "Syncing data..."
     : backendOffline
       ? "API offline"
-      : electionStatus || "Preview mode";
+      : electionStatus || "No election";
+  const statusPillClass = statusLabel.toLowerCase().includes("running")
+    ? "green"
+    : statusLabel.toLowerCase().includes("ended") || statusLabel.toLowerCase().includes("offline")
+      ? "red"
+      : "blue";
 
   return (
     <div className="admin-page admin-dashboard">
@@ -458,7 +494,7 @@ export default function AdminDashboard() {
           <div className="admin-section-title">Dashboard Overview</div>
           <div className="admin-section-subtitle">Real-time system monitoring and control</div>
         </div>
-        <span className="admin-pill green">
+        <span className={`admin-pill ${statusPillClass}`}>
           <span className="dot" /> {statusLabel}
         </span>
       </div>

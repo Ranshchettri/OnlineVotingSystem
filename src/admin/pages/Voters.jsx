@@ -26,6 +26,32 @@ const statusLabel = (status) => {
   return "Pending";
 };
 
+const deriveDistrictProvince = (voter = {}) => {
+  const directDistrict = (voter.district || "").trim();
+  const directProvince = (voter.province || "").trim();
+  if (directDistrict || directProvince) {
+    return {
+      district: directDistrict,
+      province: directProvince,
+    };
+  }
+
+  const addressText = String(voter.address || "").trim();
+  if (!addressText) {
+    return { district: "", province: "" };
+  }
+
+  const parts = addressText
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  return {
+    district: parts[0] || "",
+    province: parts[1] || "",
+  };
+};
+
 export default function Voters() {
   const [stats, setStats] = useState({
     totalRegistered: 0,
@@ -88,14 +114,18 @@ export default function Voters() {
   };
 
   const normalizeList = (list = []) =>
-    (Array.isArray(list) ? list : []).map((voter) => ({
-      ...voter,
-      status: normalizeVoterStatus(voter),
-      district: voter.district || "",
-      province: voter.province || "",
-      address: voter.address || "",
-      dateOfBirth: voter.dateOfBirth || null,
-    }));
+    (Array.isArray(list) ? list : []).map((voter) => {
+      const location = deriveDistrictProvince(voter);
+      return {
+        ...voter,
+        status: normalizeVoterStatus(voter),
+        district: location.district,
+        province: location.province,
+        address: voter.address || "",
+        dateOfBirth: voter.dateOfBirth || voter.dob || null,
+        updatedAt: voter.updatedAt || null,
+      };
+    });
 
   const fetchVoterData = async () => {
     try {
@@ -190,6 +220,7 @@ export default function Voters() {
   }, [voters, searchQuery, statusFilter]);
 
   const openVoterDetails = (voter) => {
+    const location = deriveDistrictProvince(voter);
     setSelectedVoter(voter);
     setEditMode(false);
     setEditForm({
@@ -197,8 +228,8 @@ export default function Voters() {
       email: voter.email || "",
       mobile: voter.mobile || "",
       voterId: voter.voterId || "",
-      district: voter.district || "",
-      province: voter.province || "",
+      district: location.district,
+      province: location.province,
       dateOfBirth: voter.dateOfBirth
         ? new Date(voter.dateOfBirth).toISOString().split("T")[0]
         : "",
@@ -212,6 +243,7 @@ export default function Voters() {
   };
 
   const handleApproveVoter = async (voterId) => {
+    if (!voterId) return;
     try {
       await api.post(`/voters/admin/${voterId}/approve`);
       applyVoterPatch(voterId, {
@@ -228,6 +260,7 @@ export default function Voters() {
   };
 
   const handleBlockVoter = async (voterId) => {
+    if (!voterId) return;
     try {
       await api.post(`/voters/admin/${voterId}/block`);
       applyVoterPatch(voterId, {
@@ -244,6 +277,7 @@ export default function Voters() {
   };
 
   const handleRejectVoter = async (voterId) => {
+    if (!voterId) return;
     try {
       await api.post(`/voters/admin/${voterId}/reject`);
       applyVoterPatch(voterId, {
@@ -354,9 +388,10 @@ export default function Voters() {
   };
 
   const handleSaveVoterEdit = async () => {
-    if (!selectedVoter?._id) return;
+    const voterId = selectedVoter?._id || selectedVoter?.id;
+    if (!voterId) return;
     try {
-      await api.put(`/voters/admin/${selectedVoter._id}`, {
+      const payload = {
         fullName: editForm.fullName,
         email: editForm.email,
         mobile: editForm.mobile,
@@ -366,13 +401,30 @@ export default function Voters() {
         address: [editForm.district, editForm.province].filter(Boolean).join(", "),
         dateOfBirth: editForm.dateOfBirth || undefined,
         photo: editForm.photoData || undefined,
-      });
+      };
+
+      const requestUpdate = (url, method = "put") =>
+        api[method](url, payload, {
+          validateStatus: (status) => status >= 200 && status < 500,
+        });
+
+      let response = await requestUpdate(`/voters/admin/${voterId}`);
+      if (response.status === 404) {
+        response = await requestUpdate(`/admin/voters/${voterId}`);
+      }
+      if (response.status === 404) {
+        response = await requestUpdate(`/admin/voters/${voterId}`, "patch");
+      }
+      if (response.status < 200 || response.status >= 300) {
+        throw new Error(response?.data?.message || "Failed to update voter details");
+      }
+
       await fetchVoterData();
       setEditMode(false);
       closeVoterDetails();
     } catch (err) {
       console.error("Failed to update voter:", err);
-      alert(err.response?.data?.message || "Failed to update voter details");
+      alert(err.response?.data?.message || err.message || "Failed to update voter details");
     }
   };
 
@@ -421,6 +473,7 @@ export default function Voters() {
   }
 
   const selectedStatus = normalizeVoterStatus(selectedVoter || {});
+  const selectedVoterId = selectedVoter?._id || selectedVoter?.id;
   const selectedVoted = Boolean(selectedVoter?.hasVoted || selectedVoter?.voted);
   const selectedAvatar =
     editForm.photoData ||
@@ -774,10 +827,22 @@ export default function Voters() {
                   </div>
                 </div>
                 <div>
+                  <div className="stat-label">Address</div>
+                  <div className="stat-number">{selectedVoter.address || "-"}</div>
+                </div>
+                <div>
                   <div className="stat-label">Created</div>
                   <div className="stat-number">
                     {selectedVoter.createdAt
                       ? new Date(selectedVoter.createdAt).toLocaleString()
+                      : "-"}
+                  </div>
+                </div>
+                <div>
+                  <div className="stat-label">Last Updated</div>
+                  <div className="stat-number">
+                    {selectedVoter.updatedAt
+                      ? new Date(selectedVoter.updatedAt).toLocaleString()
                       : "-"}
                   </div>
                 </div>
@@ -799,12 +864,12 @@ export default function Voters() {
                   <button className="admin-button ghost wide" onClick={() => setEditMode(true)}>
                     Edit Voter
                   </button>
-                  <button className="admin-button success wide" onClick={() => handleApproveVoter(selectedVoter._id)}>
+                  <button className="admin-button success wide" onClick={() => handleApproveVoter(selectedVoterId)}>
                     Approve Voter
                   </button>
                 </>
               ) : (
-                <button className="admin-button primary danger-full" onClick={() => handleBlockVoter(selectedVoter._id)}>
+                <button className="admin-button primary danger-full" onClick={() => handleBlockVoter(selectedVoterId)}>
                   Block Voter
                 </button>
               )}

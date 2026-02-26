@@ -135,8 +135,9 @@
 }
 
 .btn-outline:hover {
-  border-color: #d1d5db;
-  background: #f9fafb;
+  border-color: #e5e7eb;
+  background: #fff;
+  color: #374151;
 }
 
 .btn-export {
