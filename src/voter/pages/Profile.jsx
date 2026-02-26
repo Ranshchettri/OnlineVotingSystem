@@ -101,7 +101,7 @@ export default function Profile() {
               Voter ID: {voterId}
             </p>
             <div className="profile-hero-badge">
-              <i className="ri-checkbox-circle-line" aria-hidden="true" />
+              <i className="ri-shield-check-line" aria-hidden="true" />
               {badgeText}
             </div>
           </div>

@@ -54,6 +54,11 @@
   box-shadow: var(--shadow-sm);
 }
 
+.party-page .party-card {
+  display: block;
+  width: 100%;
+}
+
 .party-pill {
   display: inline-flex;
   align-items: center;

@@ -185,7 +185,7 @@ export default function PartyNotifications() {
   };
 
   return (
-    <div className="party-page">
+    <div className="party-page party-notifications-page">
       <div className="party-page-header">
         <div>
           <h1>Notifications</h1>

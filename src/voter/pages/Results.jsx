@@ -15,7 +15,7 @@ const mapParty = (party) => ({
   votes: Number(party.totalVotes || party.currentVotes || 0),
 });
 
-const resolveElectionStandings = (election, partiesByElection, partyById, fallbackParties) => {
+const resolveElectionStandings = (election, partiesByElection, partyById) => {
   const electionId = (election._id || election.id || "").toString();
   let standings = partiesByElection[electionId] || [];
 
@@ -37,7 +37,14 @@ const resolveElectionStandings = (election, partiesByElection, partyById, fallba
   }
 
   if (standings.length === 0) {
-    standings = [...fallbackParties].sort((a, b) => b.votes - a.votes).slice(0, 2);
+    return {
+      winner: null,
+      runnerUp: null,
+      totalVotes: Number(election.totalVotes || 0),
+      winnerVotes: 0,
+      marginVotes: 0,
+      winnerShare: "0.0%",
+    };
   }
 
   const sorted = [...standings].sort((a, b) => b.votes - a.votes);
@@ -187,7 +194,7 @@ export default function Results() {
             winnerVotes,
             marginVotes,
             winnerShare,
-          } = resolveElectionStandings(election, partiesByElection, partyById, parties);
+          } = resolveElectionStandings(election, partiesByElection, partyById);
 
           return (
             <div key={election._id || election.id} className="result-card">
@@ -205,40 +212,48 @@ export default function Results() {
               </div>
 
               <div className="result-body">
-                <div className="result-winner">
-                  <div className="result-logo" style={{ background: winner?.color || "#2563eb" }}>
-                    {winner?.logo ? (
-                      <img src={winner.logo} alt={winner.name} className="result-logo-img" />
-                    ) : (
-                      <span>{getPartyShortLabel(winner, "N/A")}</span>
-                    )}
+                {winner ? (
+                  <>
+                    <div className="result-winner">
+                      <div className="result-logo" style={{ background: winner?.color || "#2563eb" }}>
+                        {winner?.logo ? (
+                          <img src={winner.logo} alt={winner.name} className="result-logo-img" />
+                        ) : (
+                          <span>{getPartyShortLabel(winner, "N/A")}</span>
+                        )}
+                      </div>
+
+                      <div className="result-info">
+                        <h5>{winner?.name || "Winner unavailable"}</h5>
+                        <p>{runnerUp ? `Runner-up: ${runnerUp.name}` : "Runner-up data unavailable"}</p>
+                      </div>
+                    </div>
+
+                    <div className="result-stats">
+                      <div>
+                        <span>Total Votes</span>
+                        <strong>{winnerVotes.toLocaleString()}</strong>
+                      </div>
+
+                      <div className="result-divider" />
+
+                      <div>
+                        <span>Vote Share</span>
+                        <strong>{winnerShare}</strong>
+                        <small>Total Votes: {Number(totalVotes || 0).toLocaleString()}</small>
+                      </div>
+                    </div>
+
+                    <div className="result-margin">
+                      <span>Victory Margin</span>
+                      <strong>{marginVotes.toLocaleString()} votes</strong>
+                    </div>
+                  </>
+                ) : (
+                  <div className="result-empty">
+                    <p>No recorded party votes found for this election.</p>
                   </div>
-
-                  <div className="result-info">
-                    <h5>{winner?.name || "Winner unavailable"}</h5>
-                    <p>{runnerUp ? `Runner-up: ${runnerUp.name}` : "Runner-up data unavailable"}</p>
-                  </div>
-                </div>
-
-                <div className="result-stats">
-                  <div>
-                    <span>Total Votes</span>
-                    <strong>{winnerVotes.toLocaleString()}</strong>
-                  </div>
-
-                  <div className="result-divider" />
-
-                  <div>
-                    <span>Vote Share</span>
-                    <strong>{winnerShare}</strong>
-                    <small>Total Votes: {Number(totalVotes || 0).toLocaleString()}</small>
-                  </div>
-                </div>
-
-                <div className="result-margin">
-                  <span>Victory Margin</span>
-                  <strong>{marginVotes.toLocaleString()} votes</strong>
-                </div>
+                )}
               </div>
             </div>
           );

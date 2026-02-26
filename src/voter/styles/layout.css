@@ -229,7 +229,9 @@
 }
 
 .voter-badge svg,
-.voter-logout svg {
+.voter-logout svg,
+.voter-badge i,
+.voter-logout i {
   width: 16px;
   height: 16px;
 }

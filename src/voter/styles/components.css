@@ -100,7 +100,7 @@
   height: 36px;
 }
 
-.party-card {
+.vparty-card {
   border: 1px solid var(--gray-200);
   border-radius: 14px;
   padding: 20px 22px;
@@ -113,20 +113,20 @@
   transition: border 0.2s ease;
 }
 
-.party-card:hover {
+.vparty-card:hover {
   border-color: var(--gray-300);
 }
 
-.party-card.disabled {
+.vparty-card.disabled {
   opacity: 0.6;
 }
 
-.party-card.voted {
+.vparty-card.voted {
   border-color: var(--green-500);
   background: var(--green-50);
 }
 
-.party-logo {
+.vparty-logo {
   width: 76px;
   height: 76px;
   border-radius: 8px;
@@ -137,19 +137,19 @@
   position: relative;
 }
 
-.party-logo-text {
+.vparty-logo-text {
   font-size: 18px;
   font-weight: 700;
   letter-spacing: 0.5px;
 }
-.party-logo-img {
+.vparty-logo-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   border-radius: 8px;
 }
 
-.party-rank {
+.vparty-rank {
   position: absolute;
   bottom: -10px;
   left: 8px;
@@ -160,7 +160,7 @@
   border-radius: 999px;
 }
 
-.party-check {
+.vparty-check {
   position: absolute;
   top: -8px;
   right: -8px;
@@ -175,34 +175,34 @@
   box-shadow: 0 8px 20px rgba(34, 197, 94, 0.35);
 }
 
-.party-check svg {
+.vparty-check svg {
   width: 18px;
   height: 18px;
 }
 
-.party-content {
+.vparty-content {
   flex: 1;
 }
 
-.party-header {
+.vparty-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
 }
 
-.party-name {
+.vparty-name {
   font-size: 18px;
   font-weight: 700;
 }
 
-.party-leader {
+.vparty-leader {
   font-size: 13px;
   color: var(--gray-500);
   margin-top: 2px;
 }
 
-.party-view-btn {
+.vparty-view-btn {
   border: 1px solid var(--gray-400);
   background: #fff;
   border-radius: 8px;
@@ -211,11 +211,11 @@
   color: var(--gray-700);
 }
 
-.party-view-btn:hover {
+.vparty-view-btn:hover {
   background: var(--gray-100);
 }
 
-.party-meta {
+.vparty-meta {
   margin-top: 16px;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -224,31 +224,31 @@
   color: var(--gray-500);
 }
 
-.party-meta strong {
+.vparty-meta strong {
   display: block;
   color: var(--gray-900);
   font-size: 16px;
   margin-top: 4px;
 }
 
-.party-progress {
+.vparty-progress {
   margin-top: 6px;
 }
 
-.party-progress-row {
+.vparty-progress-row {
   margin-top: 8px;
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.party-score {
+.vparty-score {
   font-size: 13px;
   font-weight: 600;
   color: var(--gray-900);
 }
 
-.party-vote-btn {
+.vparty-vote-btn {
   margin-top: 18px;
   width: 100%;
   padding: 12px 16px;
@@ -264,26 +264,26 @@
   gap: 10px;
 }
 
-.party-vote-btn:hover {
+.vparty-vote-btn:hover {
   background: var(--green-600);
   color: #fff;
   border-color: var(--green-600);
 }
 
-.party-vote-btn.disabled {
+.vparty-vote-btn.disabled {
   background: var(--gray-100);
   color: var(--gray-400);
   border-color: var(--gray-200);
   cursor: not-allowed;
 }
 
-.party-vote-btn.voted {
+.vparty-vote-btn.voted {
   background: var(--green-600);
   color: #fff;
   border-color: var(--green-600);
 }
 
-.party-vote-icon {
+.vparty-vote-icon {
   width: 20px;
   height: 20px;
   display: inline-flex;

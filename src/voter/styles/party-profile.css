@@ -4,7 +4,7 @@
   padding-bottom: 40px;
 }
 
-.party-topbar {
+.party-profile .party-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -13,7 +13,7 @@
   margin-bottom: 24px;
 }
 
-.party-back {
+.party-profile .party-back {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -21,17 +21,17 @@
   font-weight: 500;
 }
 
-.party-back svg {
+.party-profile .party-back svg {
   width: 18px;
   height: 48px;
 }
 
-.party-top-logo svg {
+.party-profile .party-top-logo svg {
   width: 34px;
   height: 34px;
 }
 
-.party-hero {
+.party-profile .party-hero {
   border-radius: 9px;
   overflow: hidden;
   border: 1px solid var(--gray-200);
@@ -39,7 +39,7 @@
   box-shadow: var(--shadow-sm);
 }
 
-.party-hero-header {
+.party-profile .party-hero-header {
   padding: 22px 24px;
   color: #fff;
   display: flex;
@@ -47,7 +47,7 @@
   gap: 20px;
 }
 
-.party-hero-logo {
+.party-profile .party-hero-logo {
   width: 100px;
   height: 100px;
   border-radius: 8px;
@@ -60,14 +60,14 @@
   font-weight: 700;
 }
 
-.party-hero-logo img {
+.party-profile .party-hero-logo img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   border-radius: 6px;
 }
 
-.party-hero-title {
+.party-profile .party-hero-title {
   font-size: 26px;
   font-weight: 700;
   display: flex;
@@ -75,24 +75,24 @@
   gap: 10px;
 }
 
-.party-bell {
+.party-profile .party-bell {
   font-size: 22px;
 }
 
-.party-hero-info p {
+.party-profile .party-hero-info p {
   margin-top: 6px;
   font-size: 14px;
   opacity: 0.9;
 }
 
-.party-hero-tags {
+.party-profile .party-hero-tags {
   margin-top: 12px;
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
 }
 
-.party-tag {
+.party-profile .party-tag {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -102,35 +102,35 @@
   font-size: 12px;
 }
 
-.party-tag svg {
+.party-profile .party-tag svg {
   width: 14px;
   height: 14px;
 }
 
-.party-hero-body {
+.party-profile .party-hero-body {
   padding: 22px 24px;
 }
 
-.party-hero-body h3 {
+.party-profile .party-hero-body h3 {
   font-size: 18px;
   font-weight: 750;
 }
 
-.party-hero-body p {
+.party-profile .party-hero-body p {
   margin-top: 10px;
   color: var(--gray-600);
   font-size: 14px;
   line-height: 1.6;
 }
 
-.party-metrics {
+.party-profile .party-metrics {
   margin-top: 22px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
 }
 
-.metric-card {
+.party-profile .metric-card {
   border-radius: 8px;
   border: 1px solid var(--gray-200);
   background: #fff;
@@ -138,18 +138,18 @@
   box-shadow: var(--shadow-sm);
 }
 
-.metric-card h4 {
+.party-profile .metric-card h4 {
   font-size: 16px;
   font-weight: 750;
 }
 
-.metric-note {
+.party-profile .metric-note {
   margin-top: 6px;
   font-size: 13px;
   color: var(--gray-500);
 }
 
-.metric-badge {
+.party-profile .metric-badge {
   margin-top: 16px;
   padding: 10px 12px;
   border-radius: 12px;
@@ -159,7 +159,7 @@
   font-weight: 600;
 }
 
-.ring {
+.party-profile .ring {
   --size: 170px;
   --thickness: 14px;
   width: var(--size);
@@ -173,7 +173,7 @@
   margin: 18px auto 0;
 }
 
-.ring::after {
+.party-profile .ring::after {
   content: "";
   position: absolute;
   inset: var(--thickness);
@@ -181,7 +181,7 @@
   border-radius: 999px;
 }
 
-.ring-inner {
+.party-profile .ring-inner {
   position: absolute;
   inset: 0;
   display: flex;
@@ -191,47 +191,47 @@
   z-index: 1;
 }
 
-.ring-value {
+.party-profile .ring-value {
   font-size: 24px;
   font-weight: 700;
 }
 
-.ring-label {
+.party-profile .ring-label {
   margin-top: 4px;
   font-size: 13px;
   color: var(--gray-600);
 }
 
-.ring-sub {
+.party-profile .ring-sub {
   margin-top: 4px;
   font-size: 12px;
   color: var(--gray-500);
 }
 
-.work-grid {
+.party-profile .work-grid {
   margin-top: 18px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
 }
 
-.party-section {
+.party-profile .party-section {
   margin-top: 22px;
   padding: 20px;
 }
 
-.party-section h3 {
+.party-profile .party-section h3 {
   font-size: 18px;
   font-weight: 750;
   margin-bottom: 14px;
 }
 
-.plan-list {
+.party-profile .plan-list {
   display: grid;
   gap: 12px;
 }
 
-.plan-item {
+.party-profile .plan-item {
   padding: 12px 16px;
   border-radius: 12px;
   background: var(--gray-50);
@@ -241,7 +241,7 @@
   font-size: 14px;
 }
 
-.plan-item span {
+.party-profile .plan-item span {
   width: 26px;
   height: 26px;
   border-radius: 999px;
@@ -254,17 +254,17 @@
   font-weight: 600;
 }
 
-.team-grid {
+.party-profile .team-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
 }
 
-.team-card {
+.party-profile .team-card {
   text-align: center;
 }
 
-.team-photo {
+.party-profile .team-photo {
   width: 100%;
   aspect-ratio: 4 / 3;
   border-radius: 14px;
@@ -277,24 +277,24 @@
   font-weight: 600;
 }
 
-.team-photo img {
+.party-profile .team-photo img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.team-name {
+.party-profile .team-name {
   margin-top: 10px;
   font-weight: 600;
 }
 
-.team-role {
+.party-profile .team-role {
   font-size: 13px;
   color: var(--gray-500);
   margin-top: 4px;
 }
 
-.ready-banner {
+.party-profile .ready-banner {
   margin-top: 24px;
   border-radius: 8px;
   background: linear-gradient(90deg, #16a34a 0%, #15803d 100%);
@@ -303,20 +303,20 @@
   text-align: center;
 }
 
-.ready-banner h3 {
+.party-profile .ready-banner h3 {
   font-size: 20px;
   font-weight: 650;
   color: #fff;
   margin-bottom: 1px;
 }
 
-.ready-banner p {
+.party-profile .ready-banner p {
   margin-top: 8px;
   font-size: 14px;
   color: rgba(255, 255, 255, 0.85);
 }
 
-.ready-btn {
+.party-profile .ready-btn {
   margin-top: 16px;
   display: inline-block;
   padding: 10px 22px;
@@ -327,16 +327,17 @@
 }
 
 @media (max-width: 1100px) {
-  .team-grid {
+  .party-profile .team-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 900px) {
-  .party-metrics {
+  .party-profile .party-metrics {
     grid-template-columns: 1fr;
   }
-  .work-grid {
+
+  .party-profile .work-grid {
     grid-template-columns: 1fr;
   }
 }

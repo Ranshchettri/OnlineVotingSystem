@@ -62,9 +62,10 @@ export default function Overview() {
   const loadLive = useCallback(async () => {
     try {
       setLoading(true);
-      const [partiesRes, electionsRes, votesRes, meRes] = await Promise.all([
+      const [partiesRes, electionsRes, activeElectionsRes, votesRes, meRes] = await Promise.all([
         api.get("/parties"),
         api.get("/elections"),
+        api.get("/elections/active").catch(() => ({ data: [] })),
         api.get("/votes/me").catch(() => ({ data: { data: [] } })),
         api.get("/auth/me").catch(() => ({ data: { data: null } })),
       ]);
@@ -78,7 +79,13 @@ export default function Overview() {
           ? electionsRes.data
           : [];
 
-      const selectedElection = pickCurrentElection(electionList);
+      const activeElectionList = Array.isArray(activeElectionsRes.data?.data)
+        ? activeElectionsRes.data.data
+        : Array.isArray(activeElectionsRes.data)
+          ? activeElectionsRes.data
+          : [];
+
+      const selectedElection = activeElectionList[0] || pickCurrentElection(electionList);
       const selectedElectionId =
         selectedElection?._id?.toString?.() || selectedElection?.id?.toString?.();
       const selectedStatus = normalizeElectionStatus(selectedElection);
@@ -253,6 +260,15 @@ export default function Overview() {
       setVoteStep("face");
       return;
     }
+    const cleanedOtp = String(otp || "").trim();
+    if (!/^\d{6}$/.test(cleanedOtp)) {
+      setOtpError("Enter a valid 6-digit OTP.");
+      return;
+    }
+    if (cleanedOtp !== "123456") {
+      setOtpError("Invalid OTP. Use 123456 for demo.");
+      return;
+    }
     submitFinalVote();
   };
 
@@ -277,8 +293,14 @@ export default function Overview() {
     }
   };
 
+  const derivedStatus = normalizeElectionStatus(currentElection);
   const isVotingOpen =
-    roleCanVote && normalizeElectionStatus(currentElection) === "running";
+    roleCanVote &&
+    Boolean(currentElection) &&
+    (derivedStatus === "running" ||
+      (String(currentElection?.status || "").toLowerCase() === "running" &&
+        currentElection?.allowVoting !== false &&
+        !currentElection?.isEnded));
 
   return (
     <div>
@@ -376,7 +398,10 @@ export default function Overview() {
         isOpen={voteStep === "otp"}
         partyName={selectedParty?.name}
         otpValue={otp}
-        onChange={setOtp}
+        onChange={(value) => {
+          setOtp(value);
+          if (otpError) setOtpError("");
+        }}
         error={otpError}
         faceVerified={faceVerified}
         onClose={() => {

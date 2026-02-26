@@ -33,7 +33,7 @@ export default function OtpModal({
 
         <div className="otp-hint">
           <i className="ri-mail-line" aria-hidden="true" />
-          Demo OTP for testing: 12345
+          Demo OTP for testing: 123456
         </div>
 
         {faceVerified ? (
@@ -54,12 +54,12 @@ export default function OtpModal({
             ref={inputRef}
             type="text"
             value={otpValue}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 6))}
             onKeyDown={(e) => {
               if (e.key === "Enter") onConfirm();
             }}
             className="otp-input"
-            placeholder="Enter 5-digit OTP"
+            placeholder="Enter 6-digit OTP"
             disabled={!faceVerified}
           />
           {error ? <p className="otp-error">{error}</p> : null}

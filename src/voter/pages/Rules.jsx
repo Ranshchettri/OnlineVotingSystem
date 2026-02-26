@@ -28,7 +28,7 @@ const guideSteps = [
   {
     title: "Verify with OTP",
     description:
-      "Enter the 5-digit OTP sent to your registered email address",
+      "Enter the 6-digit OTP sent to your registered email address",
   },
   {
     title: "Submit Your Vote",

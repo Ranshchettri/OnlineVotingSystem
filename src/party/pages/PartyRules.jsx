@@ -71,7 +71,7 @@ const IconMail = () => <i className="ri-mail-line" aria-hidden="true" />;
 
 export default function PartyRules() {
   return (
-    <div className="party-page">
+    <div className="party-page party-rules-page">
       <div className="party-page-header">
         <div>
           <h1>{partyRulesContent.title}</h1>

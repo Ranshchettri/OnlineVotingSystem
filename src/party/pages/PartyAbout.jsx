@@ -3,6 +3,11 @@ import api from "../../services/api";
 import "../styles/about.css";
 
 const MAX_FUTURE_PLANS = 50;
+const buildDraftPlans = (plans = []) =>
+  plans.map((plan, index) => ({
+    id: `plan-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 7)}`,
+    text: String(plan || ""),
+  }));
 
 export default function PartyAbout() {
   const [party, setParty] = useState(null);
@@ -32,7 +37,7 @@ export default function PartyAbout() {
         setIsLocked(Boolean(plansPayload.isEditingLocked));
 
         if (!preserveDraft) {
-          setDraftPlans(fetchedPlans);
+          setDraftPlans(buildDraftPlans(fetchedPlans));
         }
       } catch (err) {
         console.error("Failed to load party about data", err.message);
@@ -57,34 +62,40 @@ export default function PartyAbout() {
 
   const startEdit = () => {
     setMessage("");
-    setDraftPlans(savedPlans.length ? [...savedPlans] : [""]);
+    setDraftPlans(buildDraftPlans(savedPlans.length ? savedPlans : [""]));
     setIsEditing(true);
   };
 
   const cancelEdit = () => {
-    setDraftPlans(savedPlans);
+    setDraftPlans(buildDraftPlans(savedPlans));
     setIsEditing(false);
     setMessage("");
   };
 
   const addPlan = () => {
     if (draftPlans.length >= MAX_FUTURE_PLANS) return;
-    setDraftPlans((prev) => [...prev, ""]);
+    setDraftPlans((prev) => [
+      ...prev,
+      {
+        id: `plan-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        text: "",
+      },
+    ]);
   };
 
-  const removePlan = (index) => {
-    setDraftPlans((prev) => prev.filter((_, idx) => idx !== index));
+  const removePlan = (id) => {
+    setDraftPlans((prev) => prev.filter((item) => item.id !== id));
   };
 
-  const updatePlan = (index, value) => {
+  const updatePlan = (id, value) => {
     setDraftPlans((prev) =>
-      prev.map((item, idx) => (idx === index ? value : item)),
+      prev.map((item) => (item.id === id ? { ...item, text: value } : item)),
     );
   };
 
   const savePlans = async () => {
     const cleaned = draftPlans
-      .map((item) => String(item || "").trim())
+      .map((item) => String(item?.text || "").trim())
       .filter(Boolean)
       .slice(0, MAX_FUTURE_PLANS);
 
@@ -94,7 +105,7 @@ export default function PartyAbout() {
         futurePlans: cleaned,
       });
       setSavedPlans(cleaned);
-      setDraftPlans(cleaned);
+      setDraftPlans(buildDraftPlans(cleaned));
       setIsEditing(false);
       setMessage("Future plans updated successfully.");
     } catch (err) {
@@ -104,7 +115,9 @@ export default function PartyAbout() {
     }
   };
 
-  const plansToShow = isEditing ? draftPlans : savedPlans;
+  const plansCount = isEditing
+    ? draftPlans.filter((item) => String(item?.text || "").trim()).length
+    : savedPlans.filter((item) => String(item || "").trim()).length;
 
   return (
     <div className="party-page">
@@ -155,7 +168,7 @@ export default function PartyAbout() {
             <div>
               <h3>Future Plans</h3>
               <span className="plans-count">
-                {plansToShow.filter((item) => String(item || "").trim()).length} of {MAX_FUTURE_PLANS} plans
+                {plansCount} of {MAX_FUTURE_PLANS} plans
                 {" "}
                 added
               </span>
@@ -165,7 +178,7 @@ export default function PartyAbout() {
                 className="party-btn outline add-plan-btn"
                 type="button"
                 onClick={addPlan}
-                disabled={plansToShow.length >= MAX_FUTURE_PLANS}
+                disabled={draftPlans.length >= MAX_FUTURE_PLANS}
               >
                 <i className="ri-add-line" aria-hidden="true" />
                 Add Plan
@@ -174,27 +187,27 @@ export default function PartyAbout() {
           </div>
 
           <div className="about-list">
-            {plansToShow.length === 0 && !isEditing ? (
+            {savedPlans.length === 0 && !isEditing ? (
               <div className="about-item">
                 <span>1</span>
                 <p>No future plans submitted.</p>
               </div>
             ) : (
-              plansToShow.map((item, index) => (
-                <div key={`plan-${index}`} className="about-item">
+              (isEditing ? draftPlans : savedPlans).map((item, index) => (
+                <div key={isEditing ? item.id : `saved-plan-${index}`} className="about-item">
                   <span>{index + 1}</span>
                   {isEditing ? (
                     <>
                       <input
-                        value={item}
-                        onChange={(event) => updatePlan(index, event.target.value)}
+                        value={item.text}
+                        onChange={(event) => updatePlan(item.id, event.target.value)}
                         placeholder="Write future plan..."
                         maxLength={250}
                       />
                       <button
                         type="button"
                         className="about-remove"
-                        onClick={() => removePlan(index)}
+                        onClick={() => removePlan(item.id)}
                         aria-label={`Remove plan ${index + 1}`}
                       >
                         <i className="ri-delete-bin-line" aria-hidden="true" />

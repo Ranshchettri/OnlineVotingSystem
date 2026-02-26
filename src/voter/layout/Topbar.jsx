@@ -31,7 +31,7 @@ export default function Topbar() {
 
       <div className="voter-topbar-actions">
         <span className="voter-badge">
-          <i className="ri-checkbox-circle-line" aria-hidden="true" />
+          <i className="ri-shield-check-line" aria-hidden="true" />
           {status}
         </span>
         <button className="voter-logout" type="button" onClick={logout}>

@@ -193,7 +193,7 @@ export default function PartyHome() {
   };
 
   return (
-    <div className="party-page">
+    <div className="party-page party-home-page">
       <div className="party-page-header">
         <div>
           <h1>{defaults.title}</h1>
@@ -287,7 +287,7 @@ export default function PartyHome() {
               </>
             )}
             <span className="party-profile-badge">
-              <i className="ri-checkbox-circle-line" aria-hidden="true" />
+              <i className="ri-shield-check-line" aria-hidden="true" />
               Verified Party
             </span>
           </div>

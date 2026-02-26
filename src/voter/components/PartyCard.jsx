@@ -28,38 +28,38 @@ export default function PartyCard({
 
   return (
     <div
-      className={`party-card ${isVotedParty ? "voted" : ""} ${
+      className={`vparty-card ${isVotedParty ? "voted" : ""} ${
         isDisabled ? "disabled" : ""
       }`}
     >
-      <div className="party-logo" style={{ background: party.color }}>
+      <div className="vparty-logo" style={{ background: party.color }}>
         {logoSrc ? (
-          <img src={logoSrc} alt={party.name} className="party-logo-img" />
+          <img src={logoSrc} alt={party.name} className="vparty-logo-img" />
         ) : (
-          <span className="party-logo-text">
+          <span className="vparty-logo-text">
             {shortLabel}
           </span>
         )}
-        <span className="party-rank">#{party.rank}</span>
+        <span className="vparty-rank">#{party.rank}</span>
         {isVotedParty ? (
-          <span className="party-check">
+          <span className="vparty-check">
             <i className="ri-checkbox-circle-line" aria-hidden="true" />
           </span>
         ) : null}
       </div>
 
-      <div className="party-content">
-        <div className="party-header">
+      <div className="vparty-content">
+        <div className="vparty-header">
           <div>
-            <p className="party-name">{party.name}</p>
-            <p className="party-leader">Leader: {party.leader}</p>
+            <p className="vparty-name">{party.name}</p>
+            <p className="vparty-leader">Leader: {party.leader}</p>
           </div>
-          <Link className="party-view-btn" to={`/voter/party/${party.id}`}>
+          <Link className="vparty-view-btn" to={`/voter/party/${party.id}`}>
             View Profile
           </Link>
         </div>
 
-        <div className="party-meta">
+        <div className="vparty-meta">
           <div>
             <span>Current Votes</span>
             <strong>{party.votes}</strong>
@@ -70,9 +70,9 @@ export default function PartyCard({
           </div>
           <div>
             <span>Development Score</span>
-            <div className="party-progress-row">
+            <div className="vparty-progress-row">
               <ProgressBar value={party.score} />
-              <span className="party-score">{party.score}%</span>
+              <span className="vparty-score">{party.score}%</span>
             </div>
           </div>
         </div>
@@ -80,10 +80,10 @@ export default function PartyCard({
         <button
           type="button"
           onClick={() => (isDisabled ? null : onVote(party))}
-          className={`party-vote-btn ${voteClass}`}
+          className={`vparty-vote-btn ${voteClass}`}
           disabled={isDisabled}
         >
-          <span className="party-vote-icon">
+          <span className="vparty-vote-icon">
             <i
               className={
                 isVotedParty

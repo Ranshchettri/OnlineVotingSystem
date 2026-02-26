@@ -1,15 +1,15 @@
-.rules-header h1 {
+.voter-main .rules-header h1 {
   font-size: 26px;
   font-weight: 700;
   margin-bottom: 1px;
 }
 
-.rules-header p {
+.voter-main .rules-header p {
   font-size: 14px;
   color: var(--gray-500);
 }
 
-.rules-card {
+.voter-main .rules-card {
   margin-top: 18px;
   border-radius: 18px;
   border: 1px solid var(--gray-200);
@@ -18,14 +18,14 @@
   box-shadow: var(--shadow-sm);
 }
 
-.rules-card-title {
+.voter-main .rules-card-title {
   display: flex;
   align-items: center;
   gap: 14px;
   margin-bottom: 16px;
 }
 
-.rules-card-title span {
+.voter-main .rules-card-title span {
   width: 46px;
   height: 46px;
   border-radius: 14px;
@@ -36,28 +36,28 @@
   justify-content: center;
 }
 
-.rules-card-title svg {
+.voter-main .rules-card-title svg {
   width: 22px;
   height: 22px;
 }
 
-.rules-card-title h3 {
+.voter-main .rules-card-title h3 {
   font-size: 18px;
   font-weight: 600;
 }
 
-.rules-card-title p {
+.voter-main .rules-card-title p {
   font-size: 13px;
   color: var(--gray-500);
   margin-top: 4px;
 }
 
-.rules-list {
+.voter-main .rules-list {
   display: grid;
   gap: 12px;
 }
 
-.rules-item {
+.voter-main .rules-item {
   background: var(--gray-50);
   border-radius: 12px;
   padding: 14px 16px;
@@ -68,7 +68,7 @@
   color: var(--gray-700);
 }
 
-.rules-number {
+.voter-main .rules-number {
   width: 28px;
   height: 28px;
   border-radius: 999px;
@@ -81,24 +81,24 @@
   font-size: 13px;
 }
 
-.guide-card-title span {
+.voter-main .guide-card-title span {
   background: #dcfce7;
   color: var(--green-600);
 }
 
-.guide-list {
+.voter-main .guide-list {
   display: grid;
   gap: 18px;
 }
 
-.guide-item {
+.voter-main .guide-item {
   display: grid;
   grid-template-columns: 40px 1fr;
   gap: 16px;
   align-items: flex-start;
 }
 
-.guide-step {
+.voter-main .guide-step {
   width: 34px;
   height: 34px;
   border-radius: 999px;
@@ -111,7 +111,7 @@
   position: relative;
 }
 
-.guide-step::after {
+.voter-main .guide-step::after {
   content: "";
   position: absolute;
   width: 2px;
@@ -122,49 +122,49 @@
   transform: translateX(-50%);
 }
 
-.guide-item:last-child .guide-step::after {
+.voter-main .guide-item:last-child .guide-step::after {
   display: none;
 }
 
-.guide-item h4 {
+.voter-main .guide-item h4 {
   font-size: 15px;
   font-weight: 600;
 }
 
-.guide-item p {
+.voter-main .guide-item p {
   margin-top: 6px;
   font-size: 13px;
   color: var(--gray-500);
 }
 
-.legal-card-title span {
+.voter-main .legal-card-title span {
   background: #dbeafe;
   color: #2563eb;
 }
 
-.legal-list {
+.voter-main .legal-list {
   display: grid;
   gap: 14px;
 }
 
-.legal-item {
+.voter-main .legal-item {
   border: 1px solid var(--gray-200);
   border-radius: 14px;
   padding: 16px;
 }
 
-.legal-item h4 {
+.voter-main .legal-item h4 {
   font-size: 15px;
   font-weight: 600;
 }
 
-.legal-item p {
+.voter-main .legal-item p {
   margin-top: 6px;
   font-size: 13px;
   color: var(--gray-500);
 }
 
-.help-card {
+.voter-main .help-card {
   margin-top: 18px;
   border-radius: 8px;
   background: #fff3e8;
@@ -172,13 +172,13 @@
   padding: 22px;
 }
 
-.help-title {
+.voter-main .help-title {
   display: flex;
   align-items: center;
   gap: 2px;
 }
 
-.help-icon {
+.voter-main .help-icon {
   width: 40px;
   height: 40px;
   border-radius: 12px;
@@ -189,25 +189,25 @@
   justify-content: center;
 }
 
-.help-icon svg {
+.voter-main .help-icon svg {
   width: 20px;
   height: 20px;
 }
 
-.help-card h4 {
+.voter-main .help-card h4 {
   font-size: 16px;
   font-weight: 600;
   color: #000000;
 }
 
-.help-card p {
+.voter-main .help-card p {
   margin-top: 1px;
   margin-left: 16px;
   font-size: 13px;
   color: #000000;
 }
 
-.help-card ul {
+.voter-main .help-card ul {
   margin-top: 10px;
   padding-left: 18px;
   color: #c2410c;

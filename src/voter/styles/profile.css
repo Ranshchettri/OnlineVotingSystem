@@ -70,7 +70,8 @@
   gap: 8px;
 }
 
-.profile-hero-info p svg {
+.profile-hero-info p svg,
+.profile-hero-info p i {
   width: 16px;
   height: 16px;
 }
@@ -87,7 +88,8 @@
   font-weight: 600;
 }
 
-.profile-hero-badge svg {
+.profile-hero-badge svg,
+.profile-hero-badge i {
   width: 14px;
   height: 14px;
 }
@@ -184,7 +186,8 @@
   font-weight: 600;
 }
 
-.profile-history-badge svg {
+.profile-history-badge svg,
+.profile-history-badge i {
   width: 14px;
   height: 14px;
 }
