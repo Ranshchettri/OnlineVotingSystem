@@ -58,6 +58,7 @@ export default function Overview() {
     },
   ]);
   const [loading, setLoading] = useState(false);
+  const [voteSuccess, setVoteSuccess] = useState("");
 
   const loadLive = useCallback(async () => {
     try {
@@ -91,6 +92,27 @@ export default function Overview() {
       const selectedStatus = normalizeElectionStatus(selectedElection);
       const statusLabel = selectedStatus.toUpperCase();
 
+      const standingsRes = selectedElectionId
+        ? await api.get(`/results/party/${selectedElectionId}`).catch(() => null)
+        : null;
+      const standingsData = standingsRes?.data?.data || {};
+      const standingsRows = Array.isArray(standingsData.parties)
+        ? standingsData.parties
+        : [];
+      const standingsMap = new Map(
+        standingsRows.map((row) => [
+          (row.id || row.partyId || "").toString(),
+          {
+            votes: Number(row.votes || 0),
+            percentage: Number(row.percentage || 0),
+            name: row.name || "Party",
+            logo: row.logo || "",
+            color: row.color || "#2563eb",
+          },
+        ]),
+      );
+      const standingsTotalVotes = Number(standingsData.totalVotes || 0);
+
       const partyListRaw = Array.isArray(partiesRes.data?.data?.parties)
         ? partiesRes.data.data.parties
         : Array.isArray(partiesRes.data?.data)
@@ -112,26 +134,56 @@ export default function Overview() {
 
       const partyList = partySource
         .filter((party) => {
-          if (party.status === "REJECTED") return false;
+          const normalized = String(party.status || "").toUpperCase();
+          if (["REJECTED", "BLOCKED", "PENDING"].includes(normalized)) return false;
+          if (party.isActive === false) return false;
           return true;
         })
         .map((party) => ({
           id: (party._id || party.id || "").toString(),
           name: party.name || "Unnamed Party",
           leader: party.leader || "N/A",
-          votes: Number(party.totalVotes || party.currentVotes || 0),
+          votes: Number(
+            standingsMap.get((party._id || party.id || "").toString())?.votes || 0,
+          ),
           score: Number(party.development || party.goodWork || 0),
           short: getPartyShortLabel(party, "PRT"),
           shortName: party.shortName || "",
           symbol: party.symbol || "",
           logo: getPartyLogoSrc(party),
           color: party.color || "#2563eb",
-        }))
-        .sort((a, b) => (b.score === a.score ? b.votes - a.votes : b.score - a.score))
+        }));
+
+      standingsRows.forEach((row) => {
+        const id = (row.id || row.partyId || "").toString();
+        if (!id || partyList.some((party) => party.id === id)) return;
+        partyList.push({
+          id,
+          name: row.name || "Unnamed Party",
+          leader: "N/A",
+          votes: Number(row.votes || 0),
+          score: 0,
+          short: getPartyShortLabel(row, "PRT"),
+          shortName: row.shortName || "",
+          symbol: row.symbol || "",
+          logo: getPartyLogoSrc(row),
+          color: row.color || "#2563eb",
+        });
+      });
+
+      const partyListWithRank = partyList
+        .sort((a, b) => (b.votes === a.votes ? b.score - a.score : b.votes - a.votes))
         .map((party, index) => ({ ...party, rank: index + 1 }));
 
-      const electionVotes = Number(selectedElection?.totalVotes || 0);
-      const partiesWithShare = partyList.map((party) => {
+      const electionVotes = standingsTotalVotes || Number(selectedElection?.totalVotes || 0);
+      const partiesWithShare = partyListWithRank.map((party) => {
+        const standingsRow = standingsMap.get(party.id);
+        if (standingsRow) {
+          return {
+            ...party,
+            share: `${Number(standingsRow.percentage || 0).toFixed(1)}%`,
+          };
+        }
         const share =
           electionVotes > 0
             ? `${((party.votes / electionVotes) * 100).toFixed(1)}%`
@@ -183,7 +235,7 @@ export default function Overview() {
         {
           key: "votes",
           label: "Total Votes Cast",
-          value: Number.isFinite(electionVotes) ? electionVotes.toLocaleString() : "0",
+          value: Number.isFinite(electionVotes) ? Number(electionVotes).toLocaleString() : "0",
           tone: "green",
         },
         {
@@ -224,6 +276,12 @@ export default function Overview() {
     const timer = setTimeout(() => setShowEmailBanner(false), 5000);
     return () => clearTimeout(timer);
   }, [showEmailBanner]);
+
+  useEffect(() => {
+    if (!voteSuccess) return undefined;
+    const timer = setTimeout(() => setVoteSuccess(""), 4500);
+    return () => clearTimeout(timer);
+  }, [voteSuccess]);
 
   const statsWithStatus = useMemo(
     () =>
@@ -284,6 +342,7 @@ export default function Overview() {
 
       setHasVoted(true);
       setVotedPartyId(selectedParty._id || selectedParty.id);
+      setVoteSuccess(`Vote Successfully Submitted! You voted for ${selectedParty.name}.`);
       setSelectedParty(null);
       setShowEmailBanner(true);
       setVoteStep(null);
@@ -331,6 +390,18 @@ export default function Overview() {
           )?.name || ""
         }
       />
+
+      {voteSuccess ? (
+        <div className="email-banner" style={{ marginTop: 10 }}>
+          <div className="email-banner-icon">
+            <i className="ri-checkbox-circle-line" aria-hidden="true" />
+          </div>
+          <div>
+            <h4>Vote Successfully Submitted!</h4>
+            <p>{voteSuccess.replace("Vote Successfully Submitted! ", "")}</p>
+          </div>
+        </div>
+      ) : null}
 
       <div className="overview-stats">
         {statsWithStatus.map((stat) => (

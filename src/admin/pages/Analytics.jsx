@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "../../services/api";
+import { getPartyLogoSrc } from "../../shared/utils/partyDisplay";
 import "../styles/analytics.css";
 
 /* Demo seed data disabled as requested
@@ -24,24 +25,45 @@ export default function Analytics() {
     bad: 0,
   });
 
-  const mapAnalyticsRow = (row = {}) => ({
-    id: row._id || row.id || row.candidateId || row.partyId,
-    entityId: row.partyId || row.candidateId || row._id || row.id,
-    name: row.fullName || row.name || row.leader || "Unknown",
-    party: row.partyName || row.party || row.name || "",
-    votes: Number(row.totalVotes || row.currentVotes || 0).toLocaleString(),
-    avatar: row.avatar || row.photo || row.image || row.logo,
-    development: Number(row.development ?? row.totalTaskCompletion ?? 0),
-    good: Number(row.goodWork ?? 0),
-    bad: Number(row.badWork ?? 0),
-    goodTopics: Array.isArray(row.goodTopics) ? row.goodTopics : [],
-    badTopics: Array.isArray(row.badTopics) ? row.badTopics : [],
-    history: Array.isArray(row.history)
-      ? row.history
-      : Array.isArray(row.historicalData)
-        ? row.historicalData
-        : [],
-  });
+  const mapAnalyticsRow = (row = {}) => {
+    const detailed = row.detailedMetrics || {};
+    const fallbackGood = [
+      detailed.infrastructure !== undefined ? `Infrastructure: ${Number(detailed.infrastructure || 0)}%` : null,
+      detailed.healthcare !== undefined ? `Healthcare: ${Number(detailed.healthcare || 0)}%` : null,
+      detailed.education !== undefined ? `Education: ${Number(detailed.education || 0)}%` : null,
+    ].filter(Boolean);
+    const fallbackBad = [
+      detailed.policyFailures !== undefined ? `Policy failures: ${Number(detailed.policyFailures || 0)}%` : null,
+      detailed.corruptionCases !== undefined ? `Corruption cases: ${Number(detailed.corruptionCases || 0)}%` : null,
+      detailed.publicComplaints !== undefined ? `Public complaints: ${Number(detailed.publicComplaints || 0)}%` : null,
+    ].filter(Boolean);
+
+    const goodTopics = Array.isArray(row.goodTopics) && row.goodTopics.length
+      ? row.goodTopics
+      : fallbackGood;
+    const badTopics = Array.isArray(row.badTopics) && row.badTopics.length
+      ? row.badTopics
+      : fallbackBad;
+
+    return {
+      id: row._id || row.id || row.candidateId || row.partyId,
+      entityId: row.partyId || row.candidateId || row._id || row.id,
+      name: row.fullName || row.name || row.leader || "Unknown",
+      party: row.partyName || row.party || row.name || "",
+      votes: Number(row.totalVotes || row.currentVotes || 0).toLocaleString(),
+      avatar: getPartyLogoSrc(row) || row.avatar || row.photo || row.image || row.logo || "",
+      development: Number(row.development ?? row.totalTaskCompletion ?? 0),
+      good: Number(row.goodWork ?? 0),
+      bad: Number(row.badWork ?? 0),
+      goodTopics,
+      badTopics,
+      history: Array.isArray(row.history)
+        ? row.history
+        : Array.isArray(row.historicalData)
+          ? row.historicalData
+          : [],
+    };
+  };
 
   const loadPartiesAsFallbackAnalytics = async () => {
     const partyRes = await api.get("/parties");

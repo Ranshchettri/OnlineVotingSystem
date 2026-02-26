@@ -9,7 +9,7 @@ export default function PartyCard({
   disableVoting = false,
   onVote,
 }) {
-  const isDisabled = (hasVoted && !isVotedParty) || disableVoting;
+  const isDisabled = hasVoted || disableVoting;
   const voteLabel = isVotedParty
     ? "Your Vote"
     : hasVoted

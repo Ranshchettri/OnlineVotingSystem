@@ -20,19 +20,32 @@ export default function PartyProfile() {
     const loadParty = async () => {
       try {
         setLoading(true);
-        const [profileRes, statsRes, plansRes] = await Promise.all([
+        const [profileRes, progressRes, currentStatsRes, plansRes] = await Promise.all([
           api.get(`/parties/${partyId}`),
-          api.get(`/parties/${partyId}/stats`).catch(() => ({ data: { data: {} } })),
+          api.get(`/parties/${partyId}/progress`).catch(() => ({ data: { data: {} } })),
+          api.get(`/parties/${partyId}/current-stats`).catch(() => ({ data: { data: {} } })),
           api.get(`/parties/${partyId}/future-plans`).catch(() => ({ data: { data: {} } })),
         ]);
         const profileData = profileRes.data?.data?.party || null;
-        const stats = statsRes.data?.data || {};
+        const progress = progressRes.data?.data || {};
+        const currentStats = currentStatsRes.data?.data || {};
         const plans = Array.isArray(plansRes.data?.data?.futurePlans)
           ? plansRes.data.data.futurePlans
           : Array.isArray(profileData?.futurePlans)
             ? profileData.futurePlans
             : [];
-        setParty(profileData ? { ...profileData, ...stats, futurePlans: plans } : null);
+        const ownVotes = Number(currentStats?.stats?.ownVotes || 0);
+        setParty(
+          profileData
+            ? {
+                ...profileData,
+                ...progress,
+                totalVotes: ownVotes,
+                futurePlans: plans,
+                liveStats: currentStats.stats || {},
+              }
+            : null,
+        );
       } catch (error) {
         console.error("Failed to load party profile:", error?.response?.data || error.message);
         setParty(null);
@@ -49,11 +62,13 @@ export default function PartyProfile() {
   const development = clampPercent(party.development);
   const goodWork = clampPercent(party.goodWork);
   const badWork = clampPercent(party.badWork);
-  const partyColor = party.color || "#2563eb";
   const short = getPartyShortLabel(party, "PRT");
   const logoSrc = getPartyLogoSrc(party);
   const team = Array.isArray(party.teamMembers) ? party.teamMembers : [];
   const plans = Array.isArray(party.futurePlans) ? party.futurePlans : [];
+  const workTotal = goodWork + badWork;
+  const goodSlice = workTotal > 0 ? Number(((goodWork / workTotal) * 100).toFixed(1)) : 50;
+  const badSlice = Number((100 - goodSlice).toFixed(1));
 
   return (
     <div className="party-profile">
@@ -67,7 +82,7 @@ export default function PartyProfile() {
       </div>
 
       <div className="party-hero">
-        <div className="party-hero-header" style={{ background: partyColor }}>
+        <div className="party-hero-header" style={{ background: "#dc2626" }}>
           <div className="party-hero-logo">
             {logoSrc ? <img src={logoSrc} alt={party.name} /> : short}
           </div>
@@ -102,9 +117,21 @@ export default function PartyProfile() {
         <div className="metric-card">
           <h4>Work Analysis</h4>
           <p className="metric-note">Good and bad work percentages.</p>
+          <div
+            className="work-chart"
+            style={{
+              "--good-slice": `${goodSlice}%`,
+              "--bad-slice": `${badSlice}%`,
+            }}
+          >
+            <div className="work-chart-inner">
+              <strong>{goodWork}%</strong>
+              <span>Good Work</span>
+            </div>
+          </div>
           <div className="work-grid">
-            <div className="metric-badge">Good Work: {goodWork}%</div>
-            <div className="metric-badge">Bad Work: {badWork}%</div>
+            <div className="metric-badge good">Good Work: {goodWork}%</div>
+            <div className="metric-badge bad">Bad Work: {badWork}%</div>
           </div>
         </div>
       </div>
@@ -129,7 +156,7 @@ export default function PartyProfile() {
       </div>
 
       <div className="party-section metric-card">
-        <h3>Core Team</h3>
+        <h3>Team Members</h3>
         <div className="team-grid">
           {team.length === 0 ? (
             <p>No team members listed.</p>

@@ -159,9 +159,7 @@
 }
 
 .party-home-page .party-team-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: block;
   margin-bottom: 12px;
   gap: 10px;
   border-bottom: none;
@@ -174,6 +172,10 @@
   margin: 0;
   line-height: 1.05;
   border-bottom: none;
+}
+
+.party-home-page .party-team-head .party-btn {
+  margin-top: 8px;
 }
 
 .party-home-page .party-team-grid {
