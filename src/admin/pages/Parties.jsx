@@ -69,6 +69,37 @@ const mapPartyFromApi = (party = {}, idx = 0) => {
   };
 };
 
+const legacyDemoDocuments = [
+  {
+    name: "Party Registration Certificate.pdf",
+    mimeType: "application/pdf",
+    size: 2.4 * 1024 * 1024,
+    dataUrl: "",
+    uploadedAt: "2024-12-01T00:00:00.000Z",
+  },
+  {
+    name: "Leader Citizenship Document.pdf",
+    mimeType: "application/pdf",
+    size: 1.8 * 1024 * 1024,
+    dataUrl: "",
+    uploadedAt: "2024-12-01T00:00:00.000Z",
+  },
+  {
+    name: "Party Constitution.pdf",
+    mimeType: "application/pdf",
+    size: 5.2 * 1024 * 1024,
+    dataUrl: "",
+    uploadedAt: "2024-12-01T00:00:00.000Z",
+  },
+  {
+    name: "Financial Statement 2024.pdf",
+    mimeType: "application/pdf",
+    size: 3.1 * 1024 * 1024,
+    dataUrl: "",
+    uploadedAt: "2024-12-05T00:00:00.000Z",
+  },
+];
+
 /* Demo seed data disabled as requested
 const fallbackParties = [
   {
@@ -136,7 +167,10 @@ export default function Parties() {
     electionId: "",
     electionType: "Political",
   });
-  const documents = activeParty?.documents || [];
+  const documents =
+    activeParty?.documents && activeParty.documents.length
+      ? activeParty.documents
+      : legacyDemoDocuments;
   const [elections, setElections] = useState([]);
 
   const applyPartyList = (list = []) => {

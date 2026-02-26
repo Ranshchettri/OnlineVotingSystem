@@ -794,7 +794,7 @@ export default function Voters() {
                     Save Changes
                   </button>
                 </>
-              ) : selectedStatus === "BLOCKED" ? (
+              ) : selectedStatus !== "ACTIVE" ? (
                 <>
                   <button className="admin-button ghost wide" onClick={() => setEditMode(true)}>
                     Edit Voter
