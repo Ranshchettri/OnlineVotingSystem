@@ -4,8 +4,8 @@ import "../styles/home.css";
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 const defaults = {
-  title: "Party Dashboard",
-  subtitle: "Manage your party profile and team",
+  title: "Party Profile",
+  subtitle: "Manage your party information",
   logoBg: "#e5e7eb",
   logoText: "P",
 };
@@ -20,6 +20,28 @@ export default function PartyHome() {
   });
   const [draft, setDraft] = useState(() => clone(saved));
   const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
+  const [isLocked, setIsLocked] = useState(false);
+
+  const normalizeTeamForUi = (team = []) =>
+    team.map((m, idx) => ({
+      ...m,
+      id: m.id || `${m.name || "member"}-${idx}`,
+      name: String(m.name || "").trim(),
+      role: m.role || m.position || "",
+      photo: m.photo || "",
+    }));
+
+  const normalizeTeamForApi = (team = []) =>
+    team
+      .map((m) => ({
+        name: String(m.name || "").trim(),
+        role: String(m.role || "").trim(),
+        position: String(m.position || m.role || "").trim(),
+        photo: m.photo || "",
+      }))
+      .filter((m) => Boolean(m.name));
 
   useEffect(() => {
     const loadParty = async () => {
@@ -31,50 +53,88 @@ export default function PartyHome() {
           leader: party.leader || "",
           vision: party.vision || party.mission || "",
           logoImage: party.logo || "",
-          team: (party.teamMembers || []).map((m, idx) => ({
-            ...m,
-            id: `${m.name || "member"}-${idx}`,
-            photo: m.photo || "",
-          })),
+          team: normalizeTeamForUi(party.teamMembers || []),
         };
         setSaved(mapped);
-        setDraft(clone(mapped));
+        setIsLocked(Boolean(party.isEditingLocked));
+        if (party.isEditingLocked && isEditing) {
+          setIsEditing(false);
+          setSaveMessage("Editing is locked within 24 hours of election start.");
+        }
+        if (!isEditing) {
+          setDraft(clone(mapped));
+        }
       } catch (err) {
         console.error("Failed to load party data", err.message);
       }
     };
     loadParty();
-    const interval = setInterval(loadParty, 30000);
+    const interval = setInterval(() => {
+      if (!isEditing) loadParty();
+    }, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isEditing]);
 
   const startEdit = () => {
+    if (isLocked) {
+      setSaveMessage("Editing is locked within 24 hours of election start.");
+      return;
+    }
     setDraft(clone(saved));
+    setSaveMessage("");
     setIsEditing(true);
   };
 
   const cancelEdit = () => {
     setDraft(clone(saved));
+    setSaveMessage("");
     setIsEditing(false);
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
+    if (isLocked) {
+      setSaveMessage("Editing is locked within 24 hours of election start.");
+      return;
+    }
+
     const next = clone(draft);
-    setSaved(next);
-    setIsEditing(false);
-    // Persist to backend
-    api
-      .put("/parties/profile/full", {
+    const invalidMember = (next.team || []).find(
+      (member) => (member.role || member.photo) && !String(member.name || "").trim(),
+    );
+
+    if (invalidMember) {
+      setSaveMessage("Team member name is required when role or photo is provided.");
+      return;
+    }
+
+    const teamMembers = normalizeTeamForApi(next.team || []);
+
+    try {
+      setSaving(true);
+      setSaveMessage("");
+      await api.put("/parties/profile/full", {
         name: next.name,
         leader: next.leader,
         vision: next.vision,
         manifesto: next.vision,
         logo: next.logoImage,
-        teamMembers: next.team,
-      })
-      .catch((err) => {
-        console.error("Failed to save party profile", err.message);
+        teamMembers,
       });
+
+      const synced = {
+        ...next,
+        team: normalizeTeamForUi(teamMembers),
+      };
+      setSaved(synced);
+      setDraft(clone(synced));
+      setIsEditing(false);
+      setSaveMessage("Profile saved successfully.");
+    } catch (err) {
+      console.error("Failed to save party profile", err.message);
+      setSaveMessage(err.response?.data?.message || "Failed to save party profile.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const updateField = (field, value) => {
@@ -152,17 +212,25 @@ export default function PartyHome() {
               type="button"
               className="party-btn primary"
               onClick={saveEdit}
+              disabled={saving || isLocked}
             >
-              Save Changes
+              {isLocked ? "Editing Locked" : saving ? "Saving..." : "Save Changes"}
             </button>
           </div>
         ) : (
-          <button className="party-edit-btn" type="button" onClick={startEdit}>
+          <button
+            className="party-edit-btn"
+            type="button"
+            onClick={startEdit}
+            disabled={isLocked}
+            title={isLocked ? "Editing is locked before election start" : "Edit profile"}
+          >
             <i className="ri-edit-line" aria-hidden="true" />
-            Edit Profile
+            {isLocked ? "Editing Locked" : "Edit Profile"}
           </button>
         )}
       </div>
+      {saveMessage ? <div className="party-home-message">{saveMessage}</div> : null}
 
       <div className="party-profile-card">
         <div className="party-profile-hero">
@@ -181,6 +249,7 @@ export default function PartyHome() {
                   <input
                     type="file"
                     accept="image/*"
+                    disabled={isLocked}
                     onChange={(event) => handleLogo(event.target.files[0])}
                   />
                   <i className="ri-upload-cloud-line" aria-hidden="true" />
@@ -198,11 +267,13 @@ export default function PartyHome() {
               <div className="party-profile-inputs">
                 <input
                   value={draft.name}
+                  disabled={isLocked}
                   onChange={(event) => updateField("name", event.target.value)}
                   placeholder="Party Name"
                 />
                 <input
                   value={draft.leader}
+                  disabled={isLocked}
                   onChange={(event) =>
                     updateField("leader", event.target.value)
                   }
@@ -226,6 +297,7 @@ export default function PartyHome() {
           {isEditing ? (
             <textarea
               value={draft.vision}
+              disabled={isLocked}
               onChange={(event) => updateField("vision", event.target.value)}
             />
           ) : (
@@ -242,6 +314,7 @@ export default function PartyHome() {
               type="button"
               className="party-btn outline"
               onClick={addMember}
+              disabled={isLocked}
             >
               <i className="ri-add-line" aria-hidden="true" />
               Add Member
@@ -262,6 +335,7 @@ export default function PartyHome() {
                     <input
                       type="file"
                       accept="image/*"
+                      disabled={isLocked}
                       onChange={(event) =>
                         handlePhoto(member.id, event.target.files[0])
                       }
@@ -274,6 +348,7 @@ export default function PartyHome() {
                 <div className="party-team-edit">
                   <input
                     value={member.name}
+                    disabled={isLocked}
                     placeholder="Member Name"
                     onChange={(event) =>
                       updateMember(member.id, "name", event.target.value)
@@ -281,6 +356,7 @@ export default function PartyHome() {
                   />
                   <input
                     value={member.role}
+                    disabled={isLocked}
                     placeholder="Role / Bio"
                     onChange={(event) =>
                       updateMember(member.id, "role", event.target.value)
@@ -289,6 +365,7 @@ export default function PartyHome() {
                   <button
                     type="button"
                     className="party-btn danger"
+                    disabled={isLocked}
                     onClick={() => removeMember(member.id)}
                   >
                     Remove

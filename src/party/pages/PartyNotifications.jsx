@@ -11,17 +11,85 @@ const formatRelativeTime = (value) => {
   const minute = 60 * 1000;
   const hour = 60 * minute;
   const day = 24 * hour;
+  const abs = Math.abs(diffMs);
 
-  if (diffMs < minute) return "just now";
-  if (diffMs < hour) return `${Math.floor(diffMs / minute)} min ago`;
-  if (diffMs < day) return `${Math.floor(diffMs / hour)} hour${Math.floor(diffMs / hour) > 1 ? "s" : ""} ago`;
-  return `${Math.floor(diffMs / day)} day${Math.floor(diffMs / day) > 1 ? "s" : ""} ago`;
+  if (abs < minute) return "just now";
+
+  if (diffMs >= 0) {
+    if (diffMs < hour) return `${Math.floor(diffMs / minute)} min ago`;
+    if (diffMs < day) {
+      const hours = Math.floor(diffMs / hour);
+      return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+    }
+    const days = Math.floor(diffMs / day);
+    return `${days} day${days > 1 ? "s" : ""} ago`;
+  }
+
+  if (abs < hour) return `in ${Math.ceil(abs / minute)} min`;
+  if (abs < day) {
+    const hours = Math.ceil(abs / hour);
+    return `in ${hours} hour${hours > 1 ? "s" : ""}`;
+  }
+  const days = Math.ceil(abs / day);
+  return `in ${days} day${days > 1 ? "s" : ""}`;
 };
 
-const Icon = ({ type }) => {
-  if (type === "warning") return <i className="ri-error-warning-line" aria-hidden="true" />;
-  if (type === "success") return <i className="ri-checkbox-circle-line" aria-hidden="true" />;
-  if (type === "error") return <i className="ri-close-circle-line" aria-hidden="true" />;
+const normalizeType = (item = {}) => {
+  const explicit = String(item.type || "").toLowerCase();
+  if (["info", "warning", "success", "error"].includes(explicit)) return explicit;
+
+  const haystack = `${item.title || ""} ${item.message || ""}`.toLowerCase();
+  if (/(blocked|rejected|lost|failed|error)/.test(haystack)) return "error";
+  if (/(deadline|maintenance|ended|locked|warning)/.test(haystack)) return "warning";
+  if (/(started|milestone|won|published|activated|approved)/.test(haystack)) return "success";
+  return "info";
+};
+
+const buildDeadlineNotification = (startDate) => {
+  if (!startDate) return null;
+
+  const start = new Date(startDate);
+  if (Number.isNaN(start.getTime())) return null;
+
+  const lockAt = new Date(start.getTime() - 24 * 60 * 60 * 1000);
+  const now = Date.now();
+  const diff = lockAt.getTime() - now;
+
+  if (diff <= 0) {
+    return {
+      id: "synthetic-editing-deadline",
+      synthetic: true,
+      isRead: false,
+      type: "warning",
+      title: "Profile Editing Deadline",
+      message: "Profile editing is locked within 24 hours of election start.",
+      createdAt: lockAt.toISOString(),
+    };
+  }
+
+  const days = Math.ceil(diff / (24 * 60 * 60 * 1000));
+  return {
+    id: "synthetic-editing-deadline",
+    synthetic: true,
+    isRead: false,
+    type: "warning",
+    title: "Profile Editing Deadline",
+    message: `Profile editing will be locked in ${days} day${days > 1 ? "s" : ""}. Please complete all updates.`,
+    createdAt: lockAt.toISOString(),
+  };
+};
+
+const Icon = ({ item }) => {
+  const text = `${item?.title || ""} ${item?.message || ""}`.toLowerCase();
+  if (text.includes("election started")) return <i className="ri-notification-3-line" aria-hidden="true" />;
+  if (text.includes("deadline")) return <i className="ri-error-warning-line" aria-hidden="true" />;
+  if (text.includes("milestone")) return <i className="ri-trophy-line" aria-hidden="true" />;
+  if (text.includes("maintenance")) return <i className="ri-tools-line" aria-hidden="true" />;
+  if (text.includes("result")) return <i className="ri-file-chart-line" aria-hidden="true" />;
+
+  if (item?.type === "warning") return <i className="ri-error-warning-line" aria-hidden="true" />;
+  if (item?.type === "success") return <i className="ri-checkbox-circle-line" aria-hidden="true" />;
+  if (item?.type === "error") return <i className="ri-close-circle-line" aria-hidden="true" />;
   return <i className="ri-information-line" aria-hidden="true" />;
 };
 
@@ -33,11 +101,41 @@ export default function PartyNotifications() {
 
   const load = async () => {
     try {
-      const res = await api.get("/notifications");
-      const payload = res.data?.data || {};
-      const notifications = Array.isArray(payload.notifications) ? payload.notifications : [];
-      setItems(notifications);
-      setUnreadCount(Number(payload.unreadCount || 0));
+      const [notifRes, statsRes] = await Promise.all([
+        api.get("/notifications"),
+        api.get("/parties/current-stats").catch(() => null),
+      ]);
+
+      const notifPayload = notifRes.data?.data || {};
+      const sourceNotifications = Array.isArray(notifPayload.notifications)
+        ? notifPayload.notifications
+        : [];
+
+      const normalized = sourceNotifications.map((item) => ({
+        ...item,
+        type: normalizeType(item),
+      }));
+
+      const startDate = statsRes?.data?.data?.currentElection?.startDate || null;
+      const deadlineNotice = buildDeadlineNotification(startDate);
+
+      const hasDeadline = normalized.some((item) =>
+        String(item.title || "").toLowerCase().includes("profile editing deadline"),
+      );
+
+      const merged = [
+        ...normalized,
+        ...(deadlineNotice && !hasDeadline ? [deadlineNotice] : []),
+      ].sort((a, b) => {
+        const aTime = new Date(a.createdAt || 0).getTime();
+        const bTime = new Date(b.createdAt || 0).getTime();
+        return bTime - aTime;
+      });
+
+      setItems(merged);
+      const unreadFromApi = Number(notifPayload.unreadCount || 0);
+      const syntheticUnread = merged.filter((item) => item.synthetic && !item.isRead).length;
+      setUnreadCount(unreadFromApi + syntheticUnread);
       setError("");
     } catch (err) {
       setItems([]);
@@ -67,6 +165,14 @@ export default function PartyNotifications() {
   const markSingleRead = async (item) => {
     const id = item?.id;
     if (!id || item?.isRead) return;
+    if (item?.synthetic) {
+      setItems((prev) =>
+        prev.map((entry) => (entry.id === id ? { ...entry, isRead: true } : entry)),
+      );
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+      return;
+    }
+
     try {
       await api.patch(`/notifications/${id}/read`);
       setItems((prev) =>
@@ -91,10 +197,7 @@ export default function PartyNotifications() {
 
       <div className="notif-card party-card">
         <div className="notif-card-head">
-          <div className="notif-card-title">
-            Recent Notifications
-            {unreadCount > 0 ? ` (${unreadCount} unread)` : ""}
-          </div>
+          <div className="notif-card-title">Recent Notifications</div>
           <button
             className="notif-mark"
             type="button"
@@ -126,7 +229,7 @@ export default function PartyNotifications() {
               onClick={() => markSingleRead(item)}
             >
               <div className="notif-icon">
-                <Icon type={item.type} />
+                <Icon item={item} />
               </div>
               <div className="notif-body">
                 <strong>{item.title || "Notification"}</strong>
@@ -158,9 +261,15 @@ export default function PartyNotifications() {
           </span>
           <div>
             <strong>Email Notifications</strong>
-            <p>Important updates are also delivered through your registered email.</p>
+            <p>You will receive email notifications for important updates:</p>
           </div>
         </div>
+        <ul>
+          <li>Election start and end announcements</li>
+          <li>Result announcements</li>
+          <li>System updates and maintenance schedules</li>
+          <li>Important policy changes</li>
+        </ul>
       </div>
     </div>
   );

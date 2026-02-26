@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import api from "../../services/api";
 
 const normalizeEmail = (value) => String(value || "").trim().toLowerCase();
+const normalizePartyId = (value) =>
+  value && typeof value === "object" ? String(value._id || "") : String(value || "");
 
 const getSessionParty = () => {
   try {
@@ -23,13 +25,19 @@ export function usePartyData() {
     try {
       const sessionParty = getSessionParty();
       let fallbackEmail = normalizeEmail(sessionParty.email);
-      let partyId = sessionParty.partyId || sessionParty.id || "";
+      let partyId = "";
 
-      if (!partyId) {
+      try {
         const meRes = await api.get("/auth/me");
         const me = meRes.data?.data || {};
-        partyId = me.partyId || "";
+        partyId = normalizePartyId(me.partyId);
         if (!fallbackEmail) fallbackEmail = normalizeEmail(me.email);
+      } catch {
+        partyId = "";
+      }
+
+      if (!partyId) {
+        partyId = normalizePartyId(sessionParty.partyId || sessionParty.id);
       }
 
       if (partyId) {

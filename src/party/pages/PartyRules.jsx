@@ -80,15 +80,11 @@ export default function PartyRules() {
       </div>
 
       <div className="party-card rules-card">
-        <div className="rules-card-head">
-          <div className="rules-card-icon">
-            <IconDoc />
-          </div>
-          <div>
-            <h3>Party Rules</h3>
-            <p>Mandatory rules for all parties</p>
-          </div>
-        </div>
+        <h3 className="rules-title">
+          <span className="rules-title-icon"><IconDoc /></span>
+          Party Rules
+        </h3>
+        <p className="rules-subtitle">Mandatory rules for all parties</p>
         <div className="rules-list">
           {partyRulesContent.rules.map((rule, index) => (
             <div key={rule} className="rules-item">
@@ -100,15 +96,11 @@ export default function PartyRules() {
       </div>
 
       <div className="party-card rules-best">
-        <div className="rules-best-head">
-          <div className="rules-best-icon">
-            <IconBulb />
-          </div>
-          <div>
-            <h3>{partyRulesContent.bestPractices.title}</h3>
-            <p>{partyRulesContent.bestPractices.subtitle}</p>
-          </div>
-        </div>
+        <h3 className="rules-title rules-title--blue">
+          <span className="rules-title-icon"><IconBulb /></span>
+          {partyRulesContent.bestPractices.title}
+        </h3>
+        <p className="rules-subtitle">{partyRulesContent.bestPractices.subtitle}</p>
         <div className="rules-best-list">
           {partyRulesContent.bestPractices.sections.map((section) => (
             <div key={section.title} className="rules-best-section">
@@ -129,15 +121,13 @@ export default function PartyRules() {
       </div>
 
       <div className="party-card rules-restrict">
-        <div className="rules-restrict-head">
-          <div className="rules-restrict-icon">
-            <IconWarn />
-          </div>
-          <div>
-            <h3>Important Restrictions</h3>
-            <p>The following actions are strictly prohibited:</p>
-          </div>
-        </div>
+        <h3 className="rules-title rules-title--orange">
+          <span className="rules-title-icon"><IconWarn /></span>
+          Important Restrictions
+        </h3>
+        <p className="rules-subtitle rules-subtitle--orange">
+          The following actions are strictly prohibited:
+        </p>
         <ul>
           {partyRulesContent.restrictions.map((item) => (
             <li key={item}>
@@ -151,15 +141,11 @@ export default function PartyRules() {
       </div>
 
       <div className="party-card rules-help">
-        <div className="rules-help-head">
-          <div className="rules-help-icon">
-            <IconHelp />
-          </div>
-          <div>
-            <h3>Need Help?</h3>
-            <p>Contact the Election Commission for assistance</p>
-          </div>
-        </div>
+        <h3 className="rules-title rules-title--blue">
+          <span className="rules-title-icon"><IconHelp /></span>
+          Need Help?
+        </h3>
+        <p className="rules-subtitle">Contact the Election Commission for assistance</p>
         <div className="rules-help-list">
           <span>
             <IconPhone /> Helpline: {partyRulesContent.help.phone}
