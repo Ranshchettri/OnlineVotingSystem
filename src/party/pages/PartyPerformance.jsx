@@ -23,7 +23,7 @@ export default function PartyPerformance() {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await api.get("/party/past-performance");
+        const res = await api.get("/parties/past-performance");
         const data = res.data?.data || {};
         setSummary(data.summary || { totalWins: 0, averageVotes: 0, winRate: "0%" });
         setHistory(data.pastElections || []);
@@ -34,6 +34,8 @@ export default function PartyPerformance() {
       }
     };
     load();
+    const interval = setInterval(load, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const stats = [

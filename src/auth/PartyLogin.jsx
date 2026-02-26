@@ -16,7 +16,9 @@ export default function PartyLogin() {
     setLoading(true);
     setStatus("");
     try {
-      const res = await api.post("/auth/party-login", { email });
+      const normalizedEmail = email.trim().toLowerCase();
+      const res = await api.post("/auth/party-login", { email: normalizedEmail });
+      setEmail(normalizedEmail);
       setOtp(res.data?.otp || "54321");
       setStatus("Demo OTP generated (no email).");
       setStep("otp");
@@ -32,7 +34,10 @@ export default function PartyLogin() {
     setLoading(true);
     setStatus("");
     try {
-      const res = await api.post("/auth/party/verify-otp", { email, otp });
+      const res = await api.post("/auth/party/verify-otp", {
+        email: email.trim().toLowerCase(),
+        otp,
+      });
       localStorage.setItem("token", res.data.token);
       if (res.data.user) localStorage.setItem("party", JSON.stringify(res.data.user));
       nav("/party/home");

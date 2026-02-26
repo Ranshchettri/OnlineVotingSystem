@@ -66,6 +66,7 @@ const mapPartyFromApi = (party = {}, idx = 0) => {
     share: party.share || "0%",
     rank: party.rank || idx + 1,
     documents: normalizeDocuments(party.documents || []),
+    registeredAt: party.registeredAt || party.createdAt || null,
   };
 };
 
@@ -497,6 +498,12 @@ export default function Parties() {
                     <span className="value">{party.leader || "—"}</span>
                   </div>
                   <div className="party-meta muted">{party.email || "—"}</div>
+                  <div className="party-meta muted">
+                    Registered:{" "}
+                    {party.registeredAt
+                      ? new Date(party.registeredAt).toLocaleDateString()
+                      : "N/A"}
+                  </div>
                 </div>
               </div>
               <div className="party-metrics">

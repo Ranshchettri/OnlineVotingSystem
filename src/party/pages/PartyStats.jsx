@@ -28,7 +28,7 @@ export default function PartyStats() {
     const load = async () => {
       try {
         const [statsRes, partyRes] = await Promise.all([
-          api.get("/party/current-stats"),
+          api.get("/parties/current-stats"),
           api.get("/parties"),
         ]);
 
@@ -72,6 +72,8 @@ export default function PartyStats() {
       }
     };
     load();
+    const interval = setInterval(load, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   return (

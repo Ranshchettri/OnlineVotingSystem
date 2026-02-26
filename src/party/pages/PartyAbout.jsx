@@ -10,8 +10,8 @@ export default function PartyAbout() {
     const load = async () => {
       try {
         const [profileRes, plansRes] = await Promise.all([
-          api.get("/party/profile/full"),
-          api.get("/party/future-plans"),
+          api.get("/parties/profile/full"),
+          api.get("/parties/future-plans"),
         ]);
         const profile = profileRes.data?.data || {};
         setParty(profile);
@@ -21,6 +21,8 @@ export default function PartyAbout() {
       }
     };
     load();
+    const interval = setInterval(load, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   return (

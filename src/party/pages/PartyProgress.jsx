@@ -15,7 +15,7 @@ export default function PartyProgress() {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await api.get("/party/progress");
+        const res = await api.get("/parties/progress");
         const payload = res.data?.data || {};
         setData({
           development: payload.development ?? 0,
@@ -31,6 +31,8 @@ export default function PartyProgress() {
       }
     };
     load();
+    const interval = setInterval(load, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) {

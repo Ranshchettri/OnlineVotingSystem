@@ -15,7 +15,7 @@ export default function PartyNotifications() {
     const load = async () => {
       try {
         // Build notifications from live stats
-        const res = await api.get("/party/current-stats");
+        const res = await api.get("/parties/current-stats");
         const data = res.data?.data || {};
         const totalVotes = data.totalVotes || data.stats?.ownVotes || 0;
         const yourShare = data.stats?.voteShare || 0;
@@ -53,6 +53,8 @@ export default function PartyNotifications() {
       }
     };
     load();
+    const interval = setInterval(load, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   return (

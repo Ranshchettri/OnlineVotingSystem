@@ -24,13 +24,13 @@ export default function PartyHome() {
   useEffect(() => {
     const loadParty = async () => {
       try {
-        const res = await api.get("/parties");
-        const party = (res.data?.data || res.data || [])[0] || {};
+        const res = await api.get("/parties/profile/full");
+        const party = res.data?.data || {};
         const mapped = {
           name: party.name || "",
           leader: party.leader || "",
           vision: party.vision || party.mission || "",
-          logoImage: party.logoUrl || party.logo || "",
+          logoImage: party.logo || "",
           team: (party.teamMembers || []).map((m, idx) => ({
             ...m,
             id: `${m.name || "member"}-${idx}`,
@@ -44,6 +44,8 @@ export default function PartyHome() {
       }
     };
     loadParty();
+    const interval = setInterval(loadParty, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const startEdit = () => {
@@ -62,7 +64,7 @@ export default function PartyHome() {
     setIsEditing(false);
     // Persist to backend
     api
-      .put("/party/profile/full", {
+      .put("/parties/profile/full", {
         name: next.name,
         leader: next.leader,
         vision: next.vision,

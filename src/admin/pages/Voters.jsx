@@ -27,8 +27,12 @@ const statusLabel = (status) => {
 };
 
 const deriveDistrictProvince = (voter = {}) => {
-  const directDistrict = (voter.district || "").trim();
-  const directProvince = (voter.province || "").trim();
+  const directDistrict = String(
+    voter.district || voter.location?.district || voter.address?.district || "",
+  ).trim();
+  const directProvince = String(
+    voter.province || voter.location?.province || voter.address?.province || "",
+  ).trim();
   if (directDistrict || directProvince) {
     return {
       district: directDistrict,
@@ -36,7 +40,7 @@ const deriveDistrictProvince = (voter = {}) => {
     };
   }
 
-  const addressText = String(voter.address || "").trim();
+  const addressText = String(voter.address || voter.location?.address || "").trim();
   if (!addressText) {
     return { district: "", province: "" };
   }
@@ -415,6 +419,12 @@ export default function Voters() {
       if (response.status === 404) {
         response = await requestUpdate(`/admin/voters/${voterId}`, "patch");
       }
+      if (response.status === 404) {
+        response = await requestUpdate(`/voters/${voterId}`);
+      }
+      if (response.status === 404) {
+        response = await requestUpdate(`/voters/${voterId}`, "patch");
+      }
       if (response.status < 200 || response.status >= 300) {
         throw new Error(response?.data?.message || "Failed to update voter details");
       }
@@ -529,10 +539,8 @@ export default function Voters() {
           className="status-filter"
         >
           <option value="all">All Status</option>
-          <option value="PENDING">Pending</option>
           <option value="ACTIVE">Active</option>
           <option value="INACTIVE">Inactive</option>
-          <option value="BLOCKED">Blocked</option>
         </select>
       </div>
 
@@ -686,30 +694,23 @@ export default function Voters() {
               <div className="two-col">
                 <label>
                   District
-                  <select
+                  <input
                     name="district"
                     value={addForm.district}
                     onChange={handleAddFormChange}
+                    placeholder="Enter district"
                     required
-                  >
-                    <option value="">Select District</option>
-                    <option value="Kathmandu">Kathmandu</option>
-                    <option value="Pokhara">Pokhara</option>
-                    <option value="Lalitpur">Lalitpur</option>
-                  </select>
+                  />
                 </label>
                 <label>
                   Province
-                  <select
+                  <input
                     name="province"
                     value={addForm.province}
                     onChange={handleAddFormChange}
+                    placeholder="Enter province"
                     required
-                  >
-                    <option value="">Select Province</option>
-                    <option value="Bagmati">Bagmati</option>
-                    <option value="Gandaki">Gandaki</option>
-                  </select>
+                  />
                 </label>
               </div>
               <label className="file-drop">
