@@ -287,7 +287,7 @@ export default function PartyHome() {
               </>
             )}
             <span className="party-profile-badge">
-              <i className="ri-shield-line" aria-hidden="true" />
+              <i className="ri-shield-check-line" aria-hidden="true" />
               Verified Party
             </span>
           </div>

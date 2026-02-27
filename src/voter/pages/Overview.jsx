@@ -58,7 +58,6 @@ export default function Overview() {
     },
   ]);
   const [loading, setLoading] = useState(false);
-  const [voteSuccess, setVoteSuccess] = useState("");
 
   const loadLive = useCallback(async () => {
     try {
@@ -277,12 +276,6 @@ export default function Overview() {
     return () => clearTimeout(timer);
   }, [showEmailBanner]);
 
-  useEffect(() => {
-    if (!voteSuccess) return undefined;
-    const timer = setTimeout(() => setVoteSuccess(""), 4500);
-    return () => clearTimeout(timer);
-  }, [voteSuccess]);
-
   const statsWithStatus = useMemo(
     () =>
       stats.map((stat) =>
@@ -342,7 +335,6 @@ export default function Overview() {
 
       setHasVoted(true);
       setVotedPartyId(selectedParty._id || selectedParty.id);
-      setVoteSuccess(`Vote Successfully Submitted! You voted for ${selectedParty.name}.`);
       setSelectedParty(null);
       setShowEmailBanner(true);
       setVoteStep(null);
@@ -360,6 +352,11 @@ export default function Overview() {
       (String(currentElection?.status || "").toLowerCase() === "running" &&
         currentElection?.allowVoting !== false &&
         !currentElection?.isEnded));
+  const currentStatus = normalizeElectionStatus(currentElection);
+  const showPersistentVoteSuccess = hasVoted && currentStatus === "running";
+  const votedPartyName =
+    parties.find((party) => party.id?.toString?.() === votedPartyId?.toString?.())?.name ||
+    "selected party";
 
   return (
     <div>
@@ -391,14 +388,14 @@ export default function Overview() {
         }
       />
 
-      {voteSuccess ? (
+      {showPersistentVoteSuccess ? (
         <div className="email-banner" style={{ marginTop: 10 }}>
           <div className="email-banner-icon">
             <i className="ri-checkbox-circle-line" aria-hidden="true" />
           </div>
           <div>
             <h4>Vote Successfully Submitted!</h4>
-            <p>{voteSuccess.replace("Vote Successfully Submitted! ", "")}</p>
+            <p>You voted for {votedPartyName}. Your vote has been recorded successfully.</p>
           </div>
         </div>
       ) : null}

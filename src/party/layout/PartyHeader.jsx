@@ -21,7 +21,7 @@ export default function PartyHeader() {
 
       <div className="party-top-actions">
         <span className="party-badge">
-          <i className="ri-shield-line" aria-hidden="true" />
+          <i className="ri-shield-check-line" aria-hidden="true" />
           Official Party Account
         </span>
         <button type="button" className="party-logout" onClick={handleLogout}>
