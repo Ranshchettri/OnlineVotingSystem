@@ -95,6 +95,13 @@ export default function PartyStats() {
             { label: "Voting Started", value: statsData.currentElection?.startDate },
             { label: "In Progress", value: "Live" },
             { label: "Voting Ends", value: statsData.currentElection?.endDate },
+            {
+              label: "Results Announcement",
+              value:
+                String(statsData.currentElection?.status || "").toLowerCase() === "ended"
+                  ? "Published"
+                  : statsData.currentElection?.endDate,
+            },
           ].filter(Boolean),
         );
       } catch (err) {
@@ -217,21 +224,29 @@ export default function PartyStats() {
           <h3>Vote Comparison</h3>
           <div className="stats-compare">
             <div className="stats-compare-item highlight">
-              <span className="stats-compare-label">
-                <span className="stats-compare-dot" />
-                You
-              </span>
-              <strong>{current.votes}</strong>
+              <span className="stats-compare-label">Lead over 2nd place</span>
+              <strong>
+                {current.position === 1 ? `+${current.lead.toLocaleString()} votes` : "0 votes"}
+              </strong>
             </div>
-            {rankings.filter((item) => !item.isOwn).slice(0, 2).map((item) => (
-              <div key={`${item.rank}-${item.name}`} className="stats-compare-item">
-                <span className="stats-compare-label">
-                  <span className="stats-compare-dot" />
-                  {item.name}
-                </span>
-                <strong>{item.votes}</strong>
-              </div>
-            ))}
+            <div className="stats-compare-item">
+              <span className="stats-compare-label">Total votes cast</span>
+              <strong>{rankings.reduce((sum, item) => sum + Number(item.votes || 0), 0).toLocaleString()}</strong>
+            </div>
+            <div className="stats-compare-item">
+              <span className="stats-compare-label">Competing parties</span>
+              <strong>{rankings.length}</strong>
+            </div>
+            <div className="stats-compare-item">
+              <span className="stats-compare-label">Votes needed for majority</span>
+              <strong>
+                {Math.max(
+                  Math.floor(rankings.reduce((sum, item) => sum + Number(item.votes || 0), 0) / 2) + 1 -
+                    Number(current.votes || 0),
+                  0,
+                ).toLocaleString()}
+              </strong>
+            </div>
           </div>
         </div>
         <div className="stats-card">

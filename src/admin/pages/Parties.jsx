@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import api from "../../services/api";
+import { getPartyLogoSrc, getPartyShortLabel } from "../../shared/utils/partyDisplay";
 import "../styles/partyManagement.css";
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
@@ -70,75 +71,6 @@ const mapPartyFromApi = (party = {}, idx = 0) => {
   };
 };
 
-const legacyDemoDocuments = [
-  {
-    name: "Party Registration Certificate.pdf",
-    mimeType: "application/pdf",
-    size: 2.4 * 1024 * 1024,
-    dataUrl: "",
-    uploadedAt: "2024-12-01T00:00:00.000Z",
-  },
-  {
-    name: "Leader Citizenship Document.pdf",
-    mimeType: "application/pdf",
-    size: 1.8 * 1024 * 1024,
-    dataUrl: "",
-    uploadedAt: "2024-12-01T00:00:00.000Z",
-  },
-  {
-    name: "Party Constitution.pdf",
-    mimeType: "application/pdf",
-    size: 5.2 * 1024 * 1024,
-    dataUrl: "",
-    uploadedAt: "2024-12-01T00:00:00.000Z",
-  },
-  {
-    name: "Financial Statement 2024.pdf",
-    mimeType: "application/pdf",
-    size: 3.1 * 1024 * 1024,
-    dataUrl: "",
-    uploadedAt: "2024-12-05T00:00:00.000Z",
-  },
-];
-
-/* Demo seed data disabled as requested
-const fallbackParties = [
-  {
-    id: "p1",
-    name: "Nepal Communist Party (UML)",
-    leader: "K.P. Sharma Oli",
-    email: "uml_gov@ovs.test",
-    logo: "N",
-    development: 72,
-    goodWork: 85,
-    badWork: 15,
-    status: "Active",
-  },
-  {
-    id: "p2",
-    name: "Nepali Congress",
-    leader: "Sher Bahadur Deuba",
-    email: "congress_gov@ovs.test",
-    logo: "NC",
-    development: 68,
-    goodWork: 78,
-    badWork: 22,
-    status: "Active",
-  },
-  {
-    id: "p3",
-    name: "Rastriya Swatantra Party",
-    leader: "Rabi Lamichhane",
-    email: "rsp_gov@ovs.test",
-    logo: "RSP",
-    development: 45,
-    goodWork: 62,
-    badWork: 38,
-    status: "Active",
-  },
-];
-*/
-
 export default function Parties() {
   const [parties, setParties] = useState([]);
   const [error, setError] = useState(null);
@@ -168,10 +100,7 @@ export default function Parties() {
     electionId: "",
     electionType: "Political",
   });
-  const documents =
-    activeParty?.documents && activeParty.documents.length
-      ? activeParty.documents
-      : legacyDemoDocuments;
+  const documents = Array.isArray(activeParty?.documents) ? activeParty.documents : [];
   const [elections, setElections] = useState([]);
 
   const applyPartyList = (list = []) => {
@@ -468,16 +397,17 @@ export default function Parties() {
             </div>
           </div>
         ) : (
-          parties.map((party) => (
+          parties.map((party) => {
+            const logoSrc = getPartyLogoSrc(party);
+            const shortLabel = getPartyShortLabel(party, "P");
+            return (
             <div key={party.id} className="party-row">
               <div className="party-info">
                 <div className="party-logo">
-                  {party.logo &&
-                  (party.logo.startsWith("data:") ||
-                    party.logo.startsWith("http")) ? (
-                    <img src={party.logo} alt={party.name} />
+                  {logoSrc ? (
+                    <img src={logoSrc} alt={party.name} />
                   ) : (
-                    party.logo || "P"
+                    shortLabel
                   )}
                 </div>
                 <div>
@@ -564,7 +494,8 @@ export default function Parties() {
                 </div>
               </div>
             </div>
-          ))
+            );
+          })
         )}
       </div>
 
@@ -755,7 +686,13 @@ export default function Parties() {
           >
             <div className="party-modal-head">
               <div className="party-modal-title">
-                <span className="party-logo">{activeParty.logo}</span>
+                <span className="party-logo">
+                  {getPartyLogoSrc(activeParty) ? (
+                    <img src={getPartyLogoSrc(activeParty)} alt={activeParty.name} />
+                  ) : (
+                    getPartyShortLabel(activeParty, "P")
+                  )}
+                </span>
                 <div>
                   <div className="party-modal-name">{activeParty.name}</div>
                   <div className="party-modal-sub">Party Documents</div>

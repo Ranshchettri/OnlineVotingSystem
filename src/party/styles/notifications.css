@@ -33,13 +33,13 @@
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
-  padding-bottom: 0;
-  border-bottom: none;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .party-notifications-page .notif-card-title {
   margin: 0;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   line-height: 1.2;
 }
@@ -131,7 +131,7 @@
 }
 
 .party-notifications-page .notif-body strong {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 650;
   line-height: 1.2;
 }
@@ -140,7 +140,7 @@
   margin-top: 5px;
   font-size: 12px;
   color: var(--gray-700);
-  line-height: 1.45;
+  line-height: 1.4;
 }
 
 .party-notifications-page .notif-time {
@@ -179,7 +179,7 @@
 
 .party-notifications-page .notif-email-title strong {
   display: block;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   line-height: 1.2;
 }

@@ -3,13 +3,45 @@ import api from "../../services/api";
 import { getPartyLogoSrc } from "../../shared/utils/partyDisplay";
 import "../styles/analytics.css";
 
-/* Demo seed data disabled as requested
-const fallbackCandidates = [
-  { id: "c1", name: "K.P. Sharma Oli", party: "Nepal Communist Party (UML)", votes: "1,247,893", avatar: "https://i.pravatar.cc/100?img=12", development: 72, good: 85, bad: 15, goodTopics: ["Infrastructure development", "Education reforms", "Healthcare improvements"], badTopics: ["Corruption allegations", "Delayed projects", "Policy failures"] },
-  { id: "c2", name: "Sher Bahadur Deuba", party: "Nepali Congress", votes: "1,089,234", avatar: "https://i.pravatar.cc/100?img=47", development: 68, good: 78, bad: 22, goodTopics: ["Rural connectivity", "Agriculture subsidy", "Social security"], badTopics: ["Budget delays", "Policy reversals", "Inflation concerns"] },
-  { id: "c3", name: "Rabi Lamichhane", party: "Rastriya Swatantra Party", votes: "610,156", avatar: "https://i.pravatar.cc/100?img=32", development: 45, good: 62, bad: 38, goodTopics: ["Digital governance", "Youth programs", "Citizen services"], badTopics: ["Execution gaps", "Funding shortage", "Regional disputes"] },
-];
-*/
+const METRIC_LABELS = {
+  infrastructure: "Infrastructure",
+  healthcare: "Healthcare",
+  education: "Education",
+  policyFailures: "Policy failures",
+  corruptionCases: "Corruption cases",
+  publicComplaints: "Public complaints",
+};
+
+const clampPercent = (value) => {
+  const numeric = Number(value || 0);
+  if (!Number.isFinite(numeric)) return 0;
+  return Math.max(0, Math.min(100, Math.round(numeric)));
+};
+
+const toHistoryRows = (items = []) =>
+  (Array.isArray(items) ? items : [])
+    .map((item) => ({
+      year: Number(item?.year || 0) || "",
+      label: item?.label || "",
+      votes: Number(item?.votes || 0),
+      development: clampPercent(item?.development),
+      goodWork: clampPercent(item?.goodWork ?? item?.good),
+      badWork: clampPercent(item?.badWork ?? item?.bad),
+    }))
+    .filter((item) => item.year || item.label)
+    .sort((a, b) => Number(b.year || 0) - Number(a.year || 0));
+
+const buildTopicRows = (detailedMetrics = {}, mode = "good") => {
+  const keys =
+    mode === "good"
+      ? ["infrastructure", "healthcare", "education"]
+      : ["policyFailures", "corruptionCases", "publicComplaints"];
+  return keys.map((key) => ({
+    key,
+    label: METRIC_LABELS[key],
+    value: clampPercent(detailedMetrics?.[key]),
+  }));
+};
 
 export default function Analytics() {
   const [candidates, setCandidates] = useState([]);
@@ -23,27 +55,21 @@ export default function Analytics() {
     development: 0,
     good: 0,
     bad: 0,
+    detailedMetrics: {
+      infrastructure: 0,
+      healthcare: 0,
+      education: 0,
+      policyFailures: 0,
+      corruptionCases: 0,
+      publicComplaints: 0,
+    },
+    historyYear: "",
+    historyLabel: "",
+    historyVotes: "",
   });
 
   const mapAnalyticsRow = (row = {}) => {
     const detailed = row.detailedMetrics || {};
-    const fallbackGood = [
-      detailed.infrastructure !== undefined ? `Infrastructure: ${Number(detailed.infrastructure || 0)}%` : null,
-      detailed.healthcare !== undefined ? `Healthcare: ${Number(detailed.healthcare || 0)}%` : null,
-      detailed.education !== undefined ? `Education: ${Number(detailed.education || 0)}%` : null,
-    ].filter(Boolean);
-    const fallbackBad = [
-      detailed.policyFailures !== undefined ? `Policy failures: ${Number(detailed.policyFailures || 0)}%` : null,
-      detailed.corruptionCases !== undefined ? `Corruption cases: ${Number(detailed.corruptionCases || 0)}%` : null,
-      detailed.publicComplaints !== undefined ? `Public complaints: ${Number(detailed.publicComplaints || 0)}%` : null,
-    ].filter(Boolean);
-
-    const goodTopics = Array.isArray(row.goodTopics) && row.goodTopics.length
-      ? row.goodTopics
-      : fallbackGood;
-    const badTopics = Array.isArray(row.badTopics) && row.badTopics.length
-      ? row.badTopics
-      : fallbackBad;
 
     return {
       id: row._id || row.id || row.candidateId || row.partyId,
@@ -52,16 +78,26 @@ export default function Analytics() {
       party: row.partyName || row.party || row.name || "",
       votes: Number(row.totalVotes || row.currentVotes || 0).toLocaleString(),
       avatar: getPartyLogoSrc(row) || row.avatar || row.photo || row.image || row.logo || "",
-      development: Number(row.development ?? row.totalTaskCompletion ?? 0),
-      good: Number(row.goodWork ?? 0),
-      bad: Number(row.badWork ?? 0),
-      goodTopics,
-      badTopics,
-      history: Array.isArray(row.history)
-        ? row.history
-        : Array.isArray(row.historicalData)
-          ? row.historicalData
-          : [],
+      development: clampPercent(row.development ?? row.totalTaskCompletion ?? 0),
+      good: clampPercent(row.goodWork ?? 0),
+      bad: clampPercent(row.badWork ?? 0),
+      detailedMetrics: {
+        infrastructure: clampPercent(detailed.infrastructure),
+        healthcare: clampPercent(detailed.healthcare),
+        education: clampPercent(detailed.education),
+        policyFailures: clampPercent(detailed.policyFailures),
+        corruptionCases: clampPercent(detailed.corruptionCases),
+        publicComplaints: clampPercent(detailed.publicComplaints),
+      },
+      goodTopics: buildTopicRows(detailed, "good"),
+      badTopics: buildTopicRows(detailed, "bad"),
+      history: toHistoryRows(
+        Array.isArray(row.history)
+          ? row.history
+          : Array.isArray(row.historicalData)
+            ? row.historicalData
+            : [],
+      ),
     };
   };
 
@@ -152,22 +188,63 @@ export default function Analytics() {
     [selectedCandidate],
   );
 
-  const openReport = (candidate) => {
-    setSelectedCandidate(candidate);
+  const loadDetailedCandidate = async (candidate) => {
+    if (!candidate?.entityId) return candidate;
+    try {
+      const res = await api.get(`/admin/analytics/party/${candidate.entityId}/detailed`);
+      const data = res.data?.data || {};
+      return {
+        ...candidate,
+        development: clampPercent(data?.overallScores?.development ?? candidate.development),
+        good: clampPercent(data?.overallScores?.goodWork ?? candidate.good),
+        bad: clampPercent(data?.overallScores?.badWork ?? candidate.bad),
+        detailedMetrics: {
+          infrastructure: clampPercent(data?.detailedMetrics?.infrastructure),
+          healthcare: clampPercent(data?.detailedMetrics?.healthcare),
+          education: clampPercent(data?.detailedMetrics?.education),
+          policyFailures: clampPercent(data?.detailedMetrics?.policyFailures),
+          corruptionCases: clampPercent(data?.detailedMetrics?.corruptionCases),
+          publicComplaints: clampPercent(data?.detailedMetrics?.publicComplaints),
+        },
+        goodTopics: buildTopicRows(data?.detailedMetrics, "good"),
+        badTopics: buildTopicRows(data?.detailedMetrics, "bad"),
+        history: toHistoryRows(data?.historicalData),
+      };
+    } catch {
+      return candidate;
+    }
+  };
+
+  const openReport = async (candidate) => {
+    const detailedCandidate = await loadDetailedCandidate(candidate);
+    setSelectedCandidate(detailedCandidate);
     setShowReport(true);
   };
 
-  const openHistory = (candidate) => {
-    setSelectedCandidate(candidate);
+  const openHistory = async (candidate) => {
+    const detailedCandidate = await loadDetailedCandidate(candidate);
+    setSelectedCandidate(detailedCandidate);
     setShowHistory(true);
   };
 
-  const openUpdate = (candidate) => {
-    setSelectedCandidate(candidate);
+  const openUpdate = async (candidate) => {
+    const detailedCandidate = await loadDetailedCandidate(candidate);
+    setSelectedCandidate(detailedCandidate);
     setUpdateValues({
-      development: candidate.development,
-      good: candidate.good,
-      bad: candidate.bad,
+      development: detailedCandidate.development,
+      good: detailedCandidate.good,
+      bad: detailedCandidate.bad,
+      detailedMetrics: {
+        infrastructure: clampPercent(detailedCandidate.detailedMetrics?.infrastructure),
+        healthcare: clampPercent(detailedCandidate.detailedMetrics?.healthcare),
+        education: clampPercent(detailedCandidate.detailedMetrics?.education),
+        policyFailures: clampPercent(detailedCandidate.detailedMetrics?.policyFailures),
+        corruptionCases: clampPercent(detailedCandidate.detailedMetrics?.corruptionCases),
+        publicComplaints: clampPercent(detailedCandidate.detailedMetrics?.publicComplaints),
+      },
+      historyYear: "",
+      historyLabel: "",
+      historyVotes: "",
     });
     setShowUpdate(true);
   };
@@ -180,17 +257,58 @@ export default function Analytics() {
   const saveUpdate = async () => {
     if (!selectedCandidate) return;
     try {
-      await api.put(`/admin/analytics/party/${selectedCandidate.entityId}/update`, {
+      const payload = {
         development: Number(updateValues.development),
         goodWork: Number(updateValues.good),
         badWork: Number(updateValues.bad),
+        detailedMetrics: {
+          infrastructure: Number(updateValues.detailedMetrics.infrastructure),
+          healthcare: Number(updateValues.detailedMetrics.healthcare),
+          education: Number(updateValues.detailedMetrics.education),
+          policyFailures: Number(updateValues.detailedMetrics.policyFailures),
+          corruptionCases: Number(updateValues.detailedMetrics.corruptionCases),
+          publicComplaints: Number(updateValues.detailedMetrics.publicComplaints),
+        },
+      };
+
+      if (updateValues.historyYear) {
+        payload.historyEntry = {
+          year: Number(updateValues.historyYear),
+          label: String(updateValues.historyLabel || "").trim(),
+          votes: Number(updateValues.historyVotes || 0),
+          development: Number(updateValues.development),
+          goodWork: Number(updateValues.good),
+          badWork: Number(updateValues.bad),
+        };
+      }
+
+      await api.put(`/admin/analytics/party/${selectedCandidate.entityId}/update`, {
+        ...payload,
       });
       await fetchAnalytics();
+      const refreshed = await loadDetailedCandidate(selectedCandidate);
+      setSelectedCandidate(refreshed);
       setShowUpdate(false);
       showToast("Analytics updated successfully");
     } catch (err) {
       console.error("Failed to update analytics:", err);
       alert(err.response?.data?.message || "Failed to update analytics");
+    }
+  };
+
+  const removeHistoryRow = async (year) => {
+    if (!selectedCandidate?.entityId || !year) return;
+    try {
+      await api.put(`/admin/analytics/party/${selectedCandidate.entityId}/update`, {
+        deleteHistoryYear: Number(year),
+      });
+      const refreshed = await loadDetailedCandidate(selectedCandidate);
+      setSelectedCandidate(refreshed);
+      await fetchAnalytics();
+      showToast("Historical record removed");
+    } catch (err) {
+      console.error("Failed to remove historical row:", err);
+      alert(err.response?.data?.message || "Failed to remove historical data");
     }
   };
 
@@ -289,9 +407,9 @@ export default function Analytics() {
                   </div>
                   <ul className="good">
                     {(candidate.goodTopics || []).map((topic) => (
-                      <li key={topic}>
+                      <li key={topic.key}>
                         <i className="ri-checkbox-circle-line" aria-hidden="true" />
-                        {topic}
+                        <span>{topic.label}: {topic.value}%</span>
                       </li>
                     ))}
                   </ul>
@@ -303,9 +421,9 @@ export default function Analytics() {
                   </div>
                   <ul className="bad">
                     {(candidate.badTopics || []).map((topic) => (
-                      <li key={topic}>
+                      <li key={topic.key}>
                         <i className="ri-close-circle-line" aria-hidden="true" />
-                        {topic}
+                        <span>{topic.label}: {topic.value}%</span>
                       </li>
                     ))}
                   </ul>
@@ -378,9 +496,9 @@ export default function Analytics() {
                   Good Work Breakdown
                 </div>
                 {selectedCandidate.goodTopics.map((topic) => (
-                  <div key={topic} className="report-row">
-                    <span>{topic}</span>
-                    <span>{selectedCandidate.good}%</span>
+                  <div key={topic.key} className="report-row">
+                    <span>{topic.label}</span>
+                    <span>{topic.value}%</span>
                   </div>
                 ))}
               </div>
@@ -390,9 +508,9 @@ export default function Analytics() {
                   Bad Work Breakdown
                 </div>
                 {selectedCandidate.badTopics.map((topic) => (
-                  <div key={topic} className="report-row">
-                    <span>{topic}</span>
-                    <span>{selectedCandidate.bad}%</span>
+                  <div key={topic.key} className="report-row">
+                    <span>{topic.label}</span>
+                    <span>{topic.value}%</span>
                   </div>
                 ))}
               </div>
@@ -461,17 +579,29 @@ export default function Analytics() {
                       <div>
                         <div className="stat-label">Good Work</div>
                         <div className="metric-bar good">
-                          <span style={{ width: `${row.good || 0}%` }} />
+                          <span style={{ width: `${row.goodWork || 0}%` }} />
                         </div>
                       </div>
                       <div>
                         <div className="stat-label">Bad Work</div>
                         <div className="metric-bar bad">
-                          <span style={{ width: `${row.bad || 0}%` }} />
+                          <span style={{ width: `${row.badWork || 0}%` }} />
                         </div>
                       </div>
                     </div>
-                    <div className="history-votes">{row.votes || "—"}</div>
+                    <div className="history-votes">
+                      <div>{Number(row.votes || 0).toLocaleString()} votes</div>
+                      {row.year ? (
+                        <button
+                          type="button"
+                          className="admin-button ghost"
+                          onClick={() => removeHistoryRow(row.year)}
+                        >
+                          <i className="ri-delete-bin-line" aria-hidden="true" />
+                          Remove
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
                 ))
               )}
@@ -543,6 +673,104 @@ export default function Analytics() {
                   setUpdateValues((p) => ({ ...p, bad: Number(e.target.value) }))
                 }
               />
+            </div>
+            <div className="topic-editor">
+              <div className="slider-label">Good Work Breakdown</div>
+              <div className="topic-editor-grid">
+                {["infrastructure", "healthcare", "education"].map((key) => (
+                  <label key={key} className="topic-input-row">
+                    <span>{METRIC_LABELS[key]}</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={updateValues.detailedMetrics[key]}
+                      onChange={(e) =>
+                        setUpdateValues((prev) => ({
+                          ...prev,
+                          detailedMetrics: {
+                            ...prev.detailedMetrics,
+                            [key]: clampPercent(e.target.value),
+                          },
+                        }))
+                      }
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="topic-editor">
+              <div className="slider-label">Bad Work Breakdown</div>
+              <div className="topic-editor-grid">
+                {["policyFailures", "corruptionCases", "publicComplaints"].map((key) => (
+                  <label key={key} className="topic-input-row">
+                    <span>{METRIC_LABELS[key]}</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={updateValues.detailedMetrics[key]}
+                      onChange={(e) =>
+                        setUpdateValues((prev) => ({
+                          ...prev,
+                          detailedMetrics: {
+                            ...prev.detailedMetrics,
+                            [key]: clampPercent(e.target.value),
+                          },
+                        }))
+                      }
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="topic-editor">
+              <div className="slider-label">Add Historical Data (Optional)</div>
+              <div className="topic-editor-grid topic-editor-grid--history">
+                <label className="topic-input-row">
+                  <span>Year</span>
+                  <input
+                    type="number"
+                    min="2000"
+                    max="2100"
+                    value={updateValues.historyYear}
+                    onChange={(e) =>
+                      setUpdateValues((prev) => ({
+                        ...prev,
+                        historyYear: e.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label className="topic-input-row">
+                  <span>Label</span>
+                  <input
+                    type="text"
+                    value={updateValues.historyLabel}
+                    onChange={(e) =>
+                      setUpdateValues((prev) => ({
+                        ...prev,
+                        historyLabel: e.target.value,
+                      }))
+                    }
+                    placeholder="Election title"
+                  />
+                </label>
+                <label className="topic-input-row">
+                  <span>Votes</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={updateValues.historyVotes}
+                    onChange={(e) =>
+                      setUpdateValues((prev) => ({
+                        ...prev,
+                        historyVotes: e.target.value,
+                      }))
+                    }
+                  />
+                </label>
+              </div>
             </div>
             <div className="info-callout">
               <i className="ri-alert-line" aria-hidden="true" />

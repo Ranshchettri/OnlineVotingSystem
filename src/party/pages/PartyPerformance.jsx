@@ -107,7 +107,7 @@ export default function PartyPerformance() {
                     </div>
                     <span className={`performance-badge ${won ? "success" : "neutral"}`}>
                       {won ? <i className="ri-trophy-line" aria-hidden="true" /> : null}
-                      {won ? "Winner" : "Participated"}
+                      {won ? "Winner" : "Lost"}
                     </span>
                   </div>
                   <div className="performance-history-boxes">

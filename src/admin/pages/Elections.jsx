@@ -1,13 +1,7 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import api from "../../services/api";
+import Emblem from "../../assets/nepal-emblem.svg";
 import "../styles/elections.css";
-
-/* Demo seed data disabled as requested
-const fallbackElections = [
-  { id: "e1", title: "National Parliamentary Election 2025", type: "Political", status: "Running", startDate: "2025-03-15T07:00:00", endDate: "2025-03-15T17:00:00", totalVotes: 1947283, turnout: "68.4%", autoClose: true, autoResults: true, parties: [ ... ] },
-  ...
-];
-*/
 
 const formatDate = (value) => {
   if (!value) return "-";
@@ -145,9 +139,67 @@ export default function Elections() {
     }
   };
 
-  const handleExport = (election) => {
-    setExportElection(election);
-    setShowExport(true);
+  const handleExport = async (election) => {
+    try {
+      const electionId = election.id || election._id;
+      const [standingsRes, partiesRes] = await Promise.all([
+        electionId ? api.get(`/results/party/${electionId}`).catch(() => null) : Promise.resolve(null),
+        api.get("/parties").catch(() => null),
+      ]);
+
+      const standings = Array.isArray(standingsRes?.data?.data?.parties)
+        ? standingsRes.data.data.parties
+        : [];
+      const allParties = Array.isArray(partiesRes?.data?.data?.parties)
+        ? partiesRes.data.data.parties
+        : Array.isArray(partiesRes?.data?.data)
+          ? partiesRes.data.data
+          : [];
+      const partyByName = new Map(
+        allParties.map((item) => [String(item.name || "").toLowerCase(), item]),
+      );
+
+      const mappedParties = standings.map((item, index) => {
+        const meta = partyByName.get(String(item.name || "").toLowerCase()) || {};
+        const percent = Number(item.percentage || 0);
+        return {
+          name: item.name || "Party",
+          leader: meta.leader || "N/A",
+          votes: Number(item.votes || 0),
+          percentage: `${percent.toFixed(1)}%`,
+          color: item.color || meta.color || "#2563eb",
+          logo: item.logo || meta.logo || meta.symbol || "",
+          rank: Number(item.rank || index + 1),
+        };
+      });
+
+      const fallbackSnapshot = allParties
+        .filter((party) => party.status !== "BLOCKED" && party.isActive !== false)
+        .map((party, index) => ({
+          name: party.name || "Party",
+          leader: party.leader || "N/A",
+          votes: 0,
+          percentage: "0.0%",
+          color: party.color || "#2563eb",
+          logo: party.logo || party.symbol || "",
+          rank: index + 1,
+        }));
+
+      setExportElection({
+        ...election,
+        parties:
+          mappedParties.length > 0
+            ? mappedParties
+            : fallbackSnapshot.length > 0
+              ? fallbackSnapshot
+              : (election.parties || []),
+      });
+    } catch (error) {
+      console.error("Failed to prepare export data", error);
+      setExportElection(election);
+    } finally {
+      setShowExport(true);
+    }
   };
 
   const handleStopElection = async (electionId) => {
@@ -209,21 +261,23 @@ export default function Elections() {
     if (!election) return;
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
-    const parties = election.parties || [];
+    const parties = [...(election.parties || [])].sort(
+      (a, b) => Number(b.votes || 0) - Number(a.votes || 0),
+    );
     const partyRows = parties
       .map(
         (p, i) => `
         <tr style="border-bottom:1px solid #e5e7eb;">
           <td style="padding:12px 16px;font-size:14px;color:#374151;">${i + 1}</td>
           <td style="padding:12px 16px;font-size:14px;font-weight:600;color:#111827;">${p.name}</td>
-          <td style="padding:12px 16px;font-size:14px;color:#374151;">${p.leader}</td>
+          <td style="padding:12px 16px;font-size:14px;color:#374151;">${p.leader || "N/A"}</td>
           <td style="padding:12px 16px;font-size:14px;font-weight:700;color:#111827;">${
             typeof p.votes === "number" ? p.votes.toLocaleString() : p.votes
           }</td>
           <td style="padding:12px 16px;font-size:14px;color:#374151;">${p.percentage}</td>
           <td style="padding:12px 16px;">
             <div style="background:#e5e7eb;border-radius:999px;height:8px;width:100%;overflow:hidden;">
-              <div style="background:${i === 0 ? "#10b981" : i === 1 ? "#3b82f6" : "#f59e0b"};height:100%;width:${p.percentage};border-radius:999px;"></div>
+              <div style="background:${p.color || (i === 0 ? "#10b981" : i === 1 ? "#3b82f6" : "#f59e0b")};height:100%;width:${p.percentage};border-radius:999px;"></div>
             </div>
           </td>
         </tr>`,
@@ -243,6 +297,18 @@ export default function Elections() {
           body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             margin:0; padding:40px; background:#fff; color:#111827;
+          }
+          .head-row {
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            gap:14px;
+            margin-bottom:4px;
+          }
+          .head-row img {
+            width:54px;
+            height:54px;
+            object-fit:contain;
           }
           .header {
             text-align:center; margin-bottom:40px; padding-bottom:24px;
@@ -280,7 +346,10 @@ export default function Elections() {
       </head>
       <body>
         <div class="header">
-          <h1>🇳🇵 Nepal Online Voting System</h1>
+          <div class="head-row">
+            <img src="${Emblem}" alt="Nepal emblem" />
+            <h1>Nepal Online Voting System</h1>
+          </div>
           <p style="font-size:20px;font-weight:700;color:#dc2626;">${election.title}</p>
           <p>Generated: ${new Date().toLocaleString()}</p>
         </div>
@@ -309,7 +378,7 @@ export default function Elections() {
         ${
           winner
             ? `<div class="winner-box">
-          <p style="color:#059669;">🏆 ${
+          <p style="color:#059669;">${
             election.status === "Ended" ? "Winner" : "Leading"
           }</p>
           <p style="font-size:24px;font-weight:700;">${winner.name}</p>
@@ -333,7 +402,10 @@ export default function Elections() {
               <th>Progress</th>
             </tr>
           </thead>
-          <tbody>${partyRows}</tbody>
+          <tbody>${
+            partyRows ||
+            `<tr><td colspan="6" style="padding:14px 16px;font-size:13px;color:#64748b;">No party vote data available.</td></tr>`
+          }</tbody>
         </table>
         <div style="text-align:center;margin-top:40px;border-top:2px solid #e5e7eb;padding-top:20px;">
           <p>© ${new Date().getFullYear()} Government of Nepal - Election Commission</p>
@@ -448,7 +520,7 @@ export default function Elections() {
                 </div>
                 <div>
                   <div className="stat-label">Turnout</div>
-                  <div className="stat-number">{election.turnout || "—"}</div>
+                  <div className="stat-number">{election.turnout || "â€”"}</div>
                 </div>
                 <div>
                   <div className="stat-label">Auto Close</div>
@@ -574,7 +646,7 @@ export default function Elections() {
             <div className="export-header">
               <div className="export-title">
                 <span className="export-icon">
-                  <i className="ri-archive-download-line" aria-hidden="true" />
+                  <img src={Emblem} alt="Nepal emblem" />
                 </span>
                 <div>
                   <p>Export Election Report</p>
@@ -645,7 +717,16 @@ export default function Elections() {
                     <div key={party.name} className="export-table-row">
                       <span className="pill-id">#{idx + 1}</span>
                       <div className="export-party-meta">
-                        <p className="party-name">{party.name}</p>
+                        <p className="party-name">
+                          {party.logo ? (
+                            <img src={party.logo} alt={party.name} className="export-party-logo" />
+                          ) : (
+                            <span className="export-party-logo-fallback">
+                              {String(party.name || "P").slice(0, 1).toUpperCase()}
+                            </span>
+                          )}
+                          {party.name}
+                        </p>
                         <p className="party-leader">Leader: {party.leader}</p>
                       </div>
                       <div className="export-party-votes">
@@ -727,3 +808,4 @@ export default function Elections() {
     </div>
   );
 }
+

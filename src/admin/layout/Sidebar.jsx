@@ -40,6 +40,8 @@ const Sidebar = () => {
         </div>
       </div>
 
+      <div className="admin-sidebar__divider" />
+
       <nav className="admin-sidebar__nav">
         {navItems.map((item) => (
           <NavLink
@@ -57,8 +59,12 @@ const Sidebar = () => {
         ))}
       </nav>
 
+      <div className="admin-sidebar__divider bottom" />
+
       <div className="admin-sidebar__status">
-        <div className="admin-sidebar__status-dot" />
+        <span className="admin-sidebar__status-icon">
+          <i className="ri-shield-check-line" aria-hidden="true" />
+        </span>
         <div>
           <div className="admin-sidebar__status-title">System Status</div>
           <div className="admin-sidebar__status-subtitle">

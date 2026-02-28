@@ -1,4 +1,4 @@
-import "./notFound.css";
+﻿import "./notFound.css";
 
 export default function NotFound() {
   return (
@@ -7,7 +7,7 @@ export default function NotFound() {
         <div className="notfound-badge">404</div>
         <h1>Page Not Found</h1>
         <p>
-          The page you are looking for doesn’t exist or has been moved. Please
+          The page you are looking for doesn't exist or has been moved. Please
           check the URL or go back to the dashboard.
         </p>
         <div className="notfound-actions">
@@ -25,3 +25,4 @@ export default function NotFound() {
     </div>
   );
 }
+

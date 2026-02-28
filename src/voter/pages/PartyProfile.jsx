@@ -66,6 +66,10 @@ export default function PartyProfile() {
   const logoSrc = getPartyLogoSrc(party);
   const team = Array.isArray(party.teamMembers) ? party.teamMembers : [];
   const plans = Array.isArray(party.futurePlans) ? party.futurePlans : [];
+  const gallery = Array.isArray(party.gallery) ? party.gallery : [];
+  const contact = party.contact || {};
+  const socialMedia = party.socialMedia || {};
+  const detailedMetrics = party.detailedMetrics || {};
   const workTotal = goodWork + badWork;
   const goodSlice = workTotal > 0 ? Number(((goodWork / workTotal) * 100).toFixed(1)) : 50;
   const badSlice = Number((100 - goodSlice).toFixed(1));
@@ -89,9 +93,32 @@ export default function PartyProfile() {
           <div className="party-hero-info">
             <h1 className="party-hero-title">{party.name}</h1>
             <p>Leader: {party.leader || "N/A"}</p>
+            <div className="party-hero-stats-grid">
+              <div className="party-hero-stat">
+                <span>Established</span>
+                <strong>
+                  {party.establishedDate
+                    ? new Date(party.establishedDate).toLocaleDateString()
+                    : "-"}
+                </strong>
+              </div>
+              <div className="party-hero-stat">
+                <span>Headquarters</span>
+                <strong>{party.headquarters || "-"}</strong>
+              </div>
+              <div className="party-hero-stat">
+                <span>Total Members</span>
+                <strong>{Number(party.totalMembers || 0).toLocaleString()}</strong>
+              </div>
+              <div className="party-hero-stat">
+                <span>Election Wins</span>
+                <strong>{Number(party.electionWins || 0)} Times</strong>
+              </div>
+            </div>
             <div className="party-hero-tags">
               <span className="party-tag">Votes: {Number(party.totalVotes || 0).toLocaleString()}</span>
               <span className="party-tag">Status: {String(party.status || "approved").toUpperCase()}</span>
+              <span className="party-tag">Verified Party</span>
             </div>
           </div>
         </div>
@@ -133,6 +160,20 @@ export default function PartyProfile() {
             <div className="metric-badge good">Good Work: {goodWork}%</div>
             <div className="metric-badge bad">Bad Work: {badWork}%</div>
           </div>
+          <div className="party-breakdown-grid">
+            <div className="party-breakdown good">
+              <strong>Good Work Breakdown</strong>
+              <p>Infrastructure: {clampPercent(detailedMetrics.infrastructure)}%</p>
+              <p>Healthcare: {clampPercent(detailedMetrics.healthcare)}%</p>
+              <p>Education: {clampPercent(detailedMetrics.education)}%</p>
+            </div>
+            <div className="party-breakdown bad">
+              <strong>Bad Work Breakdown</strong>
+              <p>Policy failures: {clampPercent(detailedMetrics.policyFailures)}%</p>
+              <p>Corruption cases: {clampPercent(detailedMetrics.corruptionCases)}%</p>
+              <p>Public complaints: {clampPercent(detailedMetrics.publicComplaints)}%</p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -172,6 +213,54 @@ export default function PartyProfile() {
             ))
           )}
         </div>
+      </div>
+
+      {gallery.length > 0 ? (
+        <div className="party-section metric-card">
+          <h3>Photo Gallery</h3>
+          <div className="party-gallery-grid">
+            {gallery.map((image, index) => (
+              <div key={`gallery-${index}`} className="party-gallery-item">
+                <img src={image} alt={`Gallery ${index + 1}`} />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      <div className="party-section metric-card">
+        <h3>Contact Information</h3>
+        <div className="party-contact-grid">
+          <div>
+            <span>Office Address</span>
+            <strong>{contact.address || party.headquarters || "-"}</strong>
+          </div>
+          <div>
+            <span>Phone Number</span>
+            <strong>{contact.phone || "-"}</strong>
+          </div>
+          <div>
+            <span>Email Address</span>
+            <strong>{contact.email || party.email || "-"}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div className="party-section metric-card">
+        <h3>Follow Us on Social Media</h3>
+        <div className="party-social-row">
+          <span>{socialMedia.facebook || "-"}</span>
+          <span>{socialMedia.twitter || "-"}</span>
+          <span>{socialMedia.website || "-"}</span>
+        </div>
+      </div>
+
+      <div className="ready-banner">
+        <h3>Ready to Vote?</h3>
+        <p>Go back to the voting dashboard to cast your vote</p>
+        <button type="button" className="ready-btn" onClick={() => navigate("/voter/dashboard")}>
+          Go to Voting Dashboard
+        </button>
       </div>
     </div>
   );

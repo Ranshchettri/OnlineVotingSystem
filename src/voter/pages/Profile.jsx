@@ -36,13 +36,6 @@ export default function Profile() {
         const realProfile = profileRes.data?.data || null;
         if (realProfile?.role === "voter") {
           setProfile(realProfile);
-          localStorage.setItem(
-            "voter",
-            JSON.stringify({
-              ...(stored || {}),
-              ...realProfile,
-            }),
-          );
         } else {
           setProfile(stored || null);
         }
@@ -52,7 +45,44 @@ export default function Profile() {
           : Array.isArray(historyRes.data)
             ? historyRes.data
             : [];
-        setHistory(voteHistory);
+
+        const electionIds = [...new Set(voteHistory.map((item) => String(item.electionId || "")).filter(Boolean))];
+        const standingEntries = await Promise.all(
+          electionIds.map(async (id) => {
+            try {
+              const standingsRes = await api.get(`/results/party/${id}`);
+              const parties = Array.isArray(standingsRes.data?.data?.parties)
+                ? standingsRes.data.data.parties
+                : [];
+              return [id, parties];
+            } catch {
+              return [id, []];
+            }
+          }),
+        );
+        const standingsByElection = Object.fromEntries(standingEntries);
+
+        const enrichedHistory = voteHistory.map((item) => {
+          const electionId = String(item.electionId || "");
+          const standings = Array.isArray(standingsByElection[electionId])
+            ? standingsByElection[electionId]
+            : [];
+          const winner = standings[0] || null;
+          const votedPartyName = String(item.partyName || "").toLowerCase();
+          const winnerName = String(winner?.name || "");
+          const voteWon =
+            winnerName &&
+            votedPartyName &&
+            votedPartyName === winnerName.toLowerCase();
+
+          return {
+            ...item,
+            winnerName: winnerName || "-",
+            voteWon,
+          };
+        });
+
+        setHistory(enrichedHistory);
       } catch (error) {
         console.error("Failed to load profile:", error?.response?.data || error.message);
         setHistory([]);
@@ -168,13 +198,17 @@ export default function Profile() {
                     </div>
                     <div className="profile-history-badge">
                       <i className="ri-trophy-line" aria-hidden="true" />
-                      Vote Submitted
+                      {item.voteWon ? "Your Vote Won" : "Vote Submitted"}
                     </div>
                   </div>
                   <div className="profile-history-grid">
                     <div>
                       <span>You Voted For</span>
                       <strong>{item.partyName || "-"}</strong>
+                    </div>
+                    <div>
+                      <span>Winner</span>
+                      <strong>{item.winnerName || "-"}</strong>
                     </div>
                     <div>
                       <span>Ballot Time</span>

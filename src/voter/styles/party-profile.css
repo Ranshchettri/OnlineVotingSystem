@@ -93,6 +93,32 @@
   flex-wrap: wrap;
 }
 
+.party-profile .party-hero-stats-grid {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.party-profile .party-hero-stat {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.party-profile .party-hero-stat span {
+  display: block;
+  font-size: 11px;
+  opacity: 0.9;
+}
+
+.party-profile .party-hero-stat strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  color: #fff;
+}
+
 .party-profile .party-tag {
   display: inline-flex;
   align-items: center;
@@ -226,6 +252,42 @@
   gap: 20px;
 }
 
+.party-profile .party-breakdown-grid {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.party-profile .party-breakdown {
+  border-radius: 12px;
+  border: 1px solid var(--gray-200);
+  padding: 12px;
+  display: grid;
+  gap: 4px;
+}
+
+.party-profile .party-breakdown.good {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.party-profile .party-breakdown.bad {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.party-profile .party-breakdown strong {
+  font-size: 13px;
+  color: #0f172a;
+}
+
+.party-profile .party-breakdown p {
+  margin: 0;
+  font-size: 12px;
+  color: #475569;
+}
+
 .party-profile .work-chart {
   --good-slice: 50%;
   --bad-slice: 50%;
@@ -345,6 +407,57 @@
   margin-top: 4px;
 }
 
+.party-profile .party-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.party-profile .party-gallery-item {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--gray-200);
+}
+
+.party-profile .party-gallery-item img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.party-profile .party-contact-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.party-profile .party-contact-grid span {
+  font-size: 12px;
+  color: var(--gray-500);
+}
+
+.party-profile .party-contact-grid strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.party-profile .party-social-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.party-profile .party-social-row span {
+  border: 1px solid var(--blue-200);
+  background: var(--blue-50);
+  border-radius: 10px;
+  padding: 9px 10px;
+  font-size: 12px;
+  color: var(--blue-700);
+}
+
 .party-profile .ready-banner {
   margin-top: 24px;
   border-radius: 8px;
@@ -369,17 +482,31 @@
 
 .party-profile .ready-btn {
   margin-top: 16px;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 10px 22px;
   border-radius: 12px;
-  background: #000000;
+  background: #ffffff;
   color: var(--green-700);
   font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  cursor: pointer;
 }
 
 @media (max-width: 1100px) {
   .party-profile .team-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .party-profile .party-hero-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .party-profile .party-gallery-grid,
+  .party-profile .party-contact-grid,
+  .party-profile .party-social-row {
+    grid-template-columns: 1fr 1fr;
   }
 }
 
@@ -389,6 +516,13 @@
   }
 
   .party-profile .work-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .party-profile .party-breakdown-grid,
+  .party-profile .party-gallery-grid,
+  .party-profile .party-contact-grid,
+  .party-profile .party-social-row {
     grid-template-columns: 1fr;
   }
 }

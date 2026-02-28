@@ -17,6 +17,21 @@ export default function PartyHome() {
     vision: "",
     logoImage: "",
     team: [],
+    establishedDate: "",
+    headquarters: "",
+    totalMembers: 0,
+    electionWins: 0,
+    gallery: [],
+    contact: {
+      address: "",
+      phone: "",
+      email: "",
+    },
+    socialMedia: {
+      website: "",
+      facebook: "",
+      twitter: "",
+    },
   });
   const [draft, setDraft] = useState(() => clone(saved));
   const [isEditing, setIsEditing] = useState(false);
@@ -54,6 +69,23 @@ export default function PartyHome() {
           vision: party.vision || party.mission || "",
           logoImage: party.logo || "",
           team: normalizeTeamForUi(party.teamMembers || []),
+          establishedDate: party.establishedDate
+            ? new Date(party.establishedDate).toISOString().slice(0, 10)
+            : "",
+          headquarters: party.headquarters || "",
+          totalMembers: Number(party.totalMembers || 0),
+          electionWins: Number(party.electionWins || 0),
+          gallery: Array.isArray(party.gallery) ? party.gallery : [],
+          contact: {
+            address: party.contact?.address || "",
+            phone: party.contact?.phone || "",
+            email: party.contact?.email || "",
+          },
+          socialMedia: {
+            website: party.socialMedia?.website || "",
+            facebook: party.socialMedia?.facebook || "",
+            twitter: party.socialMedia?.twitter || "",
+          },
         };
         setSaved(mapped);
         setIsLocked(Boolean(party.isEditingLocked));
@@ -119,6 +151,13 @@ export default function PartyHome() {
         manifesto: next.vision,
         logo: next.logoImage,
         teamMembers,
+        establishedDate: next.establishedDate || null,
+        headquarters: next.headquarters,
+        totalMembers: Number(next.totalMembers || 0),
+        electionWins: Number(next.electionWins || 0),
+        gallery: Array.isArray(next.gallery) ? next.gallery : [],
+        contact: next.contact || {},
+        socialMedia: next.socialMedia || {},
       });
 
       const synced = {
@@ -139,6 +178,26 @@ export default function PartyHome() {
 
   const updateField = (field, value) => {
     setDraft((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const updateContact = (field, value) => {
+    setDraft((prev) => ({
+      ...prev,
+      contact: {
+        ...(prev.contact || {}),
+        [field]: value,
+      },
+    }));
+  };
+
+  const updateSocial = (field, value) => {
+    setDraft((prev) => ({
+      ...prev,
+      socialMedia: {
+        ...(prev.socialMedia || {}),
+        [field]: value,
+      },
+    }));
   };
 
   const handleLogo = (file) => {
@@ -190,6 +249,25 @@ export default function PartyHome() {
       updateMember(id, "photo", reader.result);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleGalleryAdd = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setDraft((prev) => ({
+        ...prev,
+        gallery: [...(Array.isArray(prev.gallery) ? prev.gallery : []), reader.result],
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeGalleryImage = (index) => {
+    setDraft((prev) => ({
+      ...prev,
+      gallery: (Array.isArray(prev.gallery) ? prev.gallery : []).filter((_, idx) => idx !== index),
+    }));
   };
 
   return (
@@ -279,11 +357,69 @@ export default function PartyHome() {
                   }
                   placeholder="Leader Name"
                 />
+                <div className="party-profile-meta-grid">
+                  <label>
+                    <span>Established</span>
+                    <input
+                      type="date"
+                      value={draft.establishedDate || ""}
+                      disabled={isLocked}
+                      onChange={(event) => updateField("establishedDate", event.target.value)}
+                    />
+                  </label>
+                  <label>
+                    <span>Headquarters</span>
+                    <input
+                      value={draft.headquarters || ""}
+                      disabled={isLocked}
+                      onChange={(event) => updateField("headquarters", event.target.value)}
+                      placeholder="Baneshwor, Kathmandu"
+                    />
+                  </label>
+                  <label>
+                    <span>Total Members</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={draft.totalMembers || 0}
+                      disabled={isLocked}
+                      onChange={(event) => updateField("totalMembers", Number(event.target.value || 0))}
+                    />
+                  </label>
+                  <label>
+                    <span>Election Wins</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={draft.electionWins || 0}
+                      disabled={isLocked}
+                      onChange={(event) => updateField("electionWins", Number(event.target.value || 0))}
+                    />
+                  </label>
+                </div>
               </div>
             ) : (
               <>
                 <h2>{saved.name}</h2>
                 <p>Leader: {saved.leader}</p>
+                <div className="party-profile-stats">
+                  <div>
+                    <span>Established</span>
+                    <strong>{saved.establishedDate ? new Date(saved.establishedDate).toLocaleDateString() : "-"}</strong>
+                  </div>
+                  <div>
+                    <span>Headquarters</span>
+                    <strong>{saved.headquarters || "-"}</strong>
+                  </div>
+                  <div>
+                    <span>Total Members</span>
+                    <strong>{Number(saved.totalMembers || 0).toLocaleString()}</strong>
+                  </div>
+                  <div>
+                    <span>Election Wins</span>
+                    <strong>{Number(saved.electionWins || 0)} Times</strong>
+                  </div>
+                </div>
               </>
             )}
             <span className="party-profile-badge">
@@ -379,6 +515,135 @@ export default function PartyHome() {
               )}
             </div>
           ))}
+        </div>
+      </div>
+
+      <div className="party-gallery party-card">
+        <div className="party-team-head">
+          <h3>Photo Gallery</h3>
+          {isEditing ? (
+            <label className="party-btn outline party-gallery-upload">
+              <input
+                type="file"
+                accept="image/*"
+                disabled={isLocked}
+                onChange={(event) => handleGalleryAdd(event.target.files[0])}
+              />
+              <i className="ri-add-line" aria-hidden="true" />
+              Add Photo
+            </label>
+          ) : null}
+        </div>
+        <div className="party-gallery-grid">
+          {(isEditing ? draft.gallery : saved.gallery).length === 0 ? (
+            <div className="party-gallery-empty">No gallery images uploaded.</div>
+          ) : (
+            (isEditing ? draft.gallery : saved.gallery).map((image, index) => (
+              <div key={`gallery-${index}`} className="party-gallery-item">
+                <img src={image} alt={`Gallery ${index + 1}`} />
+                {isEditing ? (
+                  <button
+                    type="button"
+                    className="party-btn danger"
+                    onClick={() => removeGalleryImage(index)}
+                    disabled={isLocked}
+                  >
+                    Remove
+                  </button>
+                ) : null}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      <div className="party-contact party-card">
+        <h3>Contact Information</h3>
+        <div className="party-contact-grid">
+          <label>
+            <span>Address</span>
+            {isEditing ? (
+              <input
+                value={draft.contact?.address || ""}
+                onChange={(event) => updateContact("address", event.target.value)}
+                disabled={isLocked}
+                placeholder="Baneshwor, Kathmandu, Nepal"
+              />
+            ) : (
+              <strong>{saved.contact?.address || "-"}</strong>
+            )}
+          </label>
+          <label>
+            <span>Phone</span>
+            {isEditing ? (
+              <input
+                value={draft.contact?.phone || ""}
+                onChange={(event) => updateContact("phone", event.target.value)}
+                disabled={isLocked}
+                placeholder="+977-1-4900000"
+              />
+            ) : (
+              <strong>{saved.contact?.phone || "-"}</strong>
+            )}
+          </label>
+          <label>
+            <span>Email</span>
+            {isEditing ? (
+              <input
+                value={draft.contact?.email || ""}
+                onChange={(event) => updateContact("email", event.target.value)}
+                disabled={isLocked}
+                placeholder="info@party.gov.np"
+              />
+            ) : (
+              <strong>{saved.contact?.email || "-"}</strong>
+            )}
+          </label>
+        </div>
+      </div>
+
+      <div className="party-social party-card">
+        <h3>Social & Website</h3>
+        <div className="party-contact-grid">
+          <label>
+            <span>Official Website</span>
+            {isEditing ? (
+              <input
+                value={draft.socialMedia?.website || ""}
+                onChange={(event) => updateSocial("website", event.target.value)}
+                disabled={isLocked}
+                placeholder="https://party.gov.np"
+              />
+            ) : (
+              <strong>{saved.socialMedia?.website || "-"}</strong>
+            )}
+          </label>
+          <label>
+            <span>Facebook</span>
+            {isEditing ? (
+              <input
+                value={draft.socialMedia?.facebook || ""}
+                onChange={(event) => updateSocial("facebook", event.target.value)}
+                disabled={isLocked}
+                placeholder="https://facebook.com/party"
+              />
+            ) : (
+              <strong>{saved.socialMedia?.facebook || "-"}</strong>
+            )}
+          </label>
+          <label>
+            <span>Twitter</span>
+            {isEditing ? (
+              <input
+                value={draft.socialMedia?.twitter || ""}
+                onChange={(event) => updateSocial("twitter", event.target.value)}
+                disabled={isLocked}
+                placeholder="https://x.com/party"
+              />
+            ) : (
+              <strong>{saved.socialMedia?.twitter || "-"}</strong>
+            )}
+          </label>
         </div>
       </div>
 
