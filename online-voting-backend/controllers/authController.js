@@ -8,6 +8,13 @@ const JWT_SECRET = process.env.JWT_SECRET || "devsecret";
 
 const normalizeEmail = (email = "") => String(email || "").trim().toLowerCase();
 const escapeRegex = (value = "") => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const isBlockedVerification = (status = "") =>
+  ["blocked", "rejected"].includes(String(status || "").toLowerCase());
+const isPartyAllowedToLogin = (party = {}) => {
+  const status = String(party?.status || "").toLowerCase();
+  const isActive = party?.isActive !== false;
+  return isActive && status === "approved";
+};
 
 const resolvePartyLoginContext = async (email) => {
   const normalizedEmail = normalizeEmail(email);
@@ -24,9 +31,7 @@ const resolvePartyLoginContext = async (email) => {
   if (!partyUser && partyProfile) {
     const randomPassword = crypto.randomBytes(18).toString("hex");
     const hashedPassword = await bcrypt.hash(randomPassword, 10);
-    const isActiveParty =
-      partyProfile.isActive !== false &&
-      String(partyProfile.status || "").toLowerCase() !== "rejected";
+    const isActiveParty = isPartyAllowedToLogin(partyProfile);
 
     partyUser = await User.create({
       fullName: partyProfile.leader || partyProfile.name || "Party Account",
@@ -47,9 +52,7 @@ const resolvePartyLoginContext = async (email) => {
   }
 
   if (partyUser && partyProfile) {
-    const isActiveParty =
-      partyProfile.isActive !== false &&
-      String(partyProfile.status || "").toLowerCase() !== "rejected";
+    const isActiveParty = isPartyAllowedToLogin(partyProfile);
 
     partyUser.fullName =
       partyProfile.leader || partyProfile.name || partyUser.fullName;
@@ -129,6 +132,10 @@ const loginUser = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    if (isBlockedVerification(user.verificationStatus)) {
+      return res.status(403).json({ message: "Account is blocked by admin" });
     }
 
     // Skip email verification for this build (demo)
@@ -348,6 +355,15 @@ const partyLogin = async (req, res) => {
       return res.status(404).json({ message: "Party account not found" });
     }
 
+    if (partyProfile && !isPartyAllowedToLogin(partyProfile)) {
+      return res.status(403).json({
+        message: "Party account is blocked or pending approval",
+      });
+    }
+    if (isBlockedVerification(partyUser.verificationStatus)) {
+      return res.status(403).json({ message: "Party account is blocked" });
+    }
+
     // Fixed OTP for demo
     const otp = "54321";
 
@@ -380,6 +396,15 @@ const verifyPartyOtp = async (req, res) => {
 
     if (!partyUser) {
       return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    if (partyProfile && !isPartyAllowedToLogin(partyProfile)) {
+      return res.status(403).json({
+        message: "Party account is blocked or pending approval",
+      });
+    }
+    if (isBlockedVerification(partyUser.verificationStatus)) {
+      return res.status(403).json({ message: "Party account is blocked" });
     }
 
     if (
@@ -441,6 +466,9 @@ const voterLogin = async (req, res) => {
     if (!voter) {
       return res.status(404).json({ message: "Voter not found" });
     }
+    if (isBlockedVerification(voter.verificationStatus)) {
+      return res.status(403).json({ message: "Voter account is blocked" });
+    }
     const otp = "123456";
     voter.otp = otp;
     voter.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
@@ -464,6 +492,9 @@ const verifyVoterOtp = async (req, res) => {
     const voter = await User.findById(voterId);
     if (!voter || voter.role !== "voter") {
       return res.status(401).json({ message: "Unauthorized" });
+    }
+    if (isBlockedVerification(voter.verificationStatus)) {
+      return res.status(403).json({ message: "Voter account is blocked" });
     }
     if (!voter.otp || voter.otp !== otp || !voter.otpExpiry || voter.otpExpiry < new Date()) {
       return res.status(400).json({ message: "Invalid or expired OTP" });

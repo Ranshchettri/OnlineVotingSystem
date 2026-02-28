@@ -5,6 +5,13 @@ const Party = require("../models/Party");
 const User = require("../models/User");
 const AppError = require("../utils/AppError");
 
+const isBlockedVerification = (status = "") =>
+  ["blocked", "rejected"].includes(String(status || "").toLowerCase());
+const isPartyBlocked = (party = {}) => {
+  const status = String(party?.status || "").toLowerCase();
+  return party?.isActive === false || ["blocked", "rejected", "pending"].includes(status);
+};
+
 // POST /api/votes
 const castVote = async (req, res, next) => {
   try {
@@ -14,6 +21,14 @@ const castVote = async (req, res, next) => {
 
     if (role !== "voter") {
       return next(new AppError("Only voter accounts can cast votes", 403));
+    }
+
+    const voter = await User.findById(userId).select("verificationStatus role");
+    if (!voter || voter.role !== "voter") {
+      return next(new AppError("Voter account not found", 404));
+    }
+    if (isBlockedVerification(voter.verificationStatus)) {
+      return next(new AppError("Voter account is blocked", 403));
     }
 
     // 1 Check election exists
@@ -75,6 +90,23 @@ const castVote = async (req, res, next) => {
     } else if (partyId) {
       party = await Party.findById(partyId);
       if (!party) return next(new AppError("Party not found", 404));
+      if (isPartyBlocked(party)) {
+        return next(new AppError("Selected party is blocked for this election", 403));
+      }
+
+      const participating = Array.isArray(election.participatingParties)
+        ? election.participatingParties
+        : [];
+      if (participating.length > 0) {
+        const allowedPartyIds = new Set(
+          participating
+            .map((row) => row?.partyId?.toString?.() || row?.partyId)
+            .filter(Boolean),
+        );
+        if (!allowedPartyIds.has(String(partyId))) {
+          return next(new AppError("Selected party is not in this election", 400));
+        }
+      }
     } else {
       return next(new AppError("candidateId or partyId is required", 400));
     }

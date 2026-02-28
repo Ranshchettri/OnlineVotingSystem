@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const Party = require("../models/Party");
 const { shouldInvalidateToken } = require("../utils/sessionControl");
 
 const protect = async (req, res, next) => {
@@ -45,6 +46,21 @@ const protect = async (req, res, next) => {
 
       if (!req.user) {
         return res.status(401).json({ message: "User not found" });
+      }
+
+      const verification = String(req.user.verificationStatus || "").toLowerCase();
+      if (["blocked", "rejected"].includes(verification)) {
+        return res.status(403).json({ message: "Account is blocked by admin" });
+      }
+
+      if (req.user.role === "party" && req.user.partyId) {
+        const party = await Party.findById(req.user.partyId).select("status isActive");
+        if (party) {
+          const partyStatus = String(party.status || "").toLowerCase();
+          if (party.isActive === false || ["blocked", "rejected", "pending"].includes(partyStatus)) {
+            return res.status(403).json({ message: "Party account is blocked for this election" });
+          }
+        }
       }
 
       // Keep strict email-verification gate only for admin web login flows.

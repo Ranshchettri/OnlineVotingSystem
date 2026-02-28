@@ -31,6 +31,7 @@ const getCandidateAnalytics = async (req, res, next) => {
         const partyVotes = voteMap[party._id.toString()] || party.currentVotes || 0;
         return {
           candidateId: party._id,
+          partyId: party._id,
           fullName: party.leader || party.name,
           partyName: party.name,
           totalTaskCompletion: party.development ?? party.goodWorkPercent ?? 0,
@@ -38,6 +39,9 @@ const getCandidateAnalytics = async (req, res, next) => {
           development: party.development ?? party.goodWorkPercent ?? 0,
           goodWork: party.goodWork ?? party.goodWorkPercent ?? 0,
           badWork: party.badWork ?? party.badWorkPercent ?? 0,
+          logo: party.logo || party.symbol || "",
+          detailedMetrics: party.detailedMetrics || {},
+          historicalData: party.historicalData || [],
           tasks: [],
         };
       });

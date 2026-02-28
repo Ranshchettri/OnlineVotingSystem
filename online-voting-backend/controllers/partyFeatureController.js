@@ -53,6 +53,22 @@ const deriveElectionStatus = (election = {}, now = new Date()) => {
 };
 
 const findRelevantElectionForParty = async (party, now = new Date()) => {
+  const partyTypeRegex = party?.electionType
+    ? new RegExp(`^${escapeRegex(String(party.electionType))}$`, "i")
+    : null;
+
+  const runningFilter = {
+    startDate: { $lte: now },
+    endDate: { $gte: now },
+    allowVoting: { $ne: false },
+    isEnded: { $ne: true },
+  };
+  if (partyTypeRegex) {
+    runningFilter.type = partyTypeRegex;
+  }
+  const runningElection = await Election.findOne(runningFilter).sort({ startDate: -1 });
+  if (runningElection) return runningElection;
+
   if (party?.electionId) {
     const linkedElection = await Election.findById(party.electionId);
     if (linkedElection && deriveElectionStatus(linkedElection, now) !== "Ended") {
@@ -60,18 +76,23 @@ const findRelevantElectionForParty = async (party, now = new Date()) => {
     }
   }
 
-  const runningElection = await Election.findOne({
-    startDate: { $lte: now },
-    endDate: { $gte: now },
-    allowVoting: { $ne: false },
+  const upcomingFilter = {
+    startDate: { $gt: now },
     isEnded: { $ne: true },
-  }).sort({ startDate: -1 });
-  if (runningElection) return runningElection;
+  };
+  if (partyTypeRegex) {
+    upcomingFilter.type = partyTypeRegex;
+  }
+  const upcomingElection = await Election.findOne(upcomingFilter).sort({ startDate: 1 });
+  if (upcomingElection) return upcomingElection;
 
-  const upcomingElection = await Election.findOne({
+  const fallbackUpcoming = await Election.findOne({
     startDate: { $gt: now },
     isEnded: { $ne: true },
   }).sort({ startDate: 1 });
+
+  if (fallbackUpcoming) return fallbackUpcoming;
+
   return upcomingElection || null;
 };
 
@@ -221,7 +242,11 @@ const getPastPerformance = async (req, res, next) => {
     const manualHistory = Array.isArray(party.historicalData) ? party.historicalData : [];
 
     const endedElections = await Election.find({
-      $or: [{ status: "Ended" }, { isEnded: true }],
+      $or: [
+        { status: "Ended" },
+        { isEnded: true },
+        { endDate: { $lte: new Date() } },
+      ],
     })
       .select("_id title endDate")
       .lean();
@@ -399,14 +424,21 @@ const getCurrentStats = async (req, res, next) => {
 
     if (partiesById.size <= 1) {
       const fallbackFilter = {
-        status: { $ne: "rejected" },
-        $or: [{ electionId: election._id }, { isActive: true }],
+        status: { $nin: ["rejected", "blocked"] },
+        $or: [{ electionId: election._id }, { isActive: true }, { status: "approved" }],
       };
       if (electionTypeRegex) {
         fallbackFilter.$or.push({ electionType: electionTypeRegex });
       }
       const fallbackParties = await Party.find(fallbackFilter).lean();
       mergeParties(fallbackParties);
+    }
+
+    if (partiesById.size <= 1) {
+      const broadFallback = await Party.find({
+        status: { $nin: ["rejected", "blocked"] },
+      }).lean();
+      mergeParties(broadFallback);
     }
 
     if (!partiesById.has(party._id.toString())) {

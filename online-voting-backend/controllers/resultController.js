@@ -205,7 +205,9 @@ const getResults = async (req, res, next) => {
 const getPartyStandings = async (req, res, next) => {
   try {
     const { electionId } = req.params;
-    const election = await Election.findById(electionId).select("_id title totalVotes");
+    const election = await Election.findById(electionId).select(
+      "_id title totalVotes participatingParties",
+    );
     if (!election) return next(new AppError("Election not found", 404));
 
     const partyVotes = await Vote.aggregate([
@@ -214,7 +216,45 @@ const getPartyStandings = async (req, res, next) => {
       { $sort: { votes: -1 } },
     ]);
 
-    if (!partyVotes.length) {
+    const votesByParty = new Map();
+    partyVotes.forEach((item) => {
+      if (!item?._id) return;
+      votesByParty.set(item._id.toString(), Number(item.votes || 0));
+    });
+
+    const electionPartyVotes = Array.isArray(election.participatingParties)
+      ? election.participatingParties
+      : [];
+    electionPartyVotes.forEach((row) => {
+      const id = row?.partyId?.toString?.() || row?.partyId;
+      if (!id) return;
+      const existing = Number(votesByParty.get(id) || 0);
+      const fallbackVotes = Number(row?.votes || 0);
+      votesByParty.set(id, Math.max(existing, fallbackVotes));
+    });
+
+    if (!votesByParty.size) {
+      const linkedParties = await Party.find({ electionId: election._id })
+        .select("_id")
+        .lean();
+      linkedParties.forEach((item) => {
+        const id = item?._id?.toString?.();
+        if (id && !votesByParty.has(id)) votesByParty.set(id, 0);
+      });
+    }
+
+    if (!votesByParty.size) {
+      const activeParties = await Party.find({ status: "approved", isActive: true })
+        .select("_id")
+        .lean();
+      activeParties.forEach((item) => {
+        const id = item?._id?.toString?.();
+        if (id && !votesByParty.has(id)) votesByParty.set(id, 0);
+      });
+    }
+
+    const partyIds = [...votesByParty.keys()];
+    if (!partyIds.length) {
       return res.status(200).json({
         status: "success",
         data: {
@@ -227,21 +267,23 @@ const getPartyStandings = async (req, res, next) => {
       });
     }
 
-    const partyIds = partyVotes.map((item) => item._id).filter(Boolean);
     const parties = await Party.find({ _id: { $in: partyIds } })
       .select("_id name logo symbol color shortName")
       .lean();
 
     const byId = new Map(parties.map((item) => [item._id.toString(), item]));
-    const totalVotes = partyVotes.reduce((sum, item) => sum + Number(item.votes || 0), 0);
+    const totalVotesFromRows = [...votesByParty.values()].reduce(
+      (sum, votes) => sum + Number(votes || 0),
+      0,
+    );
+    const totalVotes = totalVotesFromRows || Number(election.totalVotes || 0);
 
-    const ranked = partyVotes
-      .map((item, index) => {
-        const ref = byId.get(item._id.toString()) || {};
-        const votes = Number(item.votes || 0);
+    const ranked = partyIds
+      .map((id) => {
+        const ref = byId.get(id) || {};
+        const votes = Number(votesByParty.get(id) || 0);
         return {
-          id: item._id.toString(),
-          rank: index + 1,
+          id,
           name: ref.name || "Party",
           shortName: ref.shortName || "",
           logo: ref.logo || ref.symbol || "",
@@ -250,7 +292,14 @@ const getPartyStandings = async (req, res, next) => {
           percentage: totalVotes ? Number(((votes / totalVotes) * 100).toFixed(2)) : 0,
         };
       })
-      .sort((a, b) => b.votes - a.votes);
+      .sort((a, b) => {
+        if (b.votes === a.votes) return a.name.localeCompare(b.name);
+        return b.votes - a.votes;
+      })
+      .map((item, index) => ({ ...item, rank: index + 1 }));
+
+    const winner = ranked.length && ranked[0].votes > 0 ? ranked[0] : null;
+    const runnerUp = ranked.length > 1 && ranked[1].votes > 0 ? ranked[1] : null;
 
     res.status(200).json({
       status: "success",
@@ -258,8 +307,8 @@ const getPartyStandings = async (req, res, next) => {
         electionId: election._id,
         totalVotes,
         parties: ranked,
-        winner: ranked[0] || null,
-        runnerUp: ranked[1] || null,
+        winner,
+        runnerUp,
       },
     });
   } catch (err) {
