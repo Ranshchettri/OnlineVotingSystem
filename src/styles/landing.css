@@ -66,6 +66,67 @@
   filter: brightness(0.98);
 }
 
+.landing-role-panel {
+  margin-top: 20px;
+}
+
+.landing-role-title {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: #334155;
+  font-weight: 600;
+}
+
+.landing-role-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.landing-role-btn {
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 11px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  background: #ffffff;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.landing-role-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1);
+}
+
+.landing-role-btn.admin {
+  border-color: #fecaca;
+  background: linear-gradient(120deg, #fff1f2, #ffffff);
+}
+
+.landing-role-btn.voter {
+  border-color: #bbf7d0;
+  background: linear-gradient(120deg, #f0fdf4, #ffffff);
+}
+
+.landing-role-btn.party {
+  border-color: #bfdbfe;
+  background: linear-gradient(120deg, #eff6ff, #ffffff);
+}
+
+.landing-back-btn {
+  margin-top: 10px;
+  border: 0;
+  background: transparent;
+  color: #475569;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.landing-back-btn:hover {
+  color: #1e293b;
+}
+
 @media (max-width: 640px) {
   .landing-card {
     padding: 22px;

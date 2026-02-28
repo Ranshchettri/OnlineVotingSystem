@@ -5,7 +5,7 @@ import { getPartyLogoSrc, getPartyShortLabel } from "../../shared/utils/partyDis
 import { usePartyData } from "../hooks/usePartyData";
 
 const navItems = [
-  { label: "Home / Profile", path: "/party/home", icon: "ri-home-line" },
+  { label: "Home ", path: "/party/home", icon: "ri-home-line" },
   { label: "About", path: "/party/about", icon: "ri-information-line" },
   { label: "Progress", path: "/party/progress", icon: "ri-bar-chart-box-line" },
   { label: "Past Performance", path: "/party/performance", icon: "ri-history-line" },

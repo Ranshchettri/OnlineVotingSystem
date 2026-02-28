@@ -4,7 +4,7 @@ import "../styles/home.css";
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 const defaults = {
-  title: "Party Profile",
+  title: "Party Dashboard",
   subtitle: "Manage your party information",
   logoBg: "#e5e7eb",
   logoText: "P",

@@ -110,7 +110,7 @@ const Topbar = () => {
         <div className="admin-topbar__titles">
           <div className="admin-topbar__title">Admin Control Tower</div>
           <div className="admin-topbar__subtitle">
-            Master Brain - Full System Control
+              Full System Control
           </div>
         </div>
       </div>
