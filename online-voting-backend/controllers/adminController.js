@@ -81,6 +81,12 @@ const notifyPartyUsers = async (partyId, { type = "info", title, message }) => {
   }
 };
 
+const toScore = (value, fallback = 0) => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return fallback;
+  return Math.max(0, Math.min(100, numeric));
+};
+
 // GET /api/admin/dashboard
 const getDashboardStats = async (req, res, next) => {
   try {
@@ -504,16 +510,89 @@ const getPartyAnalyticsDetailed = async (req, res, next) => {
     const party = await Party.findById(partyId).lean();
     if (!party) return next(new AppError("Party not found", 404));
 
+    const endedElections = await Election.find({
+      $or: [{ isEnded: true }, { status: "Ended" }, { endDate: { $lte: new Date() } }],
+    })
+      .select("_id title endDate")
+      .lean();
+    const endedIds = endedElections.map((item) => item._id);
+
+    let voteHistory = [];
+    if (endedIds.length) {
+      const voteRows = await Vote.aggregate([
+        {
+          $match: {
+            electionId: { $in: endedIds },
+            partyId: new mongoose.Types.ObjectId(partyId),
+          },
+        },
+        {
+          $group: {
+            _id: "$electionId",
+            votes: { $sum: 1 },
+          },
+        },
+      ]);
+
+      const voteByElectionId = new Map(
+        voteRows.map((row) => [row._id?.toString?.(), Number(row.votes || 0)]),
+      );
+
+      voteHistory = endedElections
+        .map((election) => {
+          const electionId = election._id.toString();
+          if (!voteByElectionId.has(electionId)) return null;
+          const year = election.endDate
+            ? new Date(election.endDate).getFullYear()
+            : new Date().getFullYear();
+          return {
+            year,
+            label: election.title || `Election ${year}`,
+            votes: voteByElectionId.get(electionId) || 0,
+            development: toScore(party.development ?? party.goodWorkPercent ?? 0),
+            goodWork: toScore(party.goodWork ?? party.goodWorkPercent ?? 0),
+            badWork: toScore(party.badWork ?? party.badWorkPercent ?? 0),
+          };
+        })
+        .filter(Boolean);
+    }
+
+    const manualHistory = Array.isArray(party.historicalData)
+      ? party.historicalData.map((item) => ({
+          year: Number(item.year || 0),
+          label: item.label || `Year ${item.year || ""}`,
+          votes: Number(item.votes || 0),
+          development: toScore(item.development ?? party.development ?? 0),
+          goodWork: toScore(item.goodWork ?? party.goodWork ?? 0),
+          badWork: toScore(item.badWork ?? party.badWork ?? 0),
+        }))
+      : [];
+
+    const mergedHistory = [...manualHistory, ...voteHistory].reduce((acc, row) => {
+      const key = `${row.year || ""}-${row.label || ""}`;
+      acc.set(key, row);
+      return acc;
+    }, new Map());
+
     res.json({
       data: {
         party: { name: party.name, logo: party.logo || party.symbol },
         overallScores: {
-          development: party.development || party.goodWorkPercent || 0,
-          goodWork: party.goodWork || party.goodWorkPercent || 0,
-          badWork: party.badWork || party.badWorkPercent || 0,
+          development: toScore(party.development || party.goodWorkPercent || 0),
+          goodWork: toScore(party.goodWork || party.goodWorkPercent || 0),
+          badWork: toScore(party.badWork || party.badWorkPercent || 0),
         },
-        detailedMetrics: party.detailedMetrics || {},
-        historicalData: party.historicalData || [],
+        detailedMetrics: {
+          infrastructure: toScore(party.detailedMetrics?.infrastructure),
+          healthcare: toScore(party.detailedMetrics?.healthcare),
+          education: toScore(party.detailedMetrics?.education),
+          policyFailures: toScore(party.detailedMetrics?.policyFailures),
+          corruptionCases: toScore(party.detailedMetrics?.corruptionCases),
+          publicComplaints: toScore(party.detailedMetrics?.publicComplaints),
+        },
+        historicalData: [...mergedHistory.values()].sort(
+          (a, b) => Number(b.year || 0) - Number(a.year || 0),
+        ),
         lastUpdated: party.updatedAt,
       },
     });
@@ -531,6 +610,8 @@ const updatePartyAnalyticsDetailed = async (req, res, next) => {
       goodWork,
       badWork,
       detailedMetrics = {},
+      historyEntry = null,
+      deleteHistoryYear = null,
       year,
       votes,
     } = req.body;
@@ -538,24 +619,78 @@ const updatePartyAnalyticsDetailed = async (req, res, next) => {
     const party = await Party.findById(partyId);
     if (!party) return next(new AppError("Party not found", 404));
 
-    if (development !== undefined) party.development = development;
-    if (goodWork !== undefined) party.goodWork = goodWork;
-    if (badWork !== undefined) party.badWork = badWork;
+    if (development !== undefined) party.development = toScore(development, party.development || 0);
+    if (goodWork !== undefined) party.goodWork = toScore(goodWork, party.goodWork || 0);
+    if (badWork !== undefined) party.badWork = toScore(badWork, party.badWork || 0);
 
     party.detailedMetrics = {
       ...party.detailedMetrics,
-      ...detailedMetrics,
+      ...(detailedMetrics && typeof detailedMetrics === "object"
+        ? Object.fromEntries(
+            Object.entries(detailedMetrics).map(([key, value]) => [key, toScore(value)]),
+          )
+        : {}),
     };
 
+    if (!Array.isArray(party.historicalData)) {
+      party.historicalData = [];
+    }
+
+    if (deleteHistoryYear !== null && deleteHistoryYear !== undefined) {
+      const targetYear = Number(deleteHistoryYear);
+      party.historicalData = party.historicalData.filter(
+        (item) => Number(item.year || 0) !== targetYear,
+      );
+    }
+
+    const incomingHistoryEntry =
+      historyEntry && typeof historyEntry === "object" ? historyEntry : null;
+    if (incomingHistoryEntry?.year) {
+      const entryYear = Number(incomingHistoryEntry.year);
+      const normalizedEntry = {
+        year: entryYear,
+        development: toScore(
+          incomingHistoryEntry.development ?? development ?? party.development,
+        ),
+        goodWork: toScore(incomingHistoryEntry.goodWork ?? goodWork ?? party.goodWork),
+        badWork: toScore(incomingHistoryEntry.badWork ?? badWork ?? party.badWork),
+        votes: Number(incomingHistoryEntry.votes || 0),
+        label: String(incomingHistoryEntry.label || "").trim(),
+      };
+      const existingIndex = party.historicalData.findIndex(
+        (item) => Number(item.year || 0) === entryYear,
+      );
+      if (existingIndex >= 0) {
+        party.historicalData[existingIndex] = {
+          ...party.historicalData[existingIndex],
+          ...normalizedEntry,
+        };
+      } else {
+        party.historicalData.push(normalizedEntry);
+      }
+    }
+
     if (year) {
+      const numericYear = Number(year);
       party.historicalData = party.historicalData || [];
-      party.historicalData.push({
-        year,
-        development: development ?? party.development,
-        goodWork: goodWork ?? party.goodWork,
-        badWork: badWork ?? party.badWork,
-        votes,
-      });
+      const normalized = {
+        year: numericYear,
+        development: toScore(development ?? party.development),
+        goodWork: toScore(goodWork ?? party.goodWork),
+        badWork: toScore(badWork ?? party.badWork),
+        votes: Number(votes || 0),
+      };
+      const existingIndex = party.historicalData.findIndex(
+        (item) => Number(item.year || 0) === numericYear,
+      );
+      if (existingIndex >= 0) {
+        party.historicalData[existingIndex] = {
+          ...party.historicalData[existingIndex],
+          ...normalized,
+        };
+      } else {
+        party.historicalData.push(normalized);
+      }
     }
 
     await party.save();

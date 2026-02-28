@@ -11,16 +11,16 @@ const escapeRegex = (value = "") => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 const resolveParty = async (req) => {
   let partyId = req.params.partyId || null;
 
-  if (!partyId) {
-    partyId = req.user?.partyId || null;
-  }
-
   if (!partyId && req.user?.role === "party" && req.user?.email) {
     const emailRegex = new RegExp(`^${escapeRegex(normalizeEmail(req.user.email))}$`, "i");
     const partyByEmail = await Party.findOne({ email: emailRegex }).sort({ createdAt: -1 });
     if (partyByEmail?._id) {
       partyId = partyByEmail._id;
     }
+  }
+
+  if (!partyId) {
+    partyId = req.user?.partyId || null;
   }
 
   if (!partyId) throw new AppError("Party ID not found", 400);
@@ -109,6 +109,13 @@ const sanitizeTeamMembers = (teamMembers = []) => {
     .filter((member) => Boolean(member.name));
 };
 
+const sanitizeGallery = (gallery = []) => {
+  if (!Array.isArray(gallery)) return [];
+  return gallery
+    .map((item) => String(item || "").trim())
+    .filter((item) => Boolean(item));
+};
+
 // GET /api/party/profile/:partyId?
 const getPartyProfileFull = async (req, res, next) => {
   try {
@@ -123,6 +130,13 @@ const getPartyProfileFull = async (req, res, next) => {
         manifesto: party.manifesto,
         logo: party.logo,
         teamMembers: party.teamMembers || [],
+        establishedDate: party.establishedDate || null,
+        headquarters: party.headquarters || "",
+        totalMembers: Number(party.totalMembers || 0),
+        electionWins: Number(party.electionWins || party.totalWins || 0),
+        gallery: sanitizeGallery(party.gallery || []),
+        contact: party.contact || {},
+        socialMedia: party.socialMedia || {},
         isEditingLocked: isEditingLocked(election),
       },
     });
@@ -140,11 +154,35 @@ const updatePartyProfileFull = async (req, res, next) => {
       return next(new AppError("Editing locked within 24 hours of election start", 403));
     }
 
-    const allowed = ["name", "leader", "vision", "manifesto", "teamMembers", "logo"];
+    const allowed = [
+      "name",
+      "leader",
+      "vision",
+      "manifesto",
+      "teamMembers",
+      "logo",
+      "establishedDate",
+      "headquarters",
+      "totalMembers",
+      "electionWins",
+      "gallery",
+      "contact",
+      "socialMedia",
+    ];
     allowed.forEach((field) => {
       if (req.body[field] !== undefined) {
         if (field === "teamMembers") {
           party.teamMembers = sanitizeTeamMembers(req.body.teamMembers);
+        } else if (field === "gallery") {
+          party.gallery = sanitizeGallery(req.body.gallery);
+        } else if (field === "totalMembers" || field === "electionWins") {
+          const numericValue = Number(req.body[field] || 0);
+          party[field] = Number.isFinite(numericValue) ? numericValue : 0;
+        } else if (field === "contact" || field === "socialMedia") {
+          party[field] =
+            req.body[field] && typeof req.body[field] === "object"
+              ? req.body[field]
+              : {};
         } else {
           party[field] = req.body[field];
         }

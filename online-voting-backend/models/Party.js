@@ -182,6 +182,20 @@ const partySchema = new mongoose.Schema(
       publicComplaints: { type: Number, default: 0 },
     },
 
+    goodWorkBreakdown: [
+      {
+        label: { type: String },
+        value: { type: Number, default: 0 },
+      },
+    ],
+
+    badWorkBreakdown: [
+      {
+        label: { type: String },
+        value: { type: Number, default: 0 },
+      },
+    ],
+
     documents: {
       type: [mongoose.Schema.Types.Mixed],
       default: [],
@@ -189,11 +203,15 @@ const partySchema = new mongoose.Schema(
 
     historicalData: [
       {
+        electionId: { type: mongoose.Schema.Types.ObjectId, ref: "Election" },
         year: Number,
+        label: String,
         development: Number,
         goodWork: Number,
         badWork: Number,
         votes: Number,
+        won: { type: Boolean, default: false },
+        totalParties: Number,
       },
     ],
 

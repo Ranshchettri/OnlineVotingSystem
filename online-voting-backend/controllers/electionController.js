@@ -1,7 +1,12 @@
 const Election = require("../models/Election");
 const User = require("../models/User");
 const sendEmail = require("../utils/email");
-const { notifyElectionToParties } = require("../utils/electionPartyNotifications");
+const {
+  notifyElectionToParties,
+  notifyElectionOutcomeToParties,
+  ensureElectionAnalyticsSnapshot,
+  finalizeElectionAnalyticsSnapshot,
+} = require("../utils/electionPartyNotifications");
 
 const deriveElectionState = (election, now = new Date()) => {
   const start = election.startDate ? new Date(election.startDate) : null;
@@ -61,17 +66,20 @@ const syncElectionState = async (election, now = new Date()) => {
 
     const nextStatus = String(derived.status || "").toLowerCase();
     if (previousStatus !== "running" && nextStatus === "running") {
+      await ensureElectionAnalyticsSnapshot(election);
       await notifyElectionToParties(election, {
         type: "success",
         title: "Election started",
         message: `${election.title} is now running. Live voting has started.`,
       }, { includeActiveFallback: true });
     } else if (previousStatus !== "ended" && nextStatus === "ended") {
+      await finalizeElectionAnalyticsSnapshot(election);
       await notifyElectionToParties(election, {
         type: "warning",
         title: "Election ended",
         message: `${election.title} has ended. Results will be published soon.`,
       }, { includeActiveFallback: true });
+      await notifyElectionOutcomeToParties(election);
     }
   }
 

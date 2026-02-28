@@ -1,6 +1,7 @@
 const Party = require("../models/Party");
 const User = require("../models/User");
 const Notification = require("../models/Notification");
+const Vote = require("../models/Vote");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const AppError = require("../utils/AppError");
@@ -154,6 +155,53 @@ const notifyPartyAccounts = async (partyId, payload = {}) => {
   }
 };
 
+const calculatePartyWinCount = async (partyId) => {
+  const endedElections = await Election.find({
+    $or: [{ status: "Ended" }, { isEnded: true }, { endDate: { $lte: new Date() } }],
+  })
+    .select("_id")
+    .lean();
+
+  if (!endedElections.length) return 0;
+
+  const endedIds = endedElections.map((item) => item._id);
+  const rows = await Vote.aggregate([
+    { $match: { electionId: { $in: endedIds }, partyId: { $ne: null } } },
+    {
+      $group: {
+        _id: { electionId: "$electionId", partyId: "$partyId" },
+        votes: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const byElection = rows.reduce((acc, row) => {
+    const electionId = row._id?.electionId?.toString?.();
+    if (!electionId) return acc;
+    if (!acc[electionId]) acc[electionId] = [];
+    acc[electionId].push({
+      partyId: row._id?.partyId?.toString?.(),
+      votes: Number(row.votes || 0),
+    });
+    return acc;
+  }, {});
+
+  let wins = 0;
+  endedElections.forEach((election) => {
+    const list = Array.isArray(byElection[election._id.toString()])
+      ? byElection[election._id.toString()]
+      : [];
+    if (!list.length) return;
+    const topVotes = Math.max(...list.map((item) => Number(item.votes || 0)));
+    const ownVotes = Number(
+      list.find((item) => item.partyId === partyId.toString())?.votes || 0,
+    );
+    if (ownVotes > 0 && ownVotes === topVotes) wins += 1;
+  });
+
+  return wins;
+};
+
 const formatPartyPayload = (party, index = 0) => ({
   _id: party._id,
   electionId: party.electionId || null,
@@ -172,6 +220,19 @@ const formatPartyPayload = (party, index = 0) => ({
   goodWork: party.goodWork ?? party.goodWorkPercent ?? 0,
   badWork: party.badWork ?? party.badWorkPercent ?? 0,
   totalVotes: party.currentVotes || 0,
+  establishedDate: party.establishedDate || null,
+  headquarters: party.headquarters || "",
+  totalMembers: Number(party.totalMembers || 0),
+  electionWins: Number(party.electionWins || party.totalWins || 0),
+  goodWorkBreakdown: Array.isArray(party.goodWorkBreakdown)
+    ? party.goodWorkBreakdown
+    : [],
+  badWorkBreakdown: Array.isArray(party.badWorkBreakdown)
+    ? party.badWorkBreakdown
+    : [],
+  gallery: Array.isArray(party.gallery) ? party.gallery : [],
+  contact: party.contact || {},
+  socialMedia: party.socialMedia || {},
   documents: normalizePartyDocuments(party.documents || []),
   createdAt: party.createdAt,
   registeredAt: party.createdAt,
@@ -215,11 +276,19 @@ const getPartyProfile = async (req, res, next) => {
 
     if (!party) return next(new AppError("Party not found", 404));
 
+    const computedWins = await calculatePartyWinCount(party._id);
+    if (Number.isFinite(computedWins) && party.electionWins !== computedWins) {
+      party.electionWins = computedWins;
+      await party.save();
+    }
+
     const resp = {
       ...formatPartyPayload(party),
       vision: party.vision || "",
       futurePlans: Array.isArray(party.futurePlans) ? party.futurePlans : [],
       teamMembers: Array.isArray(party.teamMembers) ? party.teamMembers : [],
+      manifesto: party.manifesto || "",
+      electionWins: computedWins,
     };
 
     res.status(200).json({ data: { party: resp } });
@@ -282,7 +351,7 @@ const createParty = async (req, res, next) => {
       electionType = "Political";
     }
 
-    const resolvedIsActive = typeof isActive === "boolean" ? isActive : true;
+    const resolvedIsActive = false;
     const normalizedDocuments = normalizePartyDocuments(documents || req.body.documentData);
 
     const party = new Party({
@@ -296,7 +365,7 @@ const createParty = async (req, res, next) => {
       description,
       color,
       isActive: resolvedIsActive,
-      status: resolvedIsActive ? "approved" : "rejected",
+      status: "pending",
       electionId: electionId || undefined,
       electionType,
       documents: normalizedDocuments,
@@ -425,20 +494,22 @@ const deleteParty = async (req, res, next) => {
 
 // 🔴 GET PARTY DASHBOARD (Party Only)
 const resolvePartyIdForUser = async (user = {}) => {
-  if (user?.partyId) return user.partyId;
   const normalizedEmail = normalizeEmail(user?.email);
-  if (!normalizedEmail) return null;
+  if (normalizedEmail) {
+    const partyByEmail = await Party.findOne({
+      email: { $regex: `^${escapeRegex(normalizedEmail)}$`, $options: "i" },
+    }).sort({ createdAt: -1 });
 
-  const partyByEmail = await Party.findOne({
-    email: { $regex: `^${escapeRegex(normalizedEmail)}$`, $options: "i" },
-  }).sort({ createdAt: -1 });
+    if (partyByEmail?._id) {
+      await User.findByIdAndUpdate(user._id, { partyId: partyByEmail._id }).catch(
+        () => {},
+      );
+      return partyByEmail._id;
+    }
+  }
 
-  if (!partyByEmail?._id) return null;
-
-  await User.findByIdAndUpdate(user._id, { partyId: partyByEmail._id }).catch(
-    () => {},
-  );
-  return partyByEmail._id;
+  if (user?.partyId) return user.partyId;
+  return null;
 };
 
 const getPartyDashboard = async (req, res, next) => {
