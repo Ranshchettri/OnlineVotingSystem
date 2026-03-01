@@ -46,9 +46,9 @@ export default function PartyPerformance() {
   }, []);
 
   const stats = [
-    { label: "Total Wins", value: Number(summary.totalWins || 0), icon: "trophy" },
-    { label: "Average Votes", value: formatCompactVotes(summary.averageVotes), icon: "votes" },
-    { label: "Win Rate", value: summary.winRate || "0%", icon: "trend" },
+    { label: "Total Wins", value: Number(summary.totalWins || 0), icon: "trophy", tone: "green" },
+    { label: "Average Votes", value: formatCompactVotes(summary.averageVotes), icon: "votes", tone: "blue" },
+    { label: "Win Rate", value: summary.winRate || "0%", icon: "trend", tone: "orange" },
   ];
 
   return (
@@ -63,7 +63,7 @@ export default function PartyPerformance() {
       <div className="performance-stats">
         {stats.map((stat) => (
           <div key={stat.label} className="performance-stat">
-            <div className="performance-stat-icon">
+            <div className={`performance-stat-icon ${stat.tone || ""}`}>
               <StatIcon type={stat.icon} />
             </div>
             <div>

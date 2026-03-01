@@ -10,6 +10,50 @@ const defaults = {
   logoText: "P",
 };
 
+const toInputDate = (value) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 10);
+};
+
+const mapProfileToState = (party = {}) => ({
+  name: party.name || "",
+  leader: party.leader || "",
+  vision: party.vision || party.mission || "",
+  logoImage: party.logo || "",
+  team: (Array.isArray(party.teamMembers) ? party.teamMembers : []).map((m, idx) => ({
+    ...m,
+    id: m.id || `${m.name || "member"}-${idx}`,
+    name: String(m.name || "").trim(),
+    role: m.role || m.position || "",
+    photo: m.photo || "",
+  })),
+  establishedDate: toInputDate(party.establishedDate),
+  headquarters: party.headquarters || "",
+  totalMembers: Number(party.totalMembers || 0),
+  electionWins: Number(party.electionWins || 0),
+  gallery: Array.isArray(party.gallery) ? party.gallery : [],
+  contact: {
+    address: party.contact?.address || "",
+    phone: party.contact?.phone || "",
+    email: party.contact?.email || "",
+  },
+  socialMedia: {
+    website: party.socialMedia?.website || "",
+    facebook: party.socialMedia?.facebook || "",
+    twitter: party.socialMedia?.twitter || "",
+  },
+});
+
+const readAsDataUrl = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.readAsDataURL(file);
+  });
+
 export default function PartyHome() {
   const [saved, setSaved] = useState({
     name: "",
@@ -63,29 +107,10 @@ export default function PartyHome() {
       try {
         const res = await api.get("/parties/profile/full");
         const party = res.data?.data || {};
+        const mappedRaw = mapProfileToState(party);
         const mapped = {
-          name: party.name || "",
-          leader: party.leader || "",
-          vision: party.vision || party.mission || "",
-          logoImage: party.logo || "",
-          team: normalizeTeamForUi(party.teamMembers || []),
-          establishedDate: party.establishedDate
-            ? new Date(party.establishedDate).toISOString().slice(0, 10)
-            : "",
-          headquarters: party.headquarters || "",
-          totalMembers: Number(party.totalMembers || 0),
-          electionWins: Number(party.electionWins || 0),
-          gallery: Array.isArray(party.gallery) ? party.gallery : [],
-          contact: {
-            address: party.contact?.address || "",
-            phone: party.contact?.phone || "",
-            email: party.contact?.email || "",
-          },
-          socialMedia: {
-            website: party.socialMedia?.website || "",
-            facebook: party.socialMedia?.facebook || "",
-            twitter: party.socialMedia?.twitter || "",
-          },
+          ...mappedRaw,
+          team: normalizeTeamForUi(mappedRaw.team || []),
         };
         setSaved(mapped);
         setIsLocked(Boolean(party.isEditingLocked));
@@ -154,15 +179,15 @@ export default function PartyHome() {
         establishedDate: next.establishedDate || null,
         headquarters: next.headquarters,
         totalMembers: Number(next.totalMembers || 0),
-        electionWins: Number(next.electionWins || 0),
         gallery: Array.isArray(next.gallery) ? next.gallery : [],
         contact: next.contact || {},
         socialMedia: next.socialMedia || {},
       });
-
+      const profileRes = await api.get("/parties/profile/full");
+      const mappedRaw = mapProfileToState(profileRes.data?.data || {});
       const synced = {
-        ...next,
-        team: normalizeTeamForUi(teamMembers),
+        ...mappedRaw,
+        team: normalizeTeamForUi(mappedRaw.team || teamMembers),
       };
       setSaved(synced);
       setDraft(clone(synced));
@@ -251,16 +276,19 @@ export default function PartyHome() {
     reader.readAsDataURL(file);
   };
 
-  const handleGalleryAdd = (file) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
+  const handleGalleryAdd = async (files = []) => {
+    const selectedFiles = Array.from(files || []).filter(Boolean);
+    if (!selectedFiles.length) return;
+
+    try {
+      const images = await Promise.all(selectedFiles.map((file) => readAsDataUrl(file)));
       setDraft((prev) => ({
         ...prev,
-        gallery: [...(Array.isArray(prev.gallery) ? prev.gallery : []), reader.result],
+        gallery: [...(Array.isArray(prev.gallery) ? prev.gallery : []), ...images],
       }));
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      setSaveMessage("Failed to add selected images.");
+    }
   };
 
   const removeGalleryImage = (index) => {
@@ -392,8 +420,9 @@ export default function PartyHome() {
                       type="number"
                       min="0"
                       value={draft.electionWins || 0}
-                      disabled={isLocked}
-                      onChange={(event) => updateField("electionWins", Number(event.target.value || 0))}
+                      disabled
+                      readOnly
+                      title="Auto-calculated from ended elections"
                     />
                   </label>
                 </div>
@@ -526,8 +555,9 @@ export default function PartyHome() {
               <input
                 type="file"
                 accept="image/*"
+                multiple
                 disabled={isLocked}
-                onChange={(event) => handleGalleryAdd(event.target.files[0])}
+                onChange={(event) => handleGalleryAdd(event.target.files)}
               />
               <i className="ri-add-line" aria-hidden="true" />
               Add Photo
@@ -570,7 +600,7 @@ export default function PartyHome() {
                 placeholder="Baneshwor, Kathmandu, Nepal"
               />
             ) : (
-              <strong>{saved.contact?.address || "-"}</strong>
+              <div className="party-contact-value">{saved.contact?.address || "-"}</div>
             )}
           </label>
           <label>
@@ -583,7 +613,7 @@ export default function PartyHome() {
                 placeholder="+977-1-4900000"
               />
             ) : (
-              <strong>{saved.contact?.phone || "-"}</strong>
+              <div className="party-contact-value">{saved.contact?.phone || "-"}</div>
             )}
           </label>
           <label>
@@ -596,7 +626,13 @@ export default function PartyHome() {
                 placeholder="info@party.gov.np"
               />
             ) : (
-              <strong>{saved.contact?.email || "-"}</strong>
+              <div className="party-contact-value">
+                {saved.contact?.email ? (
+                  <a href={`mailto:${saved.contact.email}`}>{saved.contact.email}</a>
+                ) : (
+                  "-"
+                )}
+              </div>
             )}
           </label>
         </div>
@@ -615,7 +651,15 @@ export default function PartyHome() {
                 placeholder="https://party.gov.np"
               />
             ) : (
-              <strong>{saved.socialMedia?.website || "-"}</strong>
+              <div className="party-contact-value">
+                {saved.socialMedia?.website ? (
+                  <a href={saved.socialMedia.website} target="_blank" rel="noreferrer">
+                    {saved.socialMedia.website}
+                  </a>
+                ) : (
+                  "-"
+                )}
+              </div>
             )}
           </label>
           <label>
@@ -628,7 +672,15 @@ export default function PartyHome() {
                 placeholder="https://facebook.com/party"
               />
             ) : (
-              <strong>{saved.socialMedia?.facebook || "-"}</strong>
+              <div className="party-contact-value">
+                {saved.socialMedia?.facebook ? (
+                  <a href={saved.socialMedia.facebook} target="_blank" rel="noreferrer">
+                    {saved.socialMedia.facebook}
+                  </a>
+                ) : (
+                  "-"
+                )}
+              </div>
             )}
           </label>
           <label>
@@ -641,7 +693,15 @@ export default function PartyHome() {
                 placeholder="https://x.com/party"
               />
             ) : (
-              <strong>{saved.socialMedia?.twitter || "-"}</strong>
+              <div className="party-contact-value">
+                {saved.socialMedia?.twitter ? (
+                  <a href={saved.socialMedia.twitter} target="_blank" rel="noreferrer">
+                    {saved.socialMedia.twitter}
+                  </a>
+                ) : (
+                  "-"
+                )}
+              </div>
             )}
           </label>
         </div>

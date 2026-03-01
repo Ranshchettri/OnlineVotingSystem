@@ -500,6 +500,40 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.topic-editor-list {
+  margin-top: 8px;
+  display: grid;
+  gap: 8px;
+}
+
+.topic-editor-row {
+  display: grid;
+  grid-template-columns: 1fr 110px 38px;
+  gap: 8px;
+  align-items: center;
+}
+
+.topic-editor-row input {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  border-radius: 8px;
+  padding: 7px 8px;
+  font-size: 12px;
+}
+
+.topic-add-btn {
+  justify-self: start;
+}
+
+.topic-remove-btn {
+  width: 34px;
+  height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .topic-input-row {
   display: grid;
   gap: 6px;

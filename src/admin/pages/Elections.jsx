@@ -1,6 +1,7 @@
 ﻿import { useEffect, useState } from "react";
 import api from "../../services/api";
 import Emblem from "../../assets/nepal-emblem.svg";
+import { getPartyLogoSrc, getPartyShortLabel } from "../../shared/utils/partyDisplay";
 import "../styles/elections.css";
 
 const formatDate = (value) => {
@@ -162,27 +163,38 @@ export default function Elections() {
       const mappedParties = standings.map((item, index) => {
         const meta = partyByName.get(String(item.name || "").toLowerCase()) || {};
         const percent = Number(item.percentage || 0);
+        const logo = getPartyLogoSrc({
+          logo: item.logo || meta.logo || meta.symbol,
+          symbol: item.symbol || meta.symbol,
+          image: meta.image,
+          avatar: meta.avatar,
+        });
         return {
           name: item.name || "Party",
           leader: meta.leader || "N/A",
           votes: Number(item.votes || 0),
           percentage: `${percent.toFixed(1)}%`,
           color: item.color || meta.color || "#2563eb",
-          logo: item.logo || meta.logo || meta.symbol || "",
+          logo,
           rank: Number(item.rank || index + 1),
+          shortLabel: getPartyShortLabel({ ...item, ...meta, logo }, "P"),
         };
       });
 
       const fallbackSnapshot = allParties
-        .filter((party) => party.status !== "BLOCKED" && party.isActive !== false)
+        .filter((party) => {
+          const status = String(party.status || "").toUpperCase();
+          return !["BLOCKED", "REJECTED", "PENDING"].includes(status) && party.isActive !== false;
+        })
         .map((party, index) => ({
           name: party.name || "Party",
           leader: party.leader || "N/A",
           votes: 0,
           percentage: "0.0%",
           color: party.color || "#2563eb",
-          logo: party.logo || party.symbol || "",
+          logo: getPartyLogoSrc(party),
           rank: index + 1,
+          shortLabel: getPartyShortLabel(party, "P"),
         }));
 
       setExportElection({
@@ -460,7 +472,7 @@ export default function Elections() {
                   <div className="election-title">{election.title}</div>
                   <div className="election-tags">
                     <span
-                      className={`admin-pill ${
+                      className={`admin-pill election-status-pill ${
                         election.status?.toLowerCase() === "running"
                           ? "green"
                           : election.status?.toLowerCase() === "upcoming"
@@ -468,6 +480,7 @@ export default function Elections() {
                             : "red"
                       }`}
                     >
+                      <i className="ri-checkbox-blank-circle-fill" aria-hidden="true" />
                       {election.status}
                     </span>
                     <span className="admin-pill purple">{election.type}</span>
@@ -520,7 +533,7 @@ export default function Elections() {
                 </div>
                 <div>
                   <div className="stat-label">Turnout</div>
-                  <div className="stat-number">{election.turnout || "â€”"}</div>
+                  <div className="stat-number">{election.turnout || "-"}</div>
                 </div>
                 <div>
                   <div className="stat-label">Auto Close</div>
@@ -587,7 +600,7 @@ export default function Elections() {
                   />
                 </label>
               </div>
-              <div className="checkbox-grid">
+              <div className="checkbox-stack">
                 <label>
                   <input
                     type="checkbox"
@@ -713,7 +726,7 @@ export default function Elections() {
                   Party vote snapshot
                 </div>
                 <div className="export-table-body">
-                  {(exportElection.parties || []).slice(0, 4).map((party, idx) => (
+                  {(exportElection.parties || []).map((party, idx) => (
                     <div key={party.name} className="export-table-row">
                       <span className="pill-id">#{idx + 1}</span>
                       <div className="export-party-meta">
@@ -722,7 +735,7 @@ export default function Elections() {
                             <img src={party.logo} alt={party.name} className="export-party-logo" />
                           ) : (
                             <span className="export-party-logo-fallback">
-                              {String(party.name || "P").slice(0, 1).toUpperCase()}
+                              {party.shortLabel || String(party.name || "P").slice(0, 1).toUpperCase()}
                             </span>
                           )}
                           {party.name}

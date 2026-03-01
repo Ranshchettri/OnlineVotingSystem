@@ -70,9 +70,12 @@ export default function PartyProfile() {
   const contact = party.contact || {};
   const socialMedia = party.socialMedia || {};
   const detailedMetrics = party.detailedMetrics || {};
-  const workTotal = goodWork + badWork;
-  const goodSlice = workTotal > 0 ? Number(((goodWork / workTotal) * 100).toFixed(1)) : 50;
-  const badSlice = Number((100 - goodSlice).toFixed(1));
+  const goodWorkBreakdown = Array.isArray(party.goodWorkBreakdown)
+    ? party.goodWorkBreakdown
+    : [];
+  const badWorkBreakdown = Array.isArray(party.badWorkBreakdown)
+    ? party.badWorkBreakdown
+    : [];
 
   return (
     <div className="party-profile">
@@ -144,16 +147,22 @@ export default function PartyProfile() {
         <div className="metric-card">
           <h4>Work Analysis</h4>
           <p className="metric-note">Good and bad work percentages.</p>
-          <div
-            className="work-chart"
-            style={{
-              "--good-slice": `${goodSlice}%`,
-              "--bad-slice": `${badSlice}%`,
-            }}
-          >
-            <div className="work-chart-inner">
-              <strong>{goodWork}%</strong>
-              <span>Good Work</span>
+          <div className="work-analysis-rings">
+            <div className="work-ring-wrap">
+              <div className="ring" style={{ "--percent": goodWork, "--ring-color": "#16a34a" }}>
+                <div className="ring-inner">
+                  <div className="ring-value">{goodWork}%</div>
+                  <div className="ring-label">Good Work</div>
+                </div>
+              </div>
+            </div>
+            <div className="work-ring-wrap">
+              <div className="ring" style={{ "--percent": badWork, "--ring-color": "#dc2626" }}>
+                <div className="ring-inner">
+                  <div className="ring-value">{badWork}%</div>
+                  <div className="ring-label">Bad Work</div>
+                </div>
+              </div>
             </div>
           </div>
           <div className="work-grid">
@@ -163,15 +172,27 @@ export default function PartyProfile() {
           <div className="party-breakdown-grid">
             <div className="party-breakdown good">
               <strong>Good Work Breakdown</strong>
-              <p>Infrastructure: {clampPercent(detailedMetrics.infrastructure)}%</p>
-              <p>Healthcare: {clampPercent(detailedMetrics.healthcare)}%</p>
-              <p>Education: {clampPercent(detailedMetrics.education)}%</p>
+              {(goodWorkBreakdown.length > 0 ? goodWorkBreakdown : [
+                { label: "Infrastructure", value: clampPercent(detailedMetrics.infrastructure) },
+                { label: "Healthcare", value: clampPercent(detailedMetrics.healthcare) },
+                { label: "Education", value: clampPercent(detailedMetrics.education) },
+              ]).map((item, index) => (
+                <p key={`good-breakdown-${index}`}>
+                  {item.label}: {clampPercent(item.value)}%
+                </p>
+              ))}
             </div>
             <div className="party-breakdown bad">
               <strong>Bad Work Breakdown</strong>
-              <p>Policy failures: {clampPercent(detailedMetrics.policyFailures)}%</p>
-              <p>Corruption cases: {clampPercent(detailedMetrics.corruptionCases)}%</p>
-              <p>Public complaints: {clampPercent(detailedMetrics.publicComplaints)}%</p>
+              {(badWorkBreakdown.length > 0 ? badWorkBreakdown : [
+                { label: "Policy failures", value: clampPercent(detailedMetrics.policyFailures) },
+                { label: "Corruption cases", value: clampPercent(detailedMetrics.corruptionCases) },
+                { label: "Public complaints", value: clampPercent(detailedMetrics.publicComplaints) },
+              ]).map((item, index) => (
+                <p key={`bad-breakdown-${index}`}>
+                  {item.label}: {clampPercent(item.value)}%
+                </p>
+              ))}
             </div>
           </div>
         </div>
@@ -229,29 +250,75 @@ export default function PartyProfile() {
       ) : null}
 
       <div className="party-section metric-card">
-        <h3>Contact Information</h3>
+        <h3>
+          <i className="ri-contacts-book-2-line" aria-hidden="true" /> Contact Information
+        </h3>
         <div className="party-contact-grid">
-          <div>
-            <span>Office Address</span>
-            <strong>{contact.address || party.headquarters || "-"}</strong>
+          <div className="party-contact-item">
+            <span className="party-contact-icon">
+              <i className="ri-map-pin-line" aria-hidden="true" />
+            </span>
+            <div>
+              <span>Office Address</span>
+              <strong>{contact.address || party.headquarters || "-"}</strong>
+            </div>
           </div>
-          <div>
-            <span>Phone Number</span>
-            <strong>{contact.phone || "-"}</strong>
+          <div className="party-contact-item">
+            <span className="party-contact-icon">
+              <i className="ri-phone-line" aria-hidden="true" />
+            </span>
+            <div>
+              <span>Phone Number</span>
+              <strong>{contact.phone || "-"}</strong>
+            </div>
           </div>
-          <div>
-            <span>Email Address</span>
-            <strong>{contact.email || party.email || "-"}</strong>
+          <div className="party-contact-item">
+            <span className="party-contact-icon">
+              <i className="ri-mail-line" aria-hidden="true" />
+            </span>
+            <div>
+              <span>Email Address</span>
+              <strong>{contact.email || party.email || "-"}</strong>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="party-section metric-card">
-        <h3>Follow Us on Social Media</h3>
+        <h3>
+          <i className="ri-share-forward-line" aria-hidden="true" /> Follow Us on Social Media
+        </h3>
         <div className="party-social-row">
-          <span>{socialMedia.facebook || "-"}</span>
-          <span>{socialMedia.twitter || "-"}</span>
-          <span>{socialMedia.website || "-"}</span>
+          <a
+            href={socialMedia.facebook || "#"}
+            target="_blank"
+            rel="noreferrer"
+            className="party-social-link"
+            onClick={(event) => !socialMedia.facebook && event.preventDefault()}
+          >
+            <i className="ri-facebook-fill" aria-hidden="true" />
+            Facebook
+          </a>
+          <a
+            href={socialMedia.twitter || "#"}
+            target="_blank"
+            rel="noreferrer"
+            className="party-social-link"
+            onClick={(event) => !socialMedia.twitter && event.preventDefault()}
+          >
+            <i className="ri-twitter-x-line" aria-hidden="true" />
+            Twitter
+          </a>
+          <a
+            href={socialMedia.website || "#"}
+            target="_blank"
+            rel="noreferrer"
+            className="party-social-link"
+            onClick={(event) => !socialMedia.website && event.preventDefault()}
+          >
+            <i className="ri-global-line" aria-hidden="true" />
+            Official Website
+          </a>
         </div>
       </div>
 

@@ -15,6 +15,8 @@ export default function PartyProgress() {
     goodWork: 0,
     badWork: 0,
     detailedMetrics: {},
+    goodWorkBreakdown: [],
+    badWorkBreakdown: [],
   });
   const [loading, setLoading] = useState(true);
 
@@ -34,6 +36,12 @@ export default function PartyProgress() {
           goodWork: clampPercent(payload.goodWork),
           badWork: clampPercent(payload.badWork),
           detailedMetrics: payload.detailedMetrics || {},
+          goodWorkBreakdown: Array.isArray(payload.goodWorkBreakdown)
+            ? payload.goodWorkBreakdown
+            : [],
+          badWorkBreakdown: Array.isArray(payload.badWorkBreakdown)
+            ? payload.badWorkBreakdown
+            : [],
         });
       } catch (err) {
         console.error("Failed to load party progress", err.message);
@@ -54,17 +62,31 @@ export default function PartyProgress() {
     );
   }
 
-  const developmentAreas = [
-    { label: "Infrastructure", key: "infrastructure" },
-    { label: "Healthcare", key: "healthcare" },
-    { label: "Education", key: "education" },
-  ];
+  const developmentAreas =
+    Array.isArray(data.goodWorkBreakdown) && data.goodWorkBreakdown.length > 0
+      ? data.goodWorkBreakdown.map((item, index) => ({
+          key: `good-${index}`,
+          label: item.label,
+          value: clampPercent(item.value),
+        }))
+      : [
+          { label: "Infrastructure", key: "infrastructure", value: clampPercent(data.detailedMetrics.infrastructure) },
+          { label: "Healthcare", key: "healthcare", value: clampPercent(data.detailedMetrics.healthcare) },
+          { label: "Education", key: "education", value: clampPercent(data.detailedMetrics.education) },
+        ];
 
-  const damageAreas = [
-    { label: "Policy Failures", key: "policyFailures" },
-    { label: "Corruption Cases", key: "corruptionCases" },
-    { label: "Public Complaints", key: "publicComplaints" },
-  ];
+  const damageAreas =
+    Array.isArray(data.badWorkBreakdown) && data.badWorkBreakdown.length > 0
+      ? data.badWorkBreakdown.map((item, index) => ({
+          key: `bad-${index}`,
+          label: item.label,
+          value: clampPercent(item.value),
+        }))
+      : [
+          { label: "Policy Failures", key: "policyFailures", value: clampPercent(data.detailedMetrics.policyFailures) },
+          { label: "Corruption Cases", key: "corruptionCases", value: clampPercent(data.detailedMetrics.corruptionCases) },
+          { label: "Public Complaints", key: "publicComplaints", value: clampPercent(data.detailedMetrics.publicComplaints) },
+        ];
 
   return (
     <div className="party-page">
@@ -101,7 +123,7 @@ export default function PartyProgress() {
             {developmentAreas.map((item) => (
               <div key={item.key} className="progress-bar-row success">
                 <span>{item.label}</span>
-                <strong>{clampPercent(data.detailedMetrics[item.key])}%</strong>
+                <strong>{clampPercent(item.value)}%</strong>
               </div>
             ))}
           </div>
@@ -122,7 +144,7 @@ export default function PartyProgress() {
             {damageAreas.map((item) => (
               <div key={item.key} className="progress-bar-row danger">
                 <span>{item.label}</span>
-                <strong>{clampPercent(data.detailedMetrics[item.key])}%</strong>
+                <strong>{clampPercent(item.value)}%</strong>
               </div>
             ))}
           </div>

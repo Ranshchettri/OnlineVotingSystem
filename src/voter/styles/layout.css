@@ -64,8 +64,16 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
-  height: 110px;
   flex: 1;
+}
+
+.voter-sidebar-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #e2e8f0 12%, #e2e8f0 88%, transparent);
+}
+
+.voter-sidebar-divider.bottom {
+  margin-top: auto;
 }
 
 .voter-nav-link {

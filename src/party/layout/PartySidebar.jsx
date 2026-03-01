@@ -97,6 +97,8 @@ export default function PartySidebar() {
         </div>
       </div>
 
+      <div className="party-sidebar-divider" />
+
       <nav className="party-nav">
         {navItems.map((item) => (
           <NavLink
@@ -113,6 +115,8 @@ export default function PartySidebar() {
           </NavLink>
         ))}
       </nav>
+
+      <div className="party-sidebar-divider bottom" />
 
       <div className="party-deadline">
         <strong className="party-deadline-title">

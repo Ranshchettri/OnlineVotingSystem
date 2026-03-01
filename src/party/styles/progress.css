@@ -122,6 +122,15 @@
   color: var(--gray-500);
 }
 
+.work-analysis .progress-ring-value {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.work-analysis .progress-ring {
+  margin-top: 8px;
+}
+
 .progress-note {
   margin-top: 12px ;
   font-size: 13px;

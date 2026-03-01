@@ -169,8 +169,8 @@
   position: absolute;
   top: -10px;
   right: -10px;
-  width: 42px;
-  height: 42px;
+  width: 46px;
+  height: 46px;
   border-radius: 999px;
   background: var(--green-600);
   color: #fff;
@@ -186,7 +186,7 @@
 }
 
 .vparty-check i {
-  font-size: 22px;
+  font-size: 24px;
   line-height: 1;
 }
 
@@ -255,6 +255,18 @@
 .vparty-score {
   font-size: 13px;
   font-weight: 600;
+  color: var(--gray-900);
+}
+
+.vparty-dev-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.vparty-dev-head strong {
+  font-size: 13px;
   color: var(--gray-900);
 }
 
@@ -493,7 +505,7 @@
 
 /* Face verification modal */
 .face-modal {
-  width: min(560px, 100%);
+  width: min(410px, 100%);
   background: #fff;
   border-radius: 12px;
   border: 1px solid var(--gray-200);
@@ -601,6 +613,7 @@
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
+  max-height: 210px;
   border-radius: 14px;
   overflow: hidden;
   background: #0f172a;

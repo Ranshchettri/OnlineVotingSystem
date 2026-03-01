@@ -80,6 +80,8 @@ export default function Sidebar() {
         </div>
       </div>
 
+      <div className="voter-sidebar-divider" />
+
       <nav className="voter-nav">
         {navItems.map((item, index) => (
           <NavLink
@@ -97,6 +99,8 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </nav>
+
+      <div className="voter-sidebar-divider bottom" />
 
       <div className="voter-status-card">
         <div className="voter-status-title">

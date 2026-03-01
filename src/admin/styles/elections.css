@@ -111,6 +111,35 @@
   align-items: center;
 }
 
+.admin-elections .election-status-pill {
+  border: 1px solid transparent;
+  padding: 6px 12px;
+  font-weight: 700;
+}
+
+.admin-elections .election-status-pill i {
+  font-size: 8px;
+  opacity: 0.9;
+}
+
+.admin-elections .election-status-pill.green {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #166534;
+}
+
+.admin-elections .election-status-pill.blue {
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+.admin-elections .election-status-pill.red {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
 .election-actions {
   display: flex;
   gap: 8px;
@@ -509,6 +538,34 @@
   place-items: center;
   font-size: 18px;
   overflow: hidden;
+}
+
+.checkbox-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.checkbox-stack label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.checkbox-stack input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #2563eb;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 .export-icon img {

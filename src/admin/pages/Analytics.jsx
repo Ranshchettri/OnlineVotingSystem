@@ -43,6 +43,14 @@ const buildTopicRows = (detailedMetrics = {}, mode = "good") => {
   }));
 };
 
+const sanitizeTopicRows = (rows = []) =>
+  (Array.isArray(rows) ? rows : [])
+    .map((row) => ({
+      label: String(row?.label || "").trim(),
+      value: clampPercent(row?.value),
+    }))
+    .filter((row) => Boolean(row.label));
+
 export default function Analytics() {
   const [candidates, setCandidates] = useState([]);
   const [error, setError] = useState(null);
@@ -55,21 +63,14 @@ export default function Analytics() {
     development: 0,
     good: 0,
     bad: 0,
-    detailedMetrics: {
-      infrastructure: 0,
-      healthcare: 0,
-      education: 0,
-      policyFailures: 0,
-      corruptionCases: 0,
-      publicComplaints: 0,
-    },
-    historyYear: "",
-    historyLabel: "",
-    historyVotes: "",
+    goodTopics: [],
+    badTopics: [],
   });
 
   const mapAnalyticsRow = (row = {}) => {
     const detailed = row.detailedMetrics || {};
+    const goodWorkBreakdown = sanitizeTopicRows(row.goodWorkBreakdown);
+    const badWorkBreakdown = sanitizeTopicRows(row.badWorkBreakdown);
 
     return {
       id: row._id || row.id || row.candidateId || row.partyId,
@@ -89,8 +90,22 @@ export default function Analytics() {
         corruptionCases: clampPercent(detailed.corruptionCases),
         publicComplaints: clampPercent(detailed.publicComplaints),
       },
-      goodTopics: buildTopicRows(detailed, "good"),
-      badTopics: buildTopicRows(detailed, "bad"),
+      goodTopics:
+        goodWorkBreakdown.length > 0
+          ? goodWorkBreakdown.map((item, index) => ({
+              key: `good-${index}-${item.label}`,
+              label: item.label,
+              value: item.value,
+            }))
+          : buildTopicRows(detailed, "good"),
+      badTopics:
+        badWorkBreakdown.length > 0
+          ? badWorkBreakdown.map((item, index) => ({
+              key: `bad-${index}-${item.label}`,
+              label: item.label,
+              value: item.value,
+            }))
+          : buildTopicRows(detailed, "bad"),
       history: toHistoryRows(
         Array.isArray(row.history)
           ? row.history
@@ -198,16 +213,23 @@ export default function Analytics() {
         development: clampPercent(data?.overallScores?.development ?? candidate.development),
         good: clampPercent(data?.overallScores?.goodWork ?? candidate.good),
         bad: clampPercent(data?.overallScores?.badWork ?? candidate.bad),
-        detailedMetrics: {
-          infrastructure: clampPercent(data?.detailedMetrics?.infrastructure),
-          healthcare: clampPercent(data?.detailedMetrics?.healthcare),
-          education: clampPercent(data?.detailedMetrics?.education),
-          policyFailures: clampPercent(data?.detailedMetrics?.policyFailures),
-          corruptionCases: clampPercent(data?.detailedMetrics?.corruptionCases),
-          publicComplaints: clampPercent(data?.detailedMetrics?.publicComplaints),
-        },
-        goodTopics: buildTopicRows(data?.detailedMetrics, "good"),
-        badTopics: buildTopicRows(data?.detailedMetrics, "bad"),
+        detailedMetrics: data?.detailedMetrics || {},
+        goodTopics:
+          sanitizeTopicRows(data?.goodWorkBreakdown).length > 0
+            ? sanitizeTopicRows(data?.goodWorkBreakdown).map((item, index) => ({
+                key: `good-${index}-${item.label}`,
+                label: item.label,
+                value: item.value,
+              }))
+            : buildTopicRows(data?.detailedMetrics, "good"),
+        badTopics:
+          sanitizeTopicRows(data?.badWorkBreakdown).length > 0
+            ? sanitizeTopicRows(data?.badWorkBreakdown).map((item, index) => ({
+                key: `bad-${index}-${item.label}`,
+                label: item.label,
+                value: item.value,
+              }))
+            : buildTopicRows(data?.detailedMetrics, "bad"),
         history: toHistoryRows(data?.historicalData),
       };
     } catch {
@@ -234,17 +256,14 @@ export default function Analytics() {
       development: detailedCandidate.development,
       good: detailedCandidate.good,
       bad: detailedCandidate.bad,
-      detailedMetrics: {
-        infrastructure: clampPercent(detailedCandidate.detailedMetrics?.infrastructure),
-        healthcare: clampPercent(detailedCandidate.detailedMetrics?.healthcare),
-        education: clampPercent(detailedCandidate.detailedMetrics?.education),
-        policyFailures: clampPercent(detailedCandidate.detailedMetrics?.policyFailures),
-        corruptionCases: clampPercent(detailedCandidate.detailedMetrics?.corruptionCases),
-        publicComplaints: clampPercent(detailedCandidate.detailedMetrics?.publicComplaints),
-      },
-      historyYear: "",
-      historyLabel: "",
-      historyVotes: "",
+      goodTopics: (detailedCandidate.goodTopics || []).map((item) => ({
+        label: item.label,
+        value: clampPercent(item.value),
+      })),
+      badTopics: (detailedCandidate.badTopics || []).map((item) => ({
+        label: item.label,
+        value: clampPercent(item.value),
+      })),
     });
     setShowUpdate(true);
   };
@@ -254,6 +273,34 @@ export default function Analytics() {
     setTimeout(() => setToast(null), 2000);
   };
 
+  const addTopicRow = (mode) => {
+    const key = mode === "bad" ? "badTopics" : "goodTopics";
+    setUpdateValues((prev) => ({
+      ...prev,
+      [key]: [...(Array.isArray(prev[key]) ? prev[key] : []), { label: "", value: 0 }],
+    }));
+  };
+
+  const updateTopicRow = (mode, index, field, value) => {
+    const key = mode === "bad" ? "badTopics" : "goodTopics";
+    setUpdateValues((prev) => ({
+      ...prev,
+      [key]: (Array.isArray(prev[key]) ? prev[key] : []).map((row, rowIndex) => {
+        if (rowIndex !== index) return row;
+        if (field === "value") return { ...row, value: clampPercent(value) };
+        return { ...row, label: value };
+      }),
+    }));
+  };
+
+  const removeTopicRow = (mode, index) => {
+    const key = mode === "bad" ? "badTopics" : "goodTopics";
+    setUpdateValues((prev) => ({
+      ...prev,
+      [key]: (Array.isArray(prev[key]) ? prev[key] : []).filter((_, rowIndex) => rowIndex !== index),
+    }));
+  };
+
   const saveUpdate = async () => {
     if (!selectedCandidate) return;
     try {
@@ -261,26 +308,9 @@ export default function Analytics() {
         development: Number(updateValues.development),
         goodWork: Number(updateValues.good),
         badWork: Number(updateValues.bad),
-        detailedMetrics: {
-          infrastructure: Number(updateValues.detailedMetrics.infrastructure),
-          healthcare: Number(updateValues.detailedMetrics.healthcare),
-          education: Number(updateValues.detailedMetrics.education),
-          policyFailures: Number(updateValues.detailedMetrics.policyFailures),
-          corruptionCases: Number(updateValues.detailedMetrics.corruptionCases),
-          publicComplaints: Number(updateValues.detailedMetrics.publicComplaints),
-        },
+        goodWorkBreakdown: sanitizeTopicRows(updateValues.goodTopics),
+        badWorkBreakdown: sanitizeTopicRows(updateValues.badTopics),
       };
-
-      if (updateValues.historyYear) {
-        payload.historyEntry = {
-          year: Number(updateValues.historyYear),
-          label: String(updateValues.historyLabel || "").trim(),
-          votes: Number(updateValues.historyVotes || 0),
-          development: Number(updateValues.development),
-          goodWork: Number(updateValues.good),
-          badWork: Number(updateValues.bad),
-        };
-      }
 
       await api.put(`/admin/analytics/party/${selectedCandidate.entityId}/update`, {
         ...payload,
@@ -568,7 +598,7 @@ export default function Analytics() {
               ) : (
                 historyRows.map((row, idx) => (
                   <div key={row.year || row.label || idx} className="history-row">
-                    <div className="year-pill">{row.year || row.label || "—"}</div>
+                    <div className="year-pill">{row.year || row.label || "-"}</div>
                     <div className="history-bars">
                       <div>
                         <div className="stat-label">Development</div>
@@ -676,100 +706,70 @@ export default function Analytics() {
             </div>
             <div className="topic-editor">
               <div className="slider-label">Good Work Breakdown</div>
-              <div className="topic-editor-grid">
-                {["infrastructure", "healthcare", "education"].map((key) => (
-                  <label key={key} className="topic-input-row">
-                    <span>{METRIC_LABELS[key]}</span>
+              <div className="topic-editor-list">
+                {(updateValues.goodTopics || []).map((row, index) => (
+                  <div key={`good-topic-${index}`} className="topic-editor-row">
+                    <input
+                      type="text"
+                      value={row.label}
+                      onChange={(e) => updateTopicRow("good", index, "label", e.target.value)}
+                      placeholder="Topic name (e.g. Infrastructure)"
+                    />
                     <input
                       type="number"
                       min="0"
                       max="100"
-                      value={updateValues.detailedMetrics[key]}
-                      onChange={(e) =>
-                        setUpdateValues((prev) => ({
-                          ...prev,
-                          detailedMetrics: {
-                            ...prev.detailedMetrics,
-                            [key]: clampPercent(e.target.value),
-                          },
-                        }))
-                      }
+                      value={row.value}
+                      onChange={(e) => updateTopicRow("good", index, "value", e.target.value)}
+                      placeholder="0"
                     />
-                  </label>
+                    <button
+                      type="button"
+                      className="admin-button ghost topic-remove-btn"
+                      onClick={() => removeTopicRow("good", index)}
+                    >
+                      <i className="ri-delete-bin-line" aria-hidden="true" />
+                    </button>
+                  </div>
                 ))}
+                <button type="button" className="admin-button ghost topic-add-btn" onClick={() => addTopicRow("good")}>
+                  <i className="ri-add-line" aria-hidden="true" />
+                  Add Good Work Topic
+                </button>
               </div>
             </div>
             <div className="topic-editor">
               <div className="slider-label">Bad Work Breakdown</div>
-              <div className="topic-editor-grid">
-                {["policyFailures", "corruptionCases", "publicComplaints"].map((key) => (
-                  <label key={key} className="topic-input-row">
-                    <span>{METRIC_LABELS[key]}</span>
+              <div className="topic-editor-list">
+                {(updateValues.badTopics || []).map((row, index) => (
+                  <div key={`bad-topic-${index}`} className="topic-editor-row">
+                    <input
+                      type="text"
+                      value={row.label}
+                      onChange={(e) => updateTopicRow("bad", index, "label", e.target.value)}
+                      placeholder="Topic name (e.g. Policy failures)"
+                    />
                     <input
                       type="number"
                       min="0"
                       max="100"
-                      value={updateValues.detailedMetrics[key]}
-                      onChange={(e) =>
-                        setUpdateValues((prev) => ({
-                          ...prev,
-                          detailedMetrics: {
-                            ...prev.detailedMetrics,
-                            [key]: clampPercent(e.target.value),
-                          },
-                        }))
-                      }
+                      value={row.value}
+                      onChange={(e) => updateTopicRow("bad", index, "value", e.target.value)}
+                      placeholder="0"
                     />
-                  </label>
+                    <button
+                      type="button"
+                      className="admin-button ghost topic-remove-btn"
+                      onClick={() => removeTopicRow("bad", index)}
+                    >
+                      <i className="ri-delete-bin-line" aria-hidden="true" />
+                    </button>
+                  </div>
                 ))}
-              </div>
-            </div>
-            <div className="topic-editor">
-              <div className="slider-label">Add Historical Data (Optional)</div>
-              <div className="topic-editor-grid topic-editor-grid--history">
-                <label className="topic-input-row">
-                  <span>Year</span>
-                  <input
-                    type="number"
-                    min="2000"
-                    max="2100"
-                    value={updateValues.historyYear}
-                    onChange={(e) =>
-                      setUpdateValues((prev) => ({
-                        ...prev,
-                        historyYear: e.target.value,
-                      }))
-                    }
-                  />
-                </label>
-                <label className="topic-input-row">
-                  <span>Label</span>
-                  <input
-                    type="text"
-                    value={updateValues.historyLabel}
-                    onChange={(e) =>
-                      setUpdateValues((prev) => ({
-                        ...prev,
-                        historyLabel: e.target.value,
-                      }))
-                    }
-                    placeholder="Election title"
-                  />
-                </label>
-                <label className="topic-input-row">
-                  <span>Votes</span>
-                  <input
-                    type="number"
-                    min="0"
-                    value={updateValues.historyVotes}
-                    onChange={(e) =>
-                      setUpdateValues((prev) => ({
-                        ...prev,
-                        historyVotes: e.target.value,
-                      }))
-                    }
-                  />
-                </label>
+                <button type="button" className="admin-button ghost topic-add-btn" onClick={() => addTopicRow("bad")}>
+                  <i className="ri-add-line" aria-hidden="true" />
+                  Add Bad Work Topic
+                </button>
               </div>
             </div>
             <div className="info-callout">

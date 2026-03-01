@@ -69,10 +69,12 @@ export default function PartyCard({
             <strong>{party.share}</strong>
           </div>
           <div>
-            <span>Development Score</span>
+            <div className="vparty-dev-head">
+              <span>Development Score</span>
+              <strong>{party.score}%</strong>
+            </div>
             <div className="vparty-progress-row">
               <ProgressBar value={party.score} />
-              <span className="vparty-score">{party.score}%</span>
             </div>
           </div>
         </div>

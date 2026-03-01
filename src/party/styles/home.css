@@ -201,10 +201,18 @@
   border-radius: 12px;
 }
 
+.party-home-page .party-gallery,
+.party-home-page .party-contact,
+.party-home-page .party-social {
+  padding: 14px 16px;
+}
+
 .party-home-page .party-team-head {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 12px;
-  gap: 10px;
+  gap: 12px;
   border-bottom: none;
   padding-bottom: 0;
 }
@@ -218,7 +226,7 @@
 }
 
 .party-home-page .party-team-head .party-btn {
-  margin-top: 8px;
+  margin-top: 0;
 }
 
 .party-home-page .party-team-grid {
@@ -375,6 +383,21 @@
 .party-home-page .party-contact-grid strong {
   color: #111827;
   font-size: 14px;
+}
+
+.party-home-page .party-contact-value {
+  color: #111827;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.party-home-page .party-contact-value a {
+  color: #0f172a;
+  text-decoration: none;
+  font-weight: 500;
+  word-break: break-all;
 }
 
 .party-home-page .party-contact-grid input {
