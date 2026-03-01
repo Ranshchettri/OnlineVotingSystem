@@ -146,13 +146,13 @@ export default function PartyProfile() {
 
         <div className="metric-card">
           <h4>Work Analysis</h4>
-          <p className="metric-note">Good and bad work percentages.</p>
+          <p className="metric-note">Good and negative impact percentages.</p>
           <div className="work-analysis-rings">
             <div className="work-ring-wrap">
               <div className="ring" style={{ "--percent": goodWork, "--ring-color": "#16a34a" }}>
                 <div className="ring-inner">
                   <div className="ring-value">{goodWork}%</div>
-                  <div className="ring-label">Good Work</div>
+                  <div className="ring-label">Positive Impact</div>
                 </div>
               </div>
             </div>
@@ -160,18 +160,18 @@ export default function PartyProfile() {
               <div className="ring" style={{ "--percent": badWork, "--ring-color": "#dc2626" }}>
                 <div className="ring-inner">
                   <div className="ring-value">{badWork}%</div>
-                  <div className="ring-label">Bad Work</div>
+                  <div className="ring-label">Negative Impact</div>
                 </div>
               </div>
             </div>
           </div>
           <div className="work-grid">
-            <div className="metric-badge good">Good Work: {goodWork}%</div>
-            <div className="metric-badge bad">Bad Work: {badWork}%</div>
+            <div className="metric-badge good">Positive Impact: {goodWork}%</div>
+            <div className="metric-badge bad">Negative Impact: {badWork}%</div>
           </div>
           <div className="party-breakdown-grid">
             <div className="party-breakdown good">
-              <strong>Good Work Breakdown</strong>
+              <strong>Positive Impact Breakdown</strong>
               {(goodWorkBreakdown.length > 0 ? goodWorkBreakdown : [
                 { label: "Infrastructure", value: clampPercent(detailedMetrics.infrastructure) },
                 { label: "Healthcare", value: clampPercent(detailedMetrics.healthcare) },
@@ -183,7 +183,7 @@ export default function PartyProfile() {
               ))}
             </div>
             <div className="party-breakdown bad">
-              <strong>Bad Work Breakdown</strong>
+              <strong>Negative Impact Breakdown</strong>
               {(badWorkBreakdown.length > 0 ? badWorkBreakdown : [
                 { label: "Policy failures", value: clampPercent(detailedMetrics.policyFailures) },
                 { label: "Corruption cases", value: clampPercent(detailedMetrics.corruptionCases) },
@@ -332,3 +332,4 @@ export default function PartyProfile() {
     </div>
   );
 }
+

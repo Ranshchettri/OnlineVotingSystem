@@ -1,138 +1,143 @@
-.landing-shell {
+.landing-page {
   min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background:
-    radial-gradient(circle at 15% 20%, #dbeafe 0, transparent 35%),
-    radial-gradient(circle at 85% 0%, #fee2e2 0, transparent 32%),
-    radial-gradient(circle at 50% 85%, #dcfce7 0, transparent 38%),
-    #f8fafc;
+  background: #e2e8f0;
 }
 
-.landing-card {
-  width: min(560px, 100%);
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 22px;
-  padding: 28px;
-  box-shadow: 0 30px 60px rgba(15, 23, 42, 0.12);
-  text-align: center;
+.landing-topbar {
+  height: 78px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border-bottom: 1px solid #dbe3ef;
 }
 
-.landing-image-wrap {
-  width: 156px;
-  height: 156px;
-  margin: 0 auto 18px;
-  border-radius: 24px;
-  background: linear-gradient(135deg, #eff6ff, #f0fdf4);
-  border: 1px solid #bfdbfe;
-  display: grid;
-  place-items: center;
+.landing-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.landing-image {
-  width: 118px;
-  height: 118px;
+.landing-brand img {
+  width: 42px;
+  height: 42px;
   object-fit: contain;
 }
 
-.landing-card h1 {
-  margin: 0;
-  font-size: 32px;
-  line-height: 1.1;
+.landing-brand h1 {
+  font-size: 18px;
+  font-weight: 800;
   color: #0f172a;
 }
 
-.landing-card p {
-  margin-top: 10px;
-  color: #475569;
-  font-size: 15px;
+.landing-brand p {
+  font-size: 12px;
+  color: #64748b;
 }
 
-.landing-start-btn {
-  margin-top: 22px;
-  border: 0;
-  border-radius: 12px;
-  padding: 12px 22px;
-  font-size: 15px;
-  font-weight: 700;
-  color: #fff;
-  background: linear-gradient(120deg, #16a34a, #0ea5e9);
-  cursor: pointer;
-}
-
-.landing-start-btn:hover {
-  filter: brightness(0.98);
-}
-
-.landing-role-panel {
-  margin-top: 20px;
-}
-
-.landing-role-title {
-  margin: 0 0 12px;
-  font-size: 14px;
+.landing-login-link {
+  height: 40px;
+  min-width: 100px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
   color: #334155;
   font-weight: 600;
+  cursor: pointer;
 }
 
-.landing-role-grid {
+.landing-hero {
+  position: relative;
+  min-height: calc(100vh - 78px);
   display: grid;
-  gap: 10px;
+  place-items: center;
+  padding: 26px;
+  background:
+    url("https://upload.wikimedia.org/wikipedia/commons/9/95/Singha_Durbar%2C_Kathmandu.jpg")
+      center / cover no-repeat;
 }
 
-.landing-role-btn {
-  border: 1px solid #cbd5e1;
-  border-radius: 12px;
-  padding: 11px 14px;
-  font-size: 14px;
+.landing-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg, rgba(15, 23, 42, 0.62), rgba(6, 78, 59, 0.45));
+}
+
+.landing-content {
+  position: relative;
+  z-index: 1;
+  max-width: 760px;
+  text-align: center;
+  color: #fff;
+}
+
+.landing-chip {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
   font-weight: 700;
+  background: rgba(16, 185, 129, 0.25);
+  border: 1px solid rgba(110, 231, 183, 0.45);
+}
+
+.landing-content h2 {
+  margin-top: 16px;
+  font-size: 58px;
+  line-height: 1.05;
+  font-weight: 800;
+}
+
+.landing-content p {
+  margin-top: 16px;
+  font-size: 18px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.landing-actions {
+  margin-top: 22px;
+  display: inline-flex;
+  gap: 12px;
+}
+
+.landing-primary,
+.landing-secondary {
+  height: 44px;
+  border-radius: 10px;
+  border: none;
+  padding: 0 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.landing-primary {
+  background: #16a34a;
+  color: #fff;
+}
+
+.landing-secondary {
+  background: rgba(255, 255, 255, 0.94);
   color: #0f172a;
-  background: #ffffff;
-  cursor: pointer;
-  transition: transform 120ms ease, box-shadow 120ms ease;
 }
 
-.landing-role-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1);
-}
-
-.landing-role-btn.admin {
-  border-color: #fecaca;
-  background: linear-gradient(120deg, #fff1f2, #ffffff);
-}
-
-.landing-role-btn.voter {
-  border-color: #bbf7d0;
-  background: linear-gradient(120deg, #f0fdf4, #ffffff);
-}
-
-.landing-role-btn.party {
-  border-color: #bfdbfe;
-  background: linear-gradient(120deg, #eff6ff, #ffffff);
-}
-
-.landing-back-btn {
-  margin-top: 10px;
-  border: 0;
-  background: transparent;
-  color: #475569;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.landing-back-btn:hover {
-  color: #1e293b;
-}
-
-@media (max-width: 640px) {
-  .landing-card {
-    padding: 22px;
+@media (max-width: 900px) {
+  .landing-content h2 {
+    font-size: 38px;
   }
 
-  .landing-card h1 {
-    font-size: 27px;
+  .landing-content p {
+    font-size: 15px;
+  }
+
+  .landing-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .landing-primary,
+  .landing-secondary {
+    width: 100%;
   }
 }

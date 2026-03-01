@@ -164,7 +164,7 @@ export default function PartyProgress() {
               </div>
             </div>
             <p>
-              <strong>Good Work</strong>
+              <strong>Positive Impact</strong>
               <br />
               Positive impact
             </p>
@@ -180,7 +180,7 @@ export default function PartyProgress() {
               </div>
             </div>
             <p>
-              <strong>Bad Work</strong>
+              <strong>Negative Impact</strong>
               <br />
               Negative impact
             </p>
@@ -194,3 +194,4 @@ export default function PartyProgress() {
     </div>
   );
 }
+

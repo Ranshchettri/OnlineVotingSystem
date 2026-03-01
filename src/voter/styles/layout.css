@@ -69,11 +69,13 @@
 
 .voter-sidebar-divider {
   height: 1px;
-  background: linear-gradient(90deg, transparent, #e2e8f0 12%, #e2e8f0 88%, transparent);
+  width: 100%;
+  background: #e2e8f0;
 }
 
 .voter-sidebar-divider.bottom {
   margin-top: auto;
+  margin-bottom: 12px;
 }
 
 .voter-nav-link {

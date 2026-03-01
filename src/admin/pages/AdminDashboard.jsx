@@ -145,8 +145,8 @@ export default function AdminDashboard() {
         publicElectionsRes,
       ] = await Promise.allSettled([
         api.get("/admin/dashboard"),
-        api.get("/admin/dashboard/activities", { params: { limit: 8 } }),
-        api.get("/admin/audit-logs", { params: { limit: 8 } }),
+        api.get("/admin/dashboard/activities", { params: { limit: 50 } }),
+        api.get("/admin/audit-logs", { params: { limit: 50 } }),
         api.get("/admin/elections"),
         api.get("/voters/admin/stats"),
         api.get("/parties"),
@@ -494,8 +494,9 @@ export default function AdminDashboard() {
           <div className="admin-section-title">Dashboard Overview</div>
           <div className="admin-section-subtitle">Real-time system monitoring and control</div>
         </div>
-        <span className={`admin-pill ${statusPillClass}`}>
-          <span className="dot" /> {statusLabel}
+        <span className={`admin-pill election-status-pill ${statusPillClass}`}>
+          <i className="ri-checkbox-blank-circle-fill" aria-hidden="true" />
+          {statusLabel}
         </span>
       </div>
 

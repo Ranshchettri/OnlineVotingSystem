@@ -12,18 +12,39 @@
 
 .admin-dashboard__header .admin-pill {
   display: inline-flex;
-  border-radius: 8px;
-  height: 38px;
-  border: 2px solid var(--admin-border);
   align-items: center;
   gap: 8px;
 }
 
-.admin-dashboard__header .admin-pill .dot {
-  width: 8px;
-  height: 8px;
+.admin-dashboard__header .admin-pill.election-status-pill {
+  border: 1px solid transparent;
+  padding: 7px 12px;
   border-radius: 999px;
-  background: var(--admin-green);
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.admin-dashboard__header .admin-pill.election-status-pill i {
+  font-size: 8px;
+  line-height: 1;
+}
+
+.admin-dashboard__header .admin-pill.election-status-pill.green {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #166534;
+}
+
+.admin-dashboard__header .admin-pill.election-status-pill.blue {
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+.admin-dashboard__header .admin-pill.election-status-pill.red {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #991b1b;
 }
 
 .admin-dashboard__stats {
@@ -263,6 +284,12 @@
   gap: 0;
 }
 
+.activity-list {
+  max-height: 330px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
 .activity-item,
 .timeline-item {
   display: flex;
@@ -297,6 +324,12 @@
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.activity-icon i,
+.timeline-icon i {
+  font-size: 18px;
+  line-height: 1;
 }
 
 .activity-icon.green,

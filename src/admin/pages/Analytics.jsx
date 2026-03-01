@@ -374,7 +374,7 @@ export default function Analytics() {
         </div>
         <div className="analytics-stat-card">
           <div className="stat-top">
-            <div className="stat-label">Avg Good Work</div>
+            <div className="stat-label">Avg Positive Impact</div>
             <span className="stat-icon teal" aria-hidden="true">
               <i className="ri-thumb-up-line" />
             </span>
@@ -383,7 +383,7 @@ export default function Analytics() {
         </div>
         <div className="analytics-stat-card">
           <div className="stat-top">
-            <div className="stat-label">Avg Bad Work</div>
+            <div className="stat-label">Avg Negative Impact</div>
             <span className="stat-icon red" aria-hidden="true">
               <i className="ri-thumb-down-line" />
             </span>
@@ -431,7 +431,7 @@ export default function Analytics() {
 
               <div className="analytics-card__middle">
                 <div className="metric-group">
-                  <div className="metric-title">Good Work Performance</div>
+                  <div className="metric-title">Positive Impact Performance</div>
                   <div className="metric-bar good">
                     <span style={{ width: `${candidate.good || 0}%` }} />
                   </div>
@@ -445,7 +445,7 @@ export default function Analytics() {
                   </ul>
                 </div>
                 <div className="metric-group">
-                  <div className="metric-title">Bad Work Performance</div>
+                  <div className="metric-title">Negative Impact Performance</div>
                   <div className="metric-bar bad">
                     <span style={{ width: `${candidate.bad || 0}%` }} />
                   </div>
@@ -523,7 +523,7 @@ export default function Analytics() {
               <div className="report-box good">
                 <div className="report-title">
                   <i className="ri-thumb-up-line" aria-hidden="true" />
-                  Good Work Breakdown
+                  Positive Impact Breakdown
                 </div>
                 {selectedCandidate.goodTopics.map((topic) => (
                   <div key={topic.key} className="report-row">
@@ -535,7 +535,7 @@ export default function Analytics() {
               <div className="report-box bad">
                 <div className="report-title">
                   <i className="ri-thumb-down-line" aria-hidden="true" />
-                  Bad Work Breakdown
+                  Negative Impact Breakdown
                 </div>
                 {selectedCandidate.badTopics.map((topic) => (
                   <div key={topic.key} className="report-row">
@@ -552,11 +552,11 @@ export default function Analytics() {
               </div>
               <div>
                 <div className="stat-number">{selectedCandidate.good}%</div>
-                <div className="stat-label">Good Work</div>
+                <div className="stat-label">Positive Impact</div>
               </div>
               <div>
                 <div className="stat-number">{selectedCandidate.bad}%</div>
-                <div className="stat-label">Bad Work</div>
+                <div className="stat-label">Negative Impact</div>
               </div>
               <div>
                 <div className="stat-number">{selectedCandidate.votes}</div>
@@ -607,13 +607,13 @@ export default function Analytics() {
                         </div>
                       </div>
                       <div>
-                        <div className="stat-label">Good Work</div>
+                        <div className="stat-label">Positive Impact</div>
                         <div className="metric-bar good">
                           <span style={{ width: `${row.goodWork || 0}%` }} />
                         </div>
                       </div>
                       <div>
-                        <div className="stat-label">Bad Work</div>
+                        <div className="stat-label">Negative Impact</div>
                         <div className="metric-bar bad">
                           <span style={{ width: `${row.badWork || 0}%` }} />
                         </div>
@@ -681,7 +681,7 @@ export default function Analytics() {
               />
             </div>
             <div className="slider-group">
-              <div className="slider-label">Good Work: {updateValues.good}%</div>
+              <div className="slider-label">Positive Impact: {updateValues.good}%</div>
               <input
                 type="range"
                 min="0"
@@ -693,7 +693,7 @@ export default function Analytics() {
               />
             </div>
             <div className="slider-group">
-              <div className="slider-label">Bad Work: {updateValues.bad}%</div>
+              <div className="slider-label">Negative Impact: {updateValues.bad}%</div>
               <input
                 type="range"
                 min="0"
@@ -705,7 +705,7 @@ export default function Analytics() {
               />
             </div>
             <div className="topic-editor">
-              <div className="slider-label">Good Work Breakdown</div>
+              <div className="slider-label">Positive Impact Breakdown</div>
               <div className="topic-editor-list">
                 {(updateValues.goodTopics || []).map((row, index) => (
                   <div key={`good-topic-${index}`} className="topic-editor-row">
@@ -734,12 +734,12 @@ export default function Analytics() {
                 ))}
                 <button type="button" className="admin-button ghost topic-add-btn" onClick={() => addTopicRow("good")}>
                   <i className="ri-add-line" aria-hidden="true" />
-                  Add Good Work Topic
+                  Add Positive Impact Topic
                 </button>
               </div>
             </div>
             <div className="topic-editor">
-              <div className="slider-label">Bad Work Breakdown</div>
+              <div className="slider-label">Negative Impact Breakdown</div>
               <div className="topic-editor-list">
                 {(updateValues.badTopics || []).map((row, index) => (
                   <div key={`bad-topic-${index}`} className="topic-editor-row">
@@ -768,7 +768,7 @@ export default function Analytics() {
                 ))}
                 <button type="button" className="admin-button ghost topic-add-btn" onClick={() => addTopicRow("bad")}>
                   <i className="ri-add-line" aria-hidden="true" />
-                  Add Bad Work Topic
+                  Add Negative Impact Topic
                 </button>
               </div>
             </div>
@@ -790,3 +790,4 @@ export default function Analytics() {
     </div>
   );
 }
+

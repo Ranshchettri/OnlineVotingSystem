@@ -1,4 +1,4 @@
-ï»¿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import api from "../../services/api";
 import { getPartyLogoSrc, getPartyShortLabel } from "../../shared/utils/partyDisplay";
 import "../styles/partyManagement.css";
@@ -425,9 +425,9 @@ export default function Parties() {
                   </div>
                   <div className="party-meta line">
                     <span className="label">Leader:</span>
-                    <span className="value">{party.leader || "â€”"}</span>
+                    <span className="value">{party.leader || "—"}</span>
                   </div>
-                  <div className="party-meta muted">{party.email || "â€”"}</div>
+                  <div className="party-meta muted">{party.email || "—"}</div>
                   <div className="party-meta muted">
                     Registered:{" "}
                     {party.registeredAt
@@ -445,14 +445,14 @@ export default function Parties() {
                   <div className="metric-value">{party.development ?? 0}%</div>
                 </div>
                 <div className="metric">
-                  <div className="metric-label">Good Work</div>
+                  <div className="metric-label">Positive Impact</div>
                   <div className="metric-bar good">
                     <span style={{ width: `${party.goodWork || 0}%` }} />
                   </div>
                   <div className="metric-value">{party.goodWork ?? 0}%</div>
                 </div>
                 <div className="metric">
-                  <div className="metric-label">Bad Work</div>
+                  <div className="metric-label">Negative Impact</div>
                   <div className="metric-bar bad">
                     <span style={{ width: `${party.badWork || 0}%` }} />
                   </div>
@@ -730,7 +730,7 @@ export default function Parties() {
                           {doc.uploadedAt
                             ? new Date(doc.uploadedAt).toLocaleDateString()
                             : "Not available"}
-                          {doc.size ? ` Â· ${(doc.size / 1024 / 1024).toFixed(2)} MB` : ""}
+                          {doc.size ? ` · ${(doc.size / 1024 / 1024).toFixed(2)} MB` : ""}
                         </div>
                       </div>
                     </div>
@@ -813,7 +813,7 @@ export default function Parties() {
             </div>
             <div className="slider-group">
               <div className="slider-label">
-                Good Work: {editValues.goodWork}%
+                Positive Impact: {editValues.goodWork}%
               </div>
               <input
                 type="range"
@@ -830,7 +830,7 @@ export default function Parties() {
             </div>
             <div className="slider-group">
               <div className="slider-label">
-                Bad Work: {editValues.badWork}%
+                Negative Impact: {editValues.badWork}%
               </div>
               <input
                 type="range"
@@ -925,3 +925,4 @@ export default function Parties() {
     </div>
   );
 }
+

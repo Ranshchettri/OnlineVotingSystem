@@ -93,11 +93,14 @@
 
 .admin-sidebar__divider {
   height: 1px;
-  background: linear-gradient(90deg, transparent, #e2e8f0 12%, #e2e8f0 88%, transparent);
+  width: calc(100% + 32px);
+  margin-left: -16px;
+  background: #e2e8f0;
 }
 
 .admin-sidebar__divider.bottom {
   margin-top: auto;
+  margin-bottom: 12px;
 }
 
 .admin-sidebar__link {

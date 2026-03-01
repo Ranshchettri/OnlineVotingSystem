@@ -41,7 +41,7 @@ const partyRulesContent = {
         title: "Performance Metrics",
         items: [
           "Development scores are based on policy implementation.",
-          "Good work and bad work are evaluated by feedback.",
+          "Good work and negative impact are evaluated by feedback.",
           "Historical performance affects voter trust.",
           "Focus on consistent positive impact.",
         ],
@@ -158,3 +158,4 @@ export default function PartyRules() {
     </div>
   );
 }
+
