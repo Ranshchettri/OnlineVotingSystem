@@ -9,7 +9,12 @@ const AuditLog = require("../models/AuditLog");
 const Analytics = require("../models/Analytics");
 const AppError = require("../utils/AppError");
 const { markForceLogout, getForceLogoutAfter } = require("../utils/sessionControl");
-const { notifyElectionToParties } = require("../utils/electionPartyNotifications");
+const {
+  notifyElectionToParties,
+  ensureElectionAnalyticsSnapshot,
+  finalizeElectionAnalyticsSnapshot,
+  notifyElectionOutcomeToParties,
+} = require("../utils/electionPartyNotifications");
 
 const deriveElectionStatus = (election = {}, now = new Date()) => {
   const start = election.startDate ? new Date(election.startDate) : null;
@@ -33,10 +38,11 @@ const deriveElectionStatus = (election = {}, now = new Date()) => {
 // Utility: create activity log (non-blocking)
 const logActivity = async ({ action, user, userId, icon, color }) => {
   try {
+    const safeUserId = mongoose.Types.ObjectId.isValid(userId) ? userId : undefined;
     await Activity.create({
       action,
       user,
-      userId,
+      userId: safeUserId,
       icon,
       color,
     });
@@ -85,6 +91,64 @@ const toScore = (value, fallback = 0) => {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return fallback;
   return Math.max(0, Math.min(100, numeric));
+};
+
+const sanitizeBreakdown = (items = []) => {
+  if (!Array.isArray(items)) return [];
+  return items
+    .map((item) => ({
+      label: String(item?.label || "").trim(),
+      value: toScore(item?.value, 0),
+    }))
+    .filter((item) => Boolean(item.label));
+};
+
+const defaultGoodBreakdown = (party = {}) => [
+  { label: "Infrastructure", value: toScore(party.detailedMetrics?.infrastructure) },
+  { label: "Healthcare", value: toScore(party.detailedMetrics?.healthcare) },
+  { label: "Education", value: toScore(party.detailedMetrics?.education) },
+];
+
+const defaultBadBreakdown = (party = {}) => [
+  { label: "Policy failures", value: toScore(party.detailedMetrics?.policyFailures) },
+  { label: "Corruption cases", value: toScore(party.detailedMetrics?.corruptionCases) },
+  { label: "Public complaints", value: toScore(party.detailedMetrics?.publicComplaints) },
+];
+
+const deriveDetailedMetricsFromBreakdown = (goodItems = [], badItems = [], current = {}) => {
+  const next = {
+    infrastructure: toScore(current.infrastructure),
+    healthcare: toScore(current.healthcare),
+    education: toScore(current.education),
+    policyFailures: toScore(current.policyFailures),
+    corruptionCases: toScore(current.corruptionCases),
+    publicComplaints: toScore(current.publicComplaints),
+  };
+
+  const apply = (rows, mapping) => {
+    rows.forEach((row) => {
+      const raw = String(row.label || "").trim().toLowerCase();
+      if (!raw) return;
+      const matched = Object.entries(mapping).find(([keyword]) => raw.includes(keyword));
+      if (matched) {
+        next[matched[1]] = toScore(row.value);
+      }
+    });
+  };
+
+  apply(goodItems, {
+    infrastructure: "infrastructure",
+    health: "healthcare",
+    education: "education",
+  });
+
+  apply(badItems, {
+    policy: "policyFailures",
+    corruption: "corruptionCases",
+    complaint: "publicComplaints",
+  });
+
+  return next;
 };
 
 // GET /api/admin/dashboard
@@ -312,13 +376,29 @@ const createElection = async (req, res, next) => {
       return next(new AppError("title, type, startDate and endDate are required", 400));
     }
 
+    const typeRegex = new RegExp(`^${escapeRegex(String(type || "").trim())}$`, "i");
+    const autoParties =
+      Array.isArray(participatingParties) && participatingParties.length > 0
+        ? participatingParties
+        : (
+            await Party.find({
+              status: "approved",
+              isActive: true,
+              electionType: typeRegex,
+            })
+              .select("_id")
+              .lean()
+          ).map((party) => party._id.toString());
+
+    const uniquePartyIds = [...new Set(autoParties.map((id) => String(id || "")).filter(Boolean))];
+
     const election = await Election.create({
       title,
       type,
       startDate,
       endDate,
       status: new Date(startDate) <= new Date() ? "Running" : "Upcoming",
-      participatingParties: participatingParties.map((pid) => ({
+      participatingParties: uniquePartyIds.map((pid) => ({
         partyId: pid,
         votes: 0,
         percentage: 0,
@@ -326,6 +406,10 @@ const createElection = async (req, res, next) => {
       isActive: new Date(startDate) <= new Date(),
       allowVoting: true,
     });
+
+    if (String(election.status || "").toLowerCase() === "running") {
+      await ensureElectionAnalyticsSnapshot(election);
+    }
 
     await logActivity({
       action: `Election created: ${title}`,
@@ -379,6 +463,8 @@ const stopElection = async (req, res, next) => {
       title: "Election ended",
       message: `${election.title} has ended. Results will be published soon.`,
     }, { includeActiveFallback: true });
+    await finalizeElectionAnalyticsSnapshot(election);
+    await notifyElectionOutcomeToParties(election);
 
     res.json({ success: true, message: "Election stopped" });
   } catch (error) {
@@ -574,6 +660,13 @@ const getPartyAnalyticsDetailed = async (req, res, next) => {
       return acc;
     }, new Map());
 
+    const goodWorkBreakdown = sanitizeBreakdown(party.goodWorkBreakdown).length
+      ? sanitizeBreakdown(party.goodWorkBreakdown)
+      : defaultGoodBreakdown(party);
+    const badWorkBreakdown = sanitizeBreakdown(party.badWorkBreakdown).length
+      ? sanitizeBreakdown(party.badWorkBreakdown)
+      : defaultBadBreakdown(party);
+
     res.json({
       data: {
         party: { name: party.name, logo: party.logo || party.symbol },
@@ -590,6 +683,8 @@ const getPartyAnalyticsDetailed = async (req, res, next) => {
           corruptionCases: toScore(party.detailedMetrics?.corruptionCases),
           publicComplaints: toScore(party.detailedMetrics?.publicComplaints),
         },
+        goodWorkBreakdown,
+        badWorkBreakdown,
         historicalData: [...mergedHistory.values()].sort(
           (a, b) => Number(b.year || 0) - Number(a.year || 0),
         ),
@@ -610,6 +705,8 @@ const updatePartyAnalyticsDetailed = async (req, res, next) => {
       goodWork,
       badWork,
       detailedMetrics = {},
+      goodWorkBreakdown = null,
+      badWorkBreakdown = null,
       historyEntry = null,
       deleteHistoryYear = null,
       year,
@@ -623,6 +720,25 @@ const updatePartyAnalyticsDetailed = async (req, res, next) => {
     if (goodWork !== undefined) party.goodWork = toScore(goodWork, party.goodWork || 0);
     if (badWork !== undefined) party.badWork = toScore(badWork, party.badWork || 0);
 
+    const sanitizedGoodBreakdown = sanitizeBreakdown(goodWorkBreakdown || []);
+    const sanitizedBadBreakdown = sanitizeBreakdown(badWorkBreakdown || []);
+
+    if (sanitizedGoodBreakdown.length) {
+      party.goodWorkBreakdown = sanitizedGoodBreakdown;
+    }
+    if (sanitizedBadBreakdown.length) {
+      party.badWorkBreakdown = sanitizedBadBreakdown;
+    }
+
+    const derivedDetailedMetrics =
+      sanitizedGoodBreakdown.length || sanitizedBadBreakdown.length
+        ? deriveDetailedMetricsFromBreakdown(
+            sanitizedGoodBreakdown,
+            sanitizedBadBreakdown,
+            party.detailedMetrics || {},
+          )
+        : {};
+
     party.detailedMetrics = {
       ...party.detailedMetrics,
       ...(detailedMetrics && typeof detailedMetrics === "object"
@@ -630,6 +746,7 @@ const updatePartyAnalyticsDetailed = async (req, res, next) => {
             Object.entries(detailedMetrics).map(([key, value]) => [key, toScore(value)]),
           )
         : {}),
+      ...derivedDetailedMetrics,
     };
 
     if (!Array.isArray(party.historicalData)) {

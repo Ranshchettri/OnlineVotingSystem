@@ -1,5 +1,8 @@
+const mongoose = require("mongoose");
 const Election = require("../models/Election");
 const User = require("../models/User");
+const Party = require("../models/Party");
+const Activity = require("../models/Activity");
 const sendEmail = require("../utils/email");
 const {
   notifyElectionToParties,
@@ -48,6 +51,20 @@ const deriveElectionState = (election, now = new Date()) => {
   };
 };
 
+const createActivity = async ({ action, user, userId, icon, color }) => {
+  try {
+    await Activity.create({
+      action,
+      user,
+      userId: mongoose.Types.ObjectId.isValid(userId) ? userId : undefined,
+      icon: icon || "ri-information-line",
+      color: color || "blue",
+    });
+  } catch (error) {
+    console.error("Failed to create activity:", error.message);
+  }
+};
+
 const syncElectionState = async (election, now = new Date()) => {
   const previousStatus = String(election.status || "").toLowerCase();
   const derived = deriveElectionState(election, now);
@@ -88,7 +105,7 @@ const syncElectionState = async (election, now = new Date()) => {
 
 const createElection = async (req, res) => {
   try {
-    const { title, type, startDate, endDate } = req.body;
+    const { title, type, startDate, endDate, participatingParties = [] } = req.body;
 
     // Basic validation
     if (!title || !type || !startDate || !endDate) {
@@ -111,6 +128,21 @@ const createElection = async (req, res) => {
     }
 
     const now = new Date();
+    const typeRegex = new RegExp(`^${String(type).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i");
+    const fallbackParties =
+      Array.isArray(participatingParties) && participatingParties.length > 0
+        ? participatingParties
+        : (
+            await Party.find({
+              status: "approved",
+              isActive: true,
+              electionType: typeRegex,
+            })
+              .select("_id")
+              .lean()
+          ).map((party) => party._id.toString());
+    const uniquePartyIds = [...new Set(fallbackParties.map((id) => String(id || "")).filter(Boolean))];
+
     const election = new Election({
       title,
       type,
@@ -120,9 +152,24 @@ const createElection = async (req, res) => {
       isActive: start <= now && end >= now,
       allowVoting: true,
       isEnded: false,
+      participatingParties: uniquePartyIds.map((partyId) => ({
+        partyId,
+        votes: 0,
+        percentage: 0,
+      })),
     });
 
     await election.save();
+    if (String(election.status || "").toLowerCase() === "running") {
+      await ensureElectionAnalyticsSnapshot(election);
+    }
+    await createActivity({
+      action: `Election created: ${election.title}`,
+      user: req.user?.fullName || "Admin",
+      userId: req.user?._id,
+      icon: "ri-ballot-line",
+      color: "blue",
+    });
     await notifyElectionToParties(election, {
       type: "info",
       title: "New election created",
@@ -192,6 +239,7 @@ const toggleElectionStatus = async (req, res) => {
     }
 
     const now = new Date();
+    const previousStatus = String(election.status || "").toLowerCase();
     if (election.isActive) {
       election.isActive = false;
       election.allowVoting = false;
@@ -206,6 +254,20 @@ const toggleElectionStatus = async (req, res) => {
       election.status = "Running";
     }
     await election.save();
+    await createActivity({
+      action: `Election ${election.isActive ? "activated" : "ended"}: ${election.title}`,
+      user: req.user?.fullName || "Admin",
+      userId: req.user?._id,
+      icon: election.isActive ? "ri-play-circle-line" : "ri-stop-circle-line",
+      color: election.isActive ? "green" : "red",
+    });
+    const nextStatus = String(election.status || "").toLowerCase();
+    if (previousStatus !== "running" && nextStatus === "running") {
+      await ensureElectionAnalyticsSnapshot(election);
+    } else if (previousStatus !== "ended" && nextStatus === "ended") {
+      await finalizeElectionAnalyticsSnapshot(election);
+      await notifyElectionOutcomeToParties(election);
+    }
 
     await notifyElectionToParties(election, {
       type: election.status === "Running" ? "success" : "warning",

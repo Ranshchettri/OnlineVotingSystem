@@ -10,7 +10,7 @@ const protect = async (req, res, next) => {
   const authHeader = req.headers.authorization || req.headers.Authorization;
   if (authHeader && authHeader === "Bearer admin-demo") {
     req.user = {
-      _id: "demo-admin",
+      _id: "000000000000000000000001",
       role: "admin",
       isEmailVerified: true,
       verified: true,
@@ -20,7 +20,7 @@ const protect = async (req, res, next) => {
 
   if (authHeader && authHeader === "Bearer party-demo") {
     req.user = {
-      _id: "demo-party",
+      _id: "000000000000000000000002",
       role: "party",
       isEmailVerified: true,
       verified: true,

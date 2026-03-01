@@ -7,6 +7,11 @@ const {
   notifyPartyIds,
 } = require("../utils/electionPartyNotifications");
 
+const isBlockedParty = (party = {}) => {
+  const status = String(party?.status || "").toLowerCase();
+  return ["blocked", "rejected"].includes(status);
+};
+
 const publishResultNotifications = async (election, { noVotes = false } = {}) => {
   try {
     const partyIds = await getElectionPartyIds(election, {
@@ -233,6 +238,21 @@ const getPartyStandings = async (req, res, next) => {
       votesByParty.set(id, Math.max(existing, fallbackVotes));
     });
 
+    const electionTypeRegex = election?.type
+      ? new RegExp(`^${String(election.type).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i")
+      : null;
+    const approvedParties = await Party.find({
+      status: "approved",
+      isActive: true,
+      ...(electionTypeRegex ? { electionType: electionTypeRegex } : {}),
+    })
+      .select("_id")
+      .lean();
+    approvedParties.forEach((item) => {
+      const id = item?._id?.toString?.();
+      if (id && !votesByParty.has(id)) votesByParty.set(id, 0);
+    });
+
     if (!votesByParty.size) {
       const linkedParties = await Party.find({ electionId: election._id })
         .select("_id")
@@ -268,7 +288,7 @@ const getPartyStandings = async (req, res, next) => {
     }
 
     const parties = await Party.find({ _id: { $in: partyIds } })
-      .select("_id name logo symbol color shortName")
+      .select("_id name logo symbol color shortName status isActive")
       .lean();
 
     const byId = new Map(parties.map((item) => [item._id.toString(), item]));
@@ -281,6 +301,7 @@ const getPartyStandings = async (req, res, next) => {
     const ranked = partyIds
       .map((id) => {
         const ref = byId.get(id) || {};
+        if (ref?._id && isBlockedParty(ref)) return null;
         const votes = Number(votesByParty.get(id) || 0);
         return {
           id,
@@ -292,6 +313,7 @@ const getPartyStandings = async (req, res, next) => {
           percentage: totalVotes ? Number(((votes / totalVotes) * 100).toFixed(2)) : 0,
         };
       })
+      .filter(Boolean)
       .sort((a, b) => {
         if (b.votes === a.votes) return a.name.localeCompare(b.name);
         return b.votes - a.votes;

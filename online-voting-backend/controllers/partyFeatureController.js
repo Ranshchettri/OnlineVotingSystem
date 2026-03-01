@@ -116,11 +116,101 @@ const sanitizeGallery = (gallery = []) => {
     .filter((item) => Boolean(item));
 };
 
+const clampPercent = (value) => {
+  const numeric = Number(value || 0);
+  if (!Number.isFinite(numeric)) return 0;
+  return Math.max(0, Math.min(100, Math.round(numeric)));
+};
+
+const sanitizeBreakdown = (items = []) => {
+  if (!Array.isArray(items)) return [];
+  return items
+    .map((item) => ({
+      label: String(item?.label || "").trim(),
+      value: clampPercent(item?.value),
+    }))
+    .filter((item) => Boolean(item.label));
+};
+
+const defaultGoodBreakdown = (party) => [
+  { label: "Infrastructure", value: clampPercent(party?.detailedMetrics?.infrastructure) },
+  { label: "Healthcare", value: clampPercent(party?.detailedMetrics?.healthcare) },
+  { label: "Education", value: clampPercent(party?.detailedMetrics?.education) },
+];
+
+const defaultBadBreakdown = (party) => [
+  { label: "Policy failures", value: clampPercent(party?.detailedMetrics?.policyFailures) },
+  { label: "Corruption cases", value: clampPercent(party?.detailedMetrics?.corruptionCases) },
+  { label: "Public complaints", value: clampPercent(party?.detailedMetrics?.publicComplaints) },
+];
+
+const buildEndedElectionFilter = () => ({
+  $or: [
+    { status: /^ended$/i },
+    { isEnded: true },
+    { allowVoting: false },
+    { endDate: { $lte: new Date() } },
+  ],
+});
+
+const computePartyWins = async (partyId) => {
+  const endedElections = await Election.find(buildEndedElectionFilter())
+    .select("_id")
+    .lean();
+  if (!endedElections.length) return 0;
+
+  const endedIds = endedElections.map((item) => item._id);
+  const voteAgg = await Vote.aggregate([
+    { $match: { electionId: { $in: endedIds }, partyId: { $ne: null } } },
+    {
+      $group: {
+        _id: {
+          electionId: "$electionId",
+          partyId: "$partyId",
+        },
+        votes: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const byElection = voteAgg.reduce((acc, row) => {
+    const electionId = row._id?.electionId?.toString?.();
+    if (!electionId) return acc;
+    if (!acc[electionId]) acc[electionId] = [];
+    acc[electionId].push({
+      partyId: row._id?.partyId?.toString?.(),
+      votes: Number(row.votes || 0),
+    });
+    return acc;
+  }, {});
+
+  let wins = 0;
+  endedElections.forEach((election) => {
+    const rows = Array.isArray(byElection[election._id.toString()])
+      ? byElection[election._id.toString()]
+      : [];
+    if (!rows.length) return;
+    const topVotes = Math.max(...rows.map((item) => Number(item.votes || 0)));
+    const ownVotes = Number(
+      rows.find((item) => item.partyId === partyId.toString())?.votes || 0,
+    );
+    if (ownVotes > 0 && ownVotes === topVotes) wins += 1;
+  });
+
+  return wins;
+};
+
 // GET /api/party/profile/:partyId?
 const getPartyProfileFull = async (req, res, next) => {
   try {
     const party = await resolveParty(req);
     const election = await findRelevantElectionForParty(party);
+    const electionWins = await computePartyWins(party._id);
+    if (Number.isFinite(electionWins) && party.electionWins !== electionWins) {
+      party.electionWins = electionWins;
+      await party.save();
+    }
+
     res.json({
       data: {
         id: party._id,
@@ -133,10 +223,16 @@ const getPartyProfileFull = async (req, res, next) => {
         establishedDate: party.establishedDate || null,
         headquarters: party.headquarters || "",
         totalMembers: Number(party.totalMembers || 0),
-        electionWins: Number(party.electionWins || party.totalWins || 0),
+        electionWins,
         gallery: sanitizeGallery(party.gallery || []),
         contact: party.contact || {},
         socialMedia: party.socialMedia || {},
+        goodWorkBreakdown: sanitizeBreakdown(party.goodWorkBreakdown).length
+          ? sanitizeBreakdown(party.goodWorkBreakdown)
+          : defaultGoodBreakdown(party),
+        badWorkBreakdown: sanitizeBreakdown(party.badWorkBreakdown).length
+          ? sanitizeBreakdown(party.badWorkBreakdown)
+          : defaultBadBreakdown(party),
         isEditingLocked: isEditingLocked(election),
       },
     });
@@ -164,7 +260,6 @@ const updatePartyProfileFull = async (req, res, next) => {
       "establishedDate",
       "headquarters",
       "totalMembers",
-      "electionWins",
       "gallery",
       "contact",
       "socialMedia",
@@ -175,7 +270,7 @@ const updatePartyProfileFull = async (req, res, next) => {
           party.teamMembers = sanitizeTeamMembers(req.body.teamMembers);
         } else if (field === "gallery") {
           party.gallery = sanitizeGallery(req.body.gallery);
-        } else if (field === "totalMembers" || field === "electionWins") {
+        } else if (field === "totalMembers") {
           const numericValue = Number(req.body[field] || 0);
           party[field] = Number.isFinite(numericValue) ? numericValue : 0;
         } else if (field === "contact" || field === "socialMedia") {
@@ -259,6 +354,12 @@ const getProgress = async (req, res, next) => {
     const party = await resolveParty(req);
     const development = party.development ?? party.goodWorkPercent ?? 0;
     const damage = 100 - development;
+    const goodWorkBreakdown = sanitizeBreakdown(party.goodWorkBreakdown).length
+      ? sanitizeBreakdown(party.goodWorkBreakdown)
+      : defaultGoodBreakdown(party);
+    const badWorkBreakdown = sanitizeBreakdown(party.badWorkBreakdown).length
+      ? sanitizeBreakdown(party.badWorkBreakdown)
+      : defaultBadBreakdown(party);
     res.json({
       data: {
         development,
@@ -266,6 +367,8 @@ const getProgress = async (req, res, next) => {
         goodWork: party.goodWork ?? party.goodWorkPercent ?? 0,
         badWork: party.badWork ?? party.badWorkPercent ?? 0,
         detailedMetrics: party.detailedMetrics || {},
+        goodWorkBreakdown,
+        badWorkBreakdown,
       },
     });
   } catch (error) {
@@ -277,106 +380,154 @@ const getProgress = async (req, res, next) => {
 const getPastPerformance = async (req, res, next) => {
   try {
     const party = await resolveParty(req);
-    const manualHistory = Array.isArray(party.historicalData) ? party.historicalData : [];
-
-    const endedElections = await Election.find({
-      $or: [
-        { status: "Ended" },
-        { isEnded: true },
-        { endDate: { $lte: new Date() } },
-      ],
-    })
-      .select("_id title endDate")
+    const partyId = party._id.toString();
+    const endedElections = await Election.find(buildEndedElectionFilter())
+      .select("_id title endDate type participatingParties")
       .lean();
     const endedElectionIds = endedElections.map((item) => item._id);
-
-    let electionHistory = [];
-    if (endedElectionIds.length) {
-      const voteAgg = await Vote.aggregate([
-        { $match: { electionId: { $in: endedElectionIds }, partyId: { $ne: null } } },
-        {
-          $group: {
-            _id: {
-              electionId: "$electionId",
-              partyId: "$partyId",
+    const voteAgg = endedElectionIds.length
+      ? await Vote.aggregate([
+          { $match: { electionId: { $in: endedElectionIds }, partyId: { $ne: null } } },
+          {
+            $group: {
+              _id: {
+                electionId: "$electionId",
+                partyId: "$partyId",
+              },
+              votes: { $sum: 1 },
             },
-            votes: { $sum: 1 },
           },
-        },
-      ]);
+        ])
+      : [];
 
-      const byElection = voteAgg.reduce((acc, row) => {
-        const key = row._id?.electionId?.toString();
-        if (!key) return acc;
-        if (!acc[key]) acc[key] = [];
-        acc[key].push({
-          partyId: row._id?.partyId?.toString(),
-          votes: Number(row.votes || 0),
-        });
-        return acc;
-      }, {});
+    const linkedParties = endedElectionIds.length
+      ? await Party.find({ electionId: { $in: endedElectionIds } })
+          .select("_id electionId")
+          .lean()
+      : [];
+    const linkedByElection = linkedParties.reduce((acc, row) => {
+      const electionId = row?.electionId?.toString?.();
+      const partyRef = row?._id?.toString?.();
+      if (!electionId || !partyRef) return acc;
+      if (!acc[electionId]) acc[electionId] = new Set();
+      acc[electionId].add(partyRef);
+      return acc;
+    }, {});
 
-      electionHistory = endedElections
-        .map((election) => {
-          const rows = byElection[election._id.toString()] || [];
-          if (!rows.length) return null;
+    const byElection = voteAgg.reduce((acc, row) => {
+      const key = row._id?.electionId?.toString();
+      if (!key) return acc;
+      if (!acc[key]) acc[key] = [];
+      acc[key].push({
+        partyId: row._id?.partyId?.toString(),
+        votes: Number(row.votes || 0),
+      });
+      return acc;
+    }, {});
 
-          const ranked = [...rows].sort((a, b) => b.votes - a.votes);
-          const ownIndex = ranked.findIndex(
-            (item) => item.partyId === party._id.toString(),
-          );
-          if (ownIndex === -1) return null;
+    const electionHistory = await Promise.all(
+      endedElections.map(async (election) => {
+        const electionId = election._id.toString();
+        const rows = Array.isArray(byElection[electionId]) ? byElection[electionId] : [];
+        const voteMap = new Map(rows.map((item) => [item.partyId, Number(item.votes || 0)]));
 
-          const yearSource = election.endDate ? new Date(election.endDate) : new Date();
-          return {
-            year: yearSource.getFullYear(),
-            election: election.title || "Election",
-            votes: ranked[ownIndex].votes,
-            position: ownIndex + 1,
-            totalParties: ranked.length,
-            won: ownIndex === 0,
-          };
-        })
-        .filter(Boolean);
-    }
+        const participatingIds = Array.isArray(election.participatingParties)
+          ? election.participatingParties
+              .map((item) => item?.partyId?.toString?.() || item?.partyId || "")
+              .filter(Boolean)
+          : [];
 
-    const normalizedManualHistory = manualHistory.map((item, index) => ({
-      year: item.year || new Date().getFullYear() - index,
-      election: item.election || item.title || `Election ${item.year || index + 1}`,
-      votes: Number(item.votes || 0),
-      position: Number(item.position || 0) || null,
-      totalParties: Number(item.totalParties || 0) || null,
-      won: Boolean(item.won || Number(item.position || 0) === 1),
-    }));
+        const candidateIds = new Set([
+          ...rows.map((item) => item.partyId).filter(Boolean),
+          ...participatingIds,
+          ...[...(linkedByElection[electionId] || [])],
+        ]);
 
-    const mergedMap = new Map();
-    normalizedManualHistory.forEach((item) => {
-      const key = `${item.election}-${item.year}`;
-      mergedMap.set(key, item);
+        const ownVotes = Number(voteMap.get(partyId) || 0);
+        const ownParticipated = candidateIds.has(partyId) || ownVotes > 0;
+        if (!ownParticipated) return null;
+        candidateIds.add(partyId);
+
+        const ranking = [...candidateIds]
+          .map((candidatePartyId) => ({
+            partyId: candidatePartyId,
+            votes: Number(voteMap.get(candidatePartyId) || 0),
+          }))
+          .sort((a, b) => {
+            if (b.votes === a.votes) return a.partyId.localeCompare(b.partyId);
+            return b.votes - a.votes;
+          });
+
+        const ownIndex = ranking.findIndex((item) => item.partyId === partyId);
+        const yearSource = election.endDate ? new Date(election.endDate) : new Date();
+        const totalParties = ranking.length;
+        const position = ownIndex >= 0 ? ownIndex + 1 : 0;
+
+        return {
+          electionId,
+          year: yearSource.getFullYear(),
+          election: election.title || "Election",
+          votes: ownVotes,
+          position,
+          totalParties,
+          won: ownIndex === 0 && ownVotes > 0,
+        };
+      }),
+    );
+
+    const voteBasedHistory = electionHistory
+      .filter(Boolean)
+      .sort((a, b) => Number(b.year || 0) - Number(a.year || 0));
+
+    const historicalRows = Array.isArray(party.historicalData)
+      ? party.historicalData
+          .map((row) => ({
+            electionId: row?.electionId?.toString?.() || "",
+            year: Number(row?.year || 0) || 0,
+            election: row?.label || `Election ${row?.year || ""}`,
+            votes: Number(row?.votes || 0),
+            position: row?.won ? 1 : Number(row?.position || 0),
+            totalParties: Number(row?.totalParties || 0),
+            won: Boolean(row?.won),
+          }))
+          .filter((row) => row.year || row.electionId || row.votes > 0 || row.won)
+      : [];
+
+    const mergedByKey = new Map();
+    historicalRows.forEach((row) => {
+      const key = row.electionId || `${row.year}-${row.election}`;
+      mergedByKey.set(key, row);
     });
-    electionHistory.forEach((item) => {
-      const key = `${item.election}-${item.year}`;
-      mergedMap.set(key, item);
+    voteBasedHistory.forEach((row) => {
+      const key = row.electionId || `${row.year}-${row.election}`;
+      mergedByKey.set(key, row);
     });
 
-    const aggregated = [...mergedMap.values()]
-      .sort((a, b) => Number(b.year || 0) - Number(a.year || 0))
-      .slice(0, 5);
+    const mergedHistory = [...mergedByKey.values()]
+      .filter((row) => row.year || row.election)
+      .sort((a, b) => Number(b.year || 0) - Number(a.year || 0));
 
-    const totalWins = aggregated.filter((item) => item.won).length;
+    const totalWins = mergedHistory.filter((item) => item.won).length;
     const averageVotes =
-      aggregated.length > 0
+      mergedHistory.length > 0
         ? Math.round(
-            aggregated.reduce((acc, current) => acc + Number(current.votes || 0), 0) /
-              aggregated.length,
+            mergedHistory.reduce((acc, current) => acc + Number(current.votes || 0), 0) /
+              mergedHistory.length,
           )
         : 0;
     const winRate =
-      aggregated.length > 0 ? `${((totalWins / aggregated.length) * 100).toFixed(1)}%` : "0%";
+      mergedHistory.length > 0
+        ? `${((totalWins / mergedHistory.length) * 100).toFixed(1)}%`
+        : "0%";
+
+    if (party.electionWins !== totalWins) {
+      party.electionWins = totalWins;
+      await party.save();
+    }
 
     res.json({
       data: {
-        pastElections: aggregated,
+        pastElections: mergedHistory.slice(0, 8),
         summary: {
           totalWins,
           averageVotes,
@@ -462,7 +613,8 @@ const getCurrentStats = async (req, res, next) => {
 
     if (partiesById.size <= 1) {
       const fallbackFilter = {
-        status: { $nin: ["rejected", "blocked"] },
+        status: "approved",
+        isActive: true,
         $or: [{ electionId: election._id }, { isActive: true }, { status: "approved" }],
       };
       if (electionTypeRegex) {
@@ -474,7 +626,8 @@ const getCurrentStats = async (req, res, next) => {
 
     if (partiesById.size <= 1) {
       const broadFallback = await Party.find({
-        status: { $nin: ["rejected", "blocked"] },
+        status: "approved",
+        isActive: true,
       }).lean();
       mergeParties(broadFallback);
     }

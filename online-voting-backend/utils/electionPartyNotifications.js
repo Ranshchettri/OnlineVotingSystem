@@ -6,8 +6,22 @@ const Notification = require("../models/Notification");
 const toId = (value) => {
   if (!value) return "";
   if (typeof value === "string") return value;
-  if (value._id) return toId(value._id);
-  if (typeof value.toString === "function") return value.toString();
+  if (typeof value === "number") return String(value);
+
+  // Handle raw ObjectId/BSON values safely first.
+  if (typeof value === "object" && typeof value.toHexString === "function") {
+    return value.toHexString();
+  }
+
+  // Only recurse when nested _id is a different object.
+  if (value && typeof value === "object" && value._id && value._id !== value) {
+    return toId(value._id);
+  }
+
+  if (typeof value?.toString === "function") {
+    const normalized = value.toString();
+    return normalized === "[object Object]" ? "" : normalized;
+  }
   return "";
 };
 

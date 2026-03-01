@@ -41,6 +41,12 @@ const getCandidateAnalytics = async (req, res, next) => {
           badWork: party.badWork ?? party.badWorkPercent ?? 0,
           logo: party.logo || party.symbol || "",
           detailedMetrics: party.detailedMetrics || {},
+          goodWorkBreakdown: Array.isArray(party.goodWorkBreakdown)
+            ? party.goodWorkBreakdown
+            : [],
+          badWorkBreakdown: Array.isArray(party.badWorkBreakdown)
+            ? party.badWorkBreakdown
+            : [],
           historicalData: party.historicalData || [],
           tasks: [],
         };

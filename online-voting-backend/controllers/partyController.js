@@ -1,7 +1,9 @@
+const mongoose = require("mongoose");
 const Party = require("../models/Party");
 const User = require("../models/User");
 const Notification = require("../models/Notification");
 const Vote = require("../models/Vote");
+const Activity = require("../models/Activity");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const AppError = require("../utils/AppError");
@@ -155,10 +157,31 @@ const notifyPartyAccounts = async (partyId, payload = {}) => {
   }
 };
 
+const createActivity = async ({ action, user, userId, icon, color }) => {
+  try {
+    await Activity.create({
+      action,
+      user,
+      userId: mongoose.Types.ObjectId.isValid(userId) ? userId : undefined,
+      icon: icon || "ri-information-line",
+      color: color || "blue",
+    });
+  } catch (error) {
+    console.error("Failed to create activity:", error.message);
+  }
+};
+
+const buildEndedElectionFilter = () => ({
+  $or: [
+    { status: /^ended$/i },
+    { isEnded: true },
+    { allowVoting: false },
+    { endDate: { $lte: new Date() } },
+  ],
+});
+
 const calculatePartyWinCount = async (partyId) => {
-  const endedElections = await Election.find({
-    $or: [{ status: "Ended" }, { isEnded: true }, { endDate: { $lte: new Date() } }],
-  })
+  const endedElections = await Election.find(buildEndedElectionFilter())
     .select("_id")
     .lean();
 
@@ -373,6 +396,13 @@ const createParty = async (req, res, next) => {
 
     await party.save();
     await ensurePartyAuthAccount(party);
+    await createActivity({
+      action: `Party created: ${party.name}`,
+      user: req.user?.fullName || "Admin",
+      userId: req.user?._id,
+      icon: "ri-flag-line",
+      color: "green",
+    });
     res.status(201).json({ data: formatPartyPayload(party) });
   } catch (error) {
     console.error("createParty failed", error);

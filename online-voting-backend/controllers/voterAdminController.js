@@ -1,5 +1,7 @@
+const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
+const Activity = require("../models/Activity");
 const AppError = require("../utils/AppError");
 const { logAudit } = require("./adminController");
 
@@ -30,6 +32,20 @@ const buildStats = (voters = []) => {
     newRegistered,
     percentageChange,
   };
+};
+
+const createActivity = async ({ action, user, userId, icon, color }) => {
+  try {
+    await Activity.create({
+      action,
+      user,
+      userId: mongoose.Types.ObjectId.isValid(userId) ? userId : undefined,
+      icon: icon || "ri-information-line",
+      color: color || "blue",
+    });
+  } catch (error) {
+    console.error("Failed to create activity:", error.message);
+  }
 };
 
 // GET /api/voters/admin/stats
@@ -77,6 +93,13 @@ const approveVoter = async (req, res, next) => {
     voter.verificationStatus = "auto-approved";
     await voter.save();
     await logAudit(req, "approve_voter", { voterId: voter._id });
+    await createActivity({
+      action: `Voter approved: ${voter.fullName}`,
+      user: req.user?.fullName || "Admin",
+      userId: req.user?._id,
+      icon: "ri-user-check-line",
+      color: "green",
+    });
     res.json({ success: true });
   } catch (error) {
     next(error);
@@ -93,6 +116,13 @@ const blockVoter = async (req, res, next) => {
     voter.verificationStatus = "blocked";
     await voter.save();
     await logAudit(req, "block_voter", { voterId: voter._id });
+    await createActivity({
+      action: `Voter blocked: ${voter.fullName}`,
+      user: req.user?.fullName || "Admin",
+      userId: req.user?._id,
+      icon: "ri-user-forbid-line",
+      color: "red",
+    });
     res.json({ success: true });
   } catch (error) {
     next(error);
@@ -109,6 +139,13 @@ const rejectVoter = async (req, res, next) => {
     voter.verificationStatus = "rejected";
     await voter.save();
     await logAudit(req, "reject_voter", { voterId: voter._id });
+    await createActivity({
+      action: `Voter rejected: ${voter.fullName}`,
+      user: req.user?.fullName || "Admin",
+      userId: req.user?._id,
+      icon: "ri-user-unfollow-line",
+      color: "red",
+    });
     res.json({ success: true });
   } catch (error) {
     next(error);
@@ -174,6 +211,13 @@ const createVoter = async (req, res, next) => {
       profilePhoto: photo || req.body.profilePhoto || null,
     });
     await logAudit(req, "create_voter", { voterId: newVoter._id });
+    await createActivity({
+      action: `Voter created: ${newVoter.fullName}`,
+      user: req.user?.fullName || "Admin",
+      userId: req.user?._id,
+      icon: "ri-user-add-line",
+      color: "blue",
+    });
     res.status(201).json({ success: true, voterId: newVoter._id });
   } catch (error) {
     next(error);
