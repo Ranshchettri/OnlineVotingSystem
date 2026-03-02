@@ -115,7 +115,7 @@ export default function PartyProfile() {
               </div>
               <div className="party-hero-stat">
                 <span>Election Wins</span>
-                <strong>{Number(party.electionWins || 0)} Times</strong>
+                <strong>{Number(party.electionWins || 0)}</strong>
               </div>
             </div>
             <div className="party-hero-tags">
