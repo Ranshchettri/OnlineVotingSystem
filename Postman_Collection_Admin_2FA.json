@@ -49,7 +49,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"email\": \"ranshsunar@gmail.com\",\n  \"password\": \"Admin@123456\"\n}"
+          "raw": "{\n  \"email\": \"ranshchettri788@gmail.com\",\n  \"password\": \"Admin@123456\"\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/api/auth/login",
