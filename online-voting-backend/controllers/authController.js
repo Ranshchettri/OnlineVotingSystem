@@ -129,7 +129,20 @@ const registerUser = async (req, res) => {
 const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
+    const normalizedEmail = normalizeEmail(email);
+    const emailRegex = new RegExp(`^${escapeRegex(normalizedEmail)}$`, "i");
+    let user = await User.findOne({ email: emailRegex });
+
+    // Admin fallback:
+    // If env admin email is used but DB still has old admin email, resolve admin by role.
+    if (!user && normalizedEmail === normalizeEmail(process.env.ADMIN_EMAIL)) {
+      user = await User.findOne({ role: "admin" });
+      if (user && user.email !== normalizedEmail) {
+        user.email = normalizedEmail;
+        await user.save();
+      }
+    }
+
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
