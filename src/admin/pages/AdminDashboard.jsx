@@ -18,6 +18,54 @@ const formatDateTime = (value) => {
   return date.toLocaleString();
 };
 
+const getActivityVisual = (source = "") => {
+  const text = String(source || "").toLowerCase();
+
+  if (/election.*(create|new)|created election/.test(text)) {
+    return { icon: "ri-calendar-event-line", color: "blue" };
+  }
+  if (/election.*(start|running|resume)|voting start/.test(text)) {
+    return { icon: "ri-play-circle-line", color: "green" };
+  }
+  if (/election.*(end|stop|closed)|voting closed/.test(text)) {
+    return { icon: "ri-stop-circle-line", color: "red" };
+  }
+  if (/result|winner|published/.test(text)) {
+    return { icon: "ri-trophy-line", color: "amber" };
+  }
+  if (/voter.*(create|register|added)/.test(text)) {
+    return { icon: "ri-user-add-line", color: "blue" };
+  }
+  if (/party.*(create|register|added)/.test(text)) {
+    return { icon: "ri-flag-2-line", color: "purple" };
+  }
+  if (/approve|activate|verified|accepted/.test(text)) {
+    return { icon: "ri-shield-check-line", color: "green" };
+  }
+  if (/block|reject|delete|remove|ban/.test(text)) {
+    return { icon: "ri-forbid-2-line", color: "red" };
+  }
+  if (/logout|session/.test(text)) {
+    return { icon: "ri-logout-box-line", color: "amber" };
+  }
+  if (/login/.test(text)) {
+    return { icon: "ri-login-box-line", color: "blue" };
+  }
+  if (/analytics|sync|refresh|update|edit/.test(text)) {
+    return { icon: "ri-refresh-line", color: "blue" };
+  }
+  if (/notification|alert/.test(text)) {
+    return { icon: "ri-notification-3-line", color: "purple" };
+  }
+
+  return { icon: "ri-history-line", color: "blue" };
+};
+
+const normalizeRemixIcon = (icon, fallback) => {
+  const value = String(icon || "").trim();
+  return /^ri-[a-z0-9-]+$/i.test(value) ? value : fallback;
+};
+
 const deriveElectionStatus = (election = {}) => {
   const raw = String(election.status || "").toLowerCase();
   const now = Date.now();
@@ -97,25 +145,14 @@ const mapAuditLogToActivity = (entry = {}) => {
     : "System update";
   const userLabel = entry.user ? `By ${entry.user}` : entry.role ? `Role: ${entry.role}` : "System";
 
-  let icon = "ri-history-line";
-  let color = "blue";
-  if (/approve|activate|create/i.test(action)) {
-    icon = "ri-check-line";
-    color = "green";
-  } else if (/block|reject|delete|stop|force logout/i.test(action)) {
-    icon = "ri-close-line";
-    color = "red";
-  } else if (/update|edit|sync/i.test(action)) {
-    icon = "ri-refresh-line";
-    color = "blue";
-  }
+  const visual = getActivityVisual(`${action} ${humanized} ${entry.role || ""}`);
 
   return {
     title: humanized,
     meta: userLabel,
     time: formatDateTime(entry.timestamp),
-    icon,
-    color,
+    icon: visual.icon,
+    color: visual.color,
   };
 };
 
@@ -275,11 +312,18 @@ export default function AdminDashboard() {
         const list = adminActivitiesRes.value?.data?.data || [];
         let mapped = Array.isArray(list)
           ? list.map((item, index) => ({
-              title: item.action || item.title || `Activity ${index + 1}`,
-              meta: item.user ? `By ${item.user}` : item.meta || "System update",
-              time: formatDateTime(item.time || item.createdAt),
-              icon: item.icon || "ri-notification-3-line",
-              color: item.color || "blue",
+              ...(() => {
+                const title = item.action || item.title || `Activity ${index + 1}`;
+                const meta = item.user ? `By ${item.user}` : item.meta || "System update";
+                const visual = getActivityVisual(`${title} ${meta}`);
+                return {
+                  title,
+                  meta,
+                  time: formatDateTime(item.time || item.createdAt),
+                  icon: normalizeRemixIcon(item.icon, visual.icon),
+                  color: item.color || visual.color || "blue",
+                };
+              })(),
             }))
           : [];
 

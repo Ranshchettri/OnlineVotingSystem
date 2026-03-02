@@ -118,6 +118,8 @@
 .party-home-page .party-profile-badge i {
   font-size: 14px;
   line-height: 1;
+  font-weight: 400;
+  font-style: normal;
 }
 
 .party-home-page .party-profile-body {

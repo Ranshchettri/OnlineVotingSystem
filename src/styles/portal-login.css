@@ -34,7 +34,7 @@
   position: absolute;
   inset: 0;
   background: url("../assets/parliament-login-clear.jpg") center / cover no-repeat;
-  filter: brightness(1.15) contrast(1.02) saturate(1.06);
+  filter: brightness(0.8) contrast(1.02) saturate(0.86) grayscale(0.22) blur(0.7px);
   transform: scale(1.01);
   z-index: 0;
 }
@@ -42,7 +42,7 @@
 .portal-login-left-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(140deg, rgba(15, 23, 42, 0.26), rgba(5, 150, 105, 0.16));
+  background: linear-gradient(140deg, rgba(30, 41, 59, 0.42), rgba(71, 85, 105, 0.26));
   backdrop-filter: blur(0.35px) saturate(103%);
   z-index: 0;
 }
@@ -93,6 +93,8 @@
   font-size: 52px;
   line-height: 1.04;
   font-weight: 800;
+  color: #fff;
+  text-shadow: 0 2px 14px rgba(15, 23, 42, 0.35);
 }
 
 .portal-login-copy h1 span {
@@ -212,15 +214,16 @@
 }
 
 .portal-input-wrap i {
-  width: 38px;
+  width: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: #94a3b8;
-  font-size: 16px;
+  font-size: 17px;
   line-height: 1;
   font-weight: 400;
   font-style: normal;
+  flex-shrink: 0;
 }
 
 .portal-input-wrap input {
@@ -233,9 +236,10 @@
   border-radius: 10px;
   font-size: 14px;
   color: #0f172a;
-  line-height: 1.2;
+  line-height: 1.15;
   padding-left: 0;
   padding-right: 12px;
+  margin: 0;
 }
 
 .portal-input-wrap input::placeholder {
@@ -272,7 +276,7 @@
   margin-top: 4px;
   display: flex;
   gap: 10px;
-  align-items: flex-start;
+  align-items: center;
   border: 1px solid #bbf7d0;
   background: #ecfdf3;
   color: #166534;
@@ -281,11 +285,12 @@
 }
 
 .portal-alert i {
-  font-size: 14px;
-  margin-top: 1px;
+  font-size: 16px;
+  margin-top: 0;
   line-height: 1;
   font-weight: 400;
   font-style: normal;
+  flex-shrink: 0;
 }
 
 .portal-alert > div {

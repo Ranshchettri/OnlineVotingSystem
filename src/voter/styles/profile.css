@@ -68,12 +68,17 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  line-height: 1.2;
 }
 
 .profile-hero-info p svg,
 .profile-hero-info p i {
-  width: 16px;
-  height: 16px;
+  width: auto;
+  height: auto;
+  font-size: 15px;
+  line-height: 1;
+  font-weight: 400;
+  font-style: normal;
 }
 
 .profile-hero-badge {
@@ -90,8 +95,12 @@
 
 .profile-hero-badge svg,
 .profile-hero-badge i {
-  width: 14px;
-  height: 14px;
+  width: auto;
+  height: auto;
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 400;
+  font-style: normal;
 }
 
 .profile-info {

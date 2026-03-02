@@ -356,6 +356,18 @@
   color: #7c3aed;
 }
 
+.activity-icon.red,
+.timeline-icon.red {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.activity-icon.amber,
+.timeline-icon.amber {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
 .timeline-icon.gray {
   background: #f1f5f9;
   color: #64748b;

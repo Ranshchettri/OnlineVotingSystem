@@ -29,6 +29,7 @@ import NotFound from "../shared/NotFound";
 import AccessLanding from "./AccessLanding";
 import VoterLogin from "../voter/Login";
 import PartyLogin from "../auth/PartyLogin";
+import RoleProtected from "../auth/RoleProtected";
 
 export default function AppRouter() {
   return (
@@ -42,29 +43,37 @@ export default function AppRouter() {
       <Route path="/party/login" element={<PartyLogin />} />
 
       <Route
-        path="/admin/*"
+        path="/admin"
         element={
-          <AdminLayout>
-            <Routes>
-              <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="elections/create" element={<CreateElection />} />
-              <Route
-                path="elections/results/:electionId"
-                element={<ElectionResults />}
-              />
-              <Route path="voters" element={<Voters />} />
-              <Route path="parties" element={<Parties />} />
-              <Route path="elections" element={<Elections />} />
-              <Route path="analytics" element={<Analytics />} />
-              <Route path="results" element={<Results />} />
-              <Route path="notifications" element={<Notifications />} />
-            </Routes>
-          </AdminLayout>
+          <RoleProtected allow="admin">
+            <AdminLayout />
+          </RoleProtected>
         }
-      />
+      >
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<AdminDashboard />} />
+        <Route path="elections/create" element={<CreateElection />} />
+        <Route
+          path="elections/results/:electionId"
+          element={<ElectionResults />}
+        />
+        <Route path="voters" element={<Voters />} />
+        <Route path="parties" element={<Parties />} />
+        <Route path="elections" element={<Elections />} />
+        <Route path="analytics" element={<Analytics />} />
+        <Route path="results" element={<Results />} />
+        <Route path="notifications" element={<Notifications />} />
+      </Route>
 
       {/* Voter Routes */}
-      <Route path="/voter" element={<VoterLayout />}>
+      <Route
+        path="/voter"
+        element={
+          <RoleProtected allow="voter">
+            <VoterLayout />
+          </RoleProtected>
+        }
+      >
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<Overview />} />
         <Route path="party/:partyId" element={<PartyProfile />} />
@@ -75,7 +84,14 @@ export default function AppRouter() {
       </Route>
 
       {/* Party Routes */}
-      <Route path="/party" element={<PartyLayout />}>
+      <Route
+        path="/party"
+        element={
+          <RoleProtected allow="party">
+            <PartyLayout />
+          </RoleProtected>
+        }
+      >
         <Route index element={<Navigate to="home" replace />} />
         <Route path="home" element={<PartyHome />} />
         <Route path="about" element={<PartyAbout />} />
