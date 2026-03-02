@@ -161,13 +161,9 @@ export default function PartyProgress() {
             >
               <div className="progress-ring-inner">
                 <div className="progress-ring-value">{data.goodWork}%</div>
+                <div className="progress-ring-label compact">Positive Impact</div>
               </div>
             </div>
-            <p>
-              <strong>Positive Impact</strong>
-              <br />
-              Positive impact
-            </p>
           </div>
 
           <div>
@@ -177,13 +173,9 @@ export default function PartyProgress() {
             >
               <div className="progress-ring-inner">
                 <div className="progress-ring-value">{data.badWork}%</div>
+                <div className="progress-ring-label compact">Negative Impact</div>
               </div>
             </div>
-            <p>
-              <strong>Negative Impact</strong>
-              <br />
-              Negative impact
-            </p>
           </div>
         </div>
         <div className="progress-note">

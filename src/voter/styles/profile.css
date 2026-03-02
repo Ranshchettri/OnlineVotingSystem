@@ -176,20 +176,41 @@
 .profile-history-badge {
   display: inline-flex;
   align-items: center;
+  white-space: nowrap;
   gap: 6px;
   padding: 6px 12px;
   border-radius: 999px;
-  background: var(--green-50);
-  border: 1px solid var(--green-200);
-  color: var(--green-700);
+  background: #ecfdf3;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
   font-size: 11px;
   font-weight: 600;
 }
 
 .profile-history-badge svg,
 .profile-history-badge i {
-  width: 14px;
-  height: 14px;
+  width: auto;
+  height: auto;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.profile-history-badge.won {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #15803d;
+}
+
+.profile-history-badge.lost {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.profile-history-badge.submitted {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
 }
 
 .profile-history-grid {

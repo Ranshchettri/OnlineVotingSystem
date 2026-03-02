@@ -446,7 +446,7 @@ export default function PartyHome() {
                   </div>
                   <div>
                     <span>Election Wins</span>
-                    <strong>{Number(saved.electionWins || 0)} Times</strong>
+                    <strong>{Number(saved.electionWins || 0)}</strong>
                   </div>
                 </div>
               </>

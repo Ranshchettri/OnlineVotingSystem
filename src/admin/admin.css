@@ -92,10 +92,12 @@
 }
 
 .admin-sidebar__divider {
-  height: 1px;
+  height: 0;
   width: calc(100% + 32px);
   margin-left: -16px;
-  background: #e2e8f0;
+  border-top: 1px solid #e2e8f0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .admin-sidebar__divider.bottom {
@@ -363,6 +365,13 @@
   max-height: 380px;
   overflow: auto;
   padding: 8px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.admin-topbar__dropdown--notifications::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .admin-topbar__dropdown-title {
@@ -434,6 +443,13 @@
   overflow-y: auto;
   display: flex;
   justify-content: center;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.admin-content::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .admin-page {

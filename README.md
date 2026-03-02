@@ -2,6 +2,11 @@
 
 Complete online voting system with frontend and backend components.
 
+## Diagrams
+
+- Quick access: `DIAGRAMS.md`
+- Detailed docs: `docs/SYSTEM_DIAGRAMS.md`
+
 ## Frontend
 
 React + Vite frontend for the voting system.

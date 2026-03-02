@@ -146,7 +146,7 @@ export default function PartyProfile() {
 
         <div className="metric-card">
           <h4>Work Analysis</h4>
-          <p className="metric-note">Good and negative impact percentages.</p>
+          <p className="metric-note">Positive and negative impact percentages.</p>
           <div className="work-analysis-rings">
             <div className="work-ring-wrap">
               <div className="ring" style={{ "--percent": goodWork, "--ring-color": "#16a34a" }}>
@@ -164,10 +164,6 @@ export default function PartyProfile() {
                 </div>
               </div>
             </div>
-          </div>
-          <div className="work-grid">
-            <div className="metric-badge good">Positive Impact: {goodWork}%</div>
-            <div className="metric-badge bad">Negative Impact: {badWork}%</div>
           </div>
           <div className="party-breakdown-grid">
             <div className="party-breakdown good">

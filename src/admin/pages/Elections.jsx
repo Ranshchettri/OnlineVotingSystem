@@ -607,7 +607,7 @@ export default function Elections() {
                     checked={form.autoClose}
                     onChange={(e) => setForm({ ...form, autoClose: e.target.checked })}
                   />
-                  Auto-close on end date
+                  <span className="checkbox-text">Auto-close on end date</span>
                 </label>
                 <label>
                   <input
@@ -615,7 +615,7 @@ export default function Elections() {
                     checked={form.autoResults}
                     onChange={(e) => setForm({ ...form, autoResults: e.target.checked })}
                   />
-                  Auto winner calculation
+                  <span className="checkbox-text">Auto winner calculation</span>
                 </label>
                 <label>
                   <input
@@ -625,7 +625,7 @@ export default function Elections() {
                       setForm({ ...form, emergencyShutdown: e.target.checked })
                     }
                   />
-                  Enable emergency shutdown
+                  <span className="checkbox-text">Enable emergency shutdown</span>
                 </label>
                 <label>
                   <input
@@ -633,7 +633,7 @@ export default function Elections() {
                     checked={form.tieHandling}
                     onChange={(e) => setForm({ ...form, tieHandling: e.target.checked })}
                   />
-                  Tie-handling logic
+                  <span className="checkbox-text">Tie-handling logic</span>
                 </label>
               </div>
               <div className="admin-modal-actions">

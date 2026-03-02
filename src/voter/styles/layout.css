@@ -16,6 +16,13 @@
   padding: 4px 32px 40px;
   overflow-y: auto;
   flex: 1;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.voter-content::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .voter-sidebar {
@@ -68,9 +75,11 @@
 }
 
 .voter-sidebar-divider {
-  height: 1px;
+  height: 0;
   width: 100%;
-  background: #e2e8f0;
+  border-top: 1px solid #e2e8f0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .voter-sidebar-divider.bottom {

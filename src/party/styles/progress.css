@@ -116,15 +116,15 @@
   text-align: center;
 }
 
-.work-analysis p {
-  margin-top: 6px;
-  font-size: 13px;
-  color: var(--gray-500);
-}
-
 .work-analysis .progress-ring-value {
   font-size: 16px;
   line-height: 1;
+}
+
+.work-analysis .progress-ring-label.compact {
+  margin-top: 3px;
+  font-size: 9px;
+  line-height: 1.1;
 }
 
 .work-analysis .progress-ring {

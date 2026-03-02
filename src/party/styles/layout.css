@@ -72,9 +72,11 @@
 }
 
 .party-sidebar-divider {
-  height: 1px;
+  height: 0;
   width: 100%;
-  background: #e2e8f0;
+  border-top: 1px solid #e2e8f0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .party-sidebar-divider.bottom {
@@ -246,4 +248,11 @@
   padding: 2px 16px 24px;
   overflow-y: auto;
   flex: 1;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.party-main .party-content::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }

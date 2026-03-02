@@ -1,0 +1,27 @@
+sequenceDiagram
+  actor V as Voter
+  participant FE as Frontend
+  participant BE as Backend API
+  participant DB as MongoDB
+  participant NS as Notification Service
+
+  V->>FE: Login (email + voterId)
+  FE->>BE: POST /auth/voter/login
+  BE->>DB: Validate voter
+  DB-->>BE: voter record
+  BE-->>FE: OTP + login step
+
+  V->>FE: Face verify + OTP submit
+  FE->>BE: POST /auth/voter/verify-otp
+  BE->>DB: Verify session
+  DB-->>BE: OK
+  BE-->>FE: JWT token
+
+  V->>FE: Cast vote
+  FE->>BE: POST /votes
+  BE->>DB: Insert vote + update counters
+  DB-->>BE: committed
+  BE->>NS: Push notifications
+  NS->>DB: Save notifications
+  BE-->>FE: Vote submitted success
+

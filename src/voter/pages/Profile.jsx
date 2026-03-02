@@ -74,11 +74,19 @@ export default function Profile() {
             winnerName &&
             votedPartyName &&
             votedPartyName === winnerName.toLowerCase();
+          const voteStatusLabel = !winnerName
+            ? "Your Vote Submitted"
+            : voteWon
+              ? "Your Vote Won"
+              : "Your Vote Lost";
+          const voteStatusClass = !winnerName ? "submitted" : voteWon ? "won" : "lost";
 
           return {
             ...item,
             winnerName: winnerName || "-",
             voteWon,
+            voteStatusLabel,
+            voteStatusClass,
           };
         });
 
@@ -196,9 +204,9 @@ export default function Profile() {
                       <h4>{item.electionName || "Election"}</h4>
                       <span>Year: {year}</span>
                     </div>
-                    <div className="profile-history-badge">
+                    <div className={`profile-history-badge ${item.voteStatusClass || "submitted"}`}>
                       <i className="ri-trophy-line" aria-hidden="true" />
-                      {item.voteWon ? "Your Vote Won" : "Vote Submitted"}
+                      {item.voteStatusLabel || "Your Vote Submitted"}
                     </div>
                   </div>
                   <div className="profile-history-grid">

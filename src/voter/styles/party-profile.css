@@ -239,8 +239,11 @@
 
 .party-profile .ring-label {
   margin-top: 4px;
-  font-size: 13px;
+  font-size: 12px;
+  line-height: 1.2;
   color: var(--gray-600);
+  text-align: center;
+  padding: 0 6px;
 }
 
 .party-profile .ring-sub {
@@ -311,9 +314,19 @@
 }
 
 .party-profile .work-ring-wrap .ring {
-  --size: 130px;
+  --size: 138px;
   --thickness: 12px;
   margin: 0 auto;
+}
+
+.party-profile .work-ring-wrap .ring .ring-value {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.party-profile .work-ring-wrap .ring .ring-label {
+  font-size: 11px;
+  margin-top: 3px;
 }
 
 .party-profile .work-chart::after {

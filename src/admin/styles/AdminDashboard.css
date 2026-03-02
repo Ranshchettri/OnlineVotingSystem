@@ -287,7 +287,14 @@
 .activity-list {
   max-height: 330px;
   overflow-y: auto;
-  padding-right: 4px;
+  padding-right: 2px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.activity-list::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .activity-item,
