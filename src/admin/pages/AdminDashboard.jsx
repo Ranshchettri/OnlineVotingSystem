@@ -22,7 +22,7 @@ const getActivityVisual = (source = "") => {
   const text = String(source || "").toLowerCase();
 
   if (/election.*(create|new)|created election/.test(text)) {
-    return { icon: "ri-calendar-event-line", color: "blue" };
+    return { icon: "ri-calendar-line", color: "blue" };
   }
   if (/election.*(start|running|resume)|voting start/.test(text)) {
     return { icon: "ri-play-circle-line", color: "green" };
@@ -43,7 +43,7 @@ const getActivityVisual = (source = "") => {
     return { icon: "ri-shield-check-line", color: "green" };
   }
   if (/block|reject|delete|remove|ban/.test(text)) {
-    return { icon: "ri-forbid-2-line", color: "red" };
+    return { icon: "ri-close-circle-line", color: "red" };
   }
   if (/logout|session/.test(text)) {
     return { icon: "ri-logout-box-line", color: "amber" };
@@ -59,11 +59,6 @@ const getActivityVisual = (source = "") => {
   }
 
   return { icon: "ri-history-line", color: "blue" };
-};
-
-const normalizeRemixIcon = (icon, fallback) => {
-  const value = String(icon || "").trim();
-  return /^ri-[a-z0-9-]+$/i.test(value) ? value : fallback;
 };
 
 const deriveElectionStatus = (election = {}) => {
@@ -320,8 +315,8 @@ export default function AdminDashboard() {
                   title,
                   meta,
                   time: formatDateTime(item.time || item.createdAt),
-                  icon: normalizeRemixIcon(item.icon, visual.icon),
-                  color: item.color || visual.color || "blue",
+                  icon: visual.icon,
+                  color: visual.color || "blue",
                 };
               })(),
             }))

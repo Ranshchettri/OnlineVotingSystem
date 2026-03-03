@@ -20,17 +20,18 @@ export default function AccessLanding() {
             <p>Election Commission of Nepal</p>
           </div>
         </div>
-        <div className="landing-nav">
+        <div className="landing-nav landing-nav-center">
           <button type="button" className="landing-nav-btn" onClick={() => scrollToId("landing-features")}>
             Features
           </button>
           <button type="button" className="landing-nav-btn" onClick={() => scrollToId("landing-about")}>
             About
           </button>
-          <button type="button" className="landing-login-link" onClick={() => navigate("/voter/login")}>
-            Voter Login
+          <button type="button" className="landing-nav-btn" onClick={() => scrollToId("landing-portals")}>
+            Portals
           </button>
         </div>
+        <div className="landing-topbar-spacer" aria-hidden="true" />
       </header>
 
       <main className="landing-hero" style={{ backgroundImage: `url(${heroImage})` }}>
@@ -45,9 +46,6 @@ export default function AccessLanding() {
           <div className="landing-actions">
             <button type="button" className="landing-primary" onClick={() => scrollToId("landing-portals")}>
               Get Started
-            </button>
-            <button type="button" className="landing-secondary" onClick={() => scrollToId("landing-features")}>
-              View Features
             </button>
           </div>
         </div>
