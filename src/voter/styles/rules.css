@@ -11,7 +11,7 @@
 
 .voter-main .rules-card {
   margin-top: 18px;
-  border-radius: 18px;
+  border-radius: 10px;
   border: 1px solid var(--gray-200);
   background: #fff;
   padding: 22px;

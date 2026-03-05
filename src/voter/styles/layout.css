@@ -237,7 +237,7 @@
 
 .voter-badge {
   padding: 8px 14px;
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--green-50);
   color: var(--green-700);
   font-weight: 600;
@@ -262,7 +262,7 @@
 .voter-logout {
   border: 1px solid var(--gray-200);
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: 10px;
   background: #fff;
   display: inline-flex;
   align-items: center;

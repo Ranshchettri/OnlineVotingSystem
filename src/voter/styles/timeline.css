@@ -13,7 +13,7 @@
 
 .timeline-active {
   margin-top: 18px;
-  border-radius: 18px;
+  border-radius: 10px;
   background: linear-gradient(90deg, #16a34a 0%, #15803d 100%);
   color: #fff;
   padding: 24px 26px;
@@ -244,7 +244,7 @@
 
 .timeline-mail {
   margin-top: 24px;
-  border-radius: 18px;
+  border-radius: 10px;
   border: 1px solid #bfdbfe;
   background: #eff6ff;
   padding: 20px;

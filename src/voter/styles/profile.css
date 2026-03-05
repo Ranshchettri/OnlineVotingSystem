@@ -17,7 +17,7 @@
 }
 
 .profile-main-card {
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid var(--gray-200);
   background: #fff;
   overflow: hidden;
@@ -36,9 +36,9 @@
 .profile-hero-photo {
   width: 78px;
   height: 78px;
-  border-radius: 999px;
+  border-radius: 5px;
   background: rgba(255, 255, 255, 0.15);
-  border: 3px solid #554e4e;
+  border: 1px dotted #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -133,7 +133,7 @@
 }
 
 .profile-history-card {
-  border-radius: 18px;
+  border-radius: 10px;
   border: 1px solid var(--gray-200);
   background: #fff;
   padding: 20px 24px;

@@ -110,7 +110,7 @@
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: 8px;
   color: #475569;
   text-decoration: none;
   font-weight: 500;
@@ -125,8 +125,7 @@
 .admin-sidebar__icon {
   width: 32px;
   height: 32px;
-  border-radius: 10px;
-  background: #f1f5f9;
+  border-radius: 5px;
   display: grid;
   place-items: center;
   color: #64748b;
@@ -159,11 +158,12 @@
 }
 
 .admin-sidebar__status {
+  height: 72px;
   display: flex;
   gap: 10px;
   align-items: flex-start;
   padding: 12px 12px;
-  border-radius: 14px;
+  border-radius: 10px;
   background: linear-gradient(145deg, #f8fafc, #f1f5f9);
   border: 1px solid #dbe3ef;
   font-size: 12px;
@@ -442,7 +442,8 @@
   background: var(--admin-bg);
   overflow-y: auto;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
+  align-items: stretch;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -453,9 +454,9 @@
 }
 
 .admin-page {
-  max-width: 1180px;
-  margin: 0 auto;
   width: 100%;
+  max-width: none;
+  margin: 0;
 }
 
 .admin-card {

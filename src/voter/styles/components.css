@@ -9,6 +9,8 @@
   padding: 18px;
   display: flex;
   gap: 14px;
+  border-radius: 10px;
+  shadow: var(--shadow-sm);
   align-items: center;
 }
 
@@ -65,7 +67,7 @@
 .vote-banner {
   margin-top: 15px;
   padding: 38px 32px;
-  border-radius: 14px;
+  border-radius: 9px;
   color: #fff;
   background: linear-gradient(90deg, #16a34a 0%, #15803d 100%);
   display: flex;

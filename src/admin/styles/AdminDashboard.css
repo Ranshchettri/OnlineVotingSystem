@@ -19,7 +19,7 @@
 .admin-dashboard__header .admin-pill.election-status-pill {
   border: 1px solid transparent;
   padding: 7px 12px;
-  border-radius: 999px;
+  border-radius: 8px;
   font-weight: 700;
   font-size: 12px;
 }
@@ -83,7 +83,7 @@
 .admin-dashboard__stat-card {
   background: var(--admin-card);
   border: 1px solid var(--admin-border);
-  border-radius: 14px;
+  border-radius: 10px;
   padding: 16px;
   display: flex;
   gap: 14px;
@@ -170,7 +170,7 @@
 .admin-dashboard__emergency {
   background: #fff7ed;
   border: 1px solid #fed7aa;
-  border-radius: 14px;
+  border-radius: 10px;
   padding: 16px;
   display: flex;
   flex-direction: column;

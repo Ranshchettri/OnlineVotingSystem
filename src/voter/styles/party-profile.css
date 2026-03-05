@@ -2,6 +2,7 @@
   width: 100%;
   max-width: none;
   margin: 0;
+  
   padding-bottom: 40px;
 }
 
@@ -25,6 +26,7 @@
 .party-profile .party-back svg {
   width: 18px;
   height: 18px;
+  
 }
 
 .party-profile .party-top-logo svg {
@@ -33,7 +35,7 @@
 }
 
 .party-profile .party-hero {
-  border-radius: 9px;
+  border-radius: 10px;
   overflow: hidden;
   border: 1px solid var(--gray-200);
   background: #fff;
@@ -52,7 +54,7 @@
   width: 100px;
   height: 100px;
   border-radius: 8px;
-  border: 3px solid rgba(255, 255, 255, 0.7);
+  border: 1x solid rgba(255, 255, 255, 0.7);
   background: rgba(255, 255, 255, 0.15);
   display: flex;
   align-items: center;

@@ -23,9 +23,9 @@
 }
 
 .party-logo-mini {
-  width: 50px;
-  height: 50px;
-  border-radius: 8px;
+  width:110px;
+  height: 60px;
+  border-radius:5px;
   background: var(--red-600);
   border: 1px solid rgba(255, 255, 255, 0.6);
   display: flex;
@@ -229,7 +229,7 @@
   color: var(--red-700);
   font-size: 13px;
   font-weight: 600;
-  line-height: 1;
+  line-height: 1.5;
 }
 
 .party-logout {
@@ -242,7 +242,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  line-height: 1;
+  line-height: 1.5;
   font-weight: 500;
   cursor: pointer;
 }
