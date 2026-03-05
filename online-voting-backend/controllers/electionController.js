@@ -4,6 +4,7 @@ const User = require("../models/User");
 const Party = require("../models/Party");
 const Activity = require("../models/Activity");
 const sendEmail = require("../utils/email");
+const { writeAuditLog } = require("../utils/audit");
 const {
   notifyElectionToParties,
   notifyElectionOutcomeToParties,
@@ -105,18 +106,51 @@ const syncElectionState = async (election, now = new Date()) => {
 
 const createElection = async (req, res) => {
   try {
-    const { title, type, startDate, endDate, participatingParties = [] } = req.body;
+    const {
+      title,
+      type,
+      startDate,
+      endDate,
+      participatingParties = [],
+      totalSeats,
+      electionSystem,
+      prMethod,
+      partyThresholdPercent,
+    } = req.body;
 
     // Basic validation
     if (!title || !type || !startDate || !endDate) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    if (!["political", "student"].includes(type)) {
+    const normalizedType = String(type || "").toLowerCase();
+    const validTypes = ["political", "student", "local", "provincial", "national"];
+    if (!validTypes.includes(normalizedType)) {
       return res
         .status(400)
-        .json({ message: "Election type must be 'political' or 'student'" });
+        .json({ message: "Election type must be political, student, local, provincial, or national" });
     }
+
+    const normalizedSystem = String(electionSystem || "FPTP").toUpperCase();
+    const system =
+      normalizedSystem === "PR"
+        ? "PR"
+        : normalizedSystem === "HYBRID"
+          ? "Hybrid"
+          : "FPTP";
+    const normalizedPrMethod = String(prMethod || "DHONDT").toUpperCase();
+    const method =
+      normalizedPrMethod === "SIMPLE"
+        ? "SIMPLE"
+        : normalizedPrMethod === "SAINTE_LAGUE"
+          ? "SAINTE_LAGUE"
+          : "DHONDT";
+    const seats = Number.isFinite(Number(totalSeats))
+      ? Math.max(1, Math.floor(Number(totalSeats)))
+      : 100;
+    const threshold = Number.isFinite(Number(partyThresholdPercent))
+      ? Math.min(100, Math.max(0, Number(partyThresholdPercent)))
+      : 0;
 
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -128,7 +162,7 @@ const createElection = async (req, res) => {
     }
 
     const now = new Date();
-    const typeRegex = new RegExp(`^${String(type).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i");
+    const typeRegex = new RegExp(`^${String(normalizedType).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i");
     const fallbackParties =
       Array.isArray(participatingParties) && participatingParties.length > 0
         ? participatingParties
@@ -145,7 +179,11 @@ const createElection = async (req, res) => {
 
     const election = new Election({
       title,
-      type,
+      type: normalizedType.charAt(0).toUpperCase() + normalizedType.slice(1),
+      electionSystem: system,
+      totalSeats: seats,
+      prMethod: method,
+      partyThresholdPercent: threshold,
       startDate: start,
       endDate: end,
       status: start <= now && end >= now ? "Running" : "Upcoming",
@@ -156,6 +194,7 @@ const createElection = async (req, res) => {
         partyId,
         votes: 0,
         percentage: 0,
+        seats: 0,
       })),
     });
 
@@ -164,11 +203,23 @@ const createElection = async (req, res) => {
       await ensureElectionAnalyticsSnapshot(election);
     }
     await createActivity({
-      action: `Election created: ${election.title}`,
+      action: `Election created: ${election.title} (${election.electionSystem})`,
       user: req.user?.fullName || "Admin",
       userId: req.user?._id,
       icon: "ri-ballot-line",
       color: "blue",
+    });
+    await writeAuditLog({
+      action: "ELECTION_CREATED",
+      userId: req.user?._id,
+      userRole: req.user?.role || "admin",
+      req,
+      metadata: {
+        electionId: election._id,
+        title: election.title,
+        electionSystem: election.electionSystem,
+        totalSeats: election.totalSeats,
+      },
     });
     await notifyElectionToParties(election, {
       type: "info",

@@ -1,5 +1,14 @@
 const validateElection = (req, res, next) => {
-  const { title, type, startDate, endDate } = req.body;
+  const {
+    title,
+    type,
+    startDate,
+    endDate,
+    totalSeats,
+    electionSystem,
+    prMethod,
+    partyThresholdPercent,
+  } = req.body;
 
   // Check required fields
   if (!title || !type || !startDate || !endDate) {
@@ -16,10 +25,12 @@ const validateElection = (req, res, next) => {
   }
 
   // Validate election type
-  const validTypes = ["political", "student"];
-  if (!validTypes.includes(type)) {
+  const normalizedType = String(type || "").toLowerCase();
+  const validTypes = ["political", "student", "local", "provincial", "national"];
+  if (!validTypes.includes(normalizedType)) {
     return res.status(400).json({
-      message: "Election type must be either 'political' or 'student'",
+      message:
+        "Election type must be one of: political, student, local, provincial, national",
     });
   }
 
@@ -56,6 +67,44 @@ const validateElection = (req, res, next) => {
     return res.status(400).json({
       message: "Election duration cannot exceed 30 days",
     });
+  }
+
+  if (totalSeats !== undefined) {
+    const seats = Number(totalSeats);
+    if (!Number.isInteger(seats) || seats <= 0 || seats > 1000) {
+      return res.status(400).json({
+        message: "totalSeats must be an integer between 1 and 1000",
+      });
+    }
+  }
+
+  if (electionSystem !== undefined) {
+    const system = String(electionSystem).toUpperCase();
+    const validSystems = ["FPTP", "PR", "HYBRID"];
+    if (!validSystems.includes(system)) {
+      return res.status(400).json({
+        message: "electionSystem must be FPTP, PR, or Hybrid",
+      });
+    }
+  }
+
+  if (prMethod !== undefined) {
+    const method = String(prMethod).toUpperCase();
+    const validMethods = ["SIMPLE", "DHONDT", "SAINTE_LAGUE"];
+    if (!validMethods.includes(method)) {
+      return res.status(400).json({
+        message: "prMethod must be SIMPLE, DHONDT, or SAINTE_LAGUE",
+      });
+    }
+  }
+
+  if (partyThresholdPercent !== undefined) {
+    const threshold = Number(partyThresholdPercent);
+    if (Number.isNaN(threshold) || threshold < 0 || threshold > 100) {
+      return res.status(400).json({
+        message: "partyThresholdPercent must be between 0 and 100",
+      });
+    }
   }
 
   next();

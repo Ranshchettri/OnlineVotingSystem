@@ -50,6 +50,10 @@ const voteSchema = new mongoose.Schema(
       type: String, // future blockchain
     },
 
+    voteHash: {
+      type: String,
+    },
+
     votedAt: {
       type: Date,
       default: Date.now,

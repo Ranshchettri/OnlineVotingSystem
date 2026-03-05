@@ -10,6 +10,7 @@ const {
 } = require("../controllers/electionController");
 
 router.post("/", protect, adminOnly, validateElection, createElection);
+router.post("/create", protect, adminOnly, validateElection, createElection);
 // Public read endpoints for voter/party dashboards
 router.get("/", getElections);
 router.get("/active", getActiveElections);

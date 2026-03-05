@@ -92,6 +92,7 @@ const notificationRoutes = require("./routes/notification");
 
 app.use("/api/auth", authRoutes);
 app.use("/api/elections", electionRoutes);
+app.use("/api/election", electionRoutes); // alias
 app.use("/api/candidates", candidateRoutes);
 // Optional debug logging for incoming party requests
 if (process.env.DEBUG_PARTY_ROUTES === "true") {
@@ -104,8 +105,10 @@ app.use("/api/parties", partyRoutes);
 app.use("/api/party", partyRoutes); // backward-compatible alias used by older frontend files
 app.use("/api/tasks", taskRoutes);
 app.use("/api/votes", voteRoutes);
+app.use("/api/vote", voteRoutes); // alias
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/results", resultRoutes);
+app.use("/api/result", resultRoutes); // alias
 app.use("/api/admin", adminRoutes);
 app.use("/api/voters", voterAdminRoutes);
 app.use("/api/notifications", notificationRoutes);

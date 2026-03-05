@@ -134,6 +134,26 @@ const partySchema = new mongoose.Schema(
       default: 0,
     },
 
+    totalVotes: {
+      type: Number,
+      default: 0,
+    },
+
+    votePercentage: {
+      type: Number,
+      default: 0,
+    },
+
+    allocatedSeats: {
+      type: Number,
+      default: 0,
+    },
+
+    latestResultElectionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Election",
+    },
+
     totalWins: { type: Number, default: 0 },
     electionWins: { type: Number, default: 0 },
 

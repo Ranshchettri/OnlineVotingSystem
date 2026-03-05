@@ -4,6 +4,8 @@ const Candidate = require("../models/Candidate");
 const Party = require("../models/Party");
 const User = require("../models/User");
 const AppError = require("../utils/AppError");
+const crypto = require("crypto");
+const { writeAuditLog } = require("../utils/audit");
 
 const isBlockedVerification = (status = "") =>
   ["blocked", "rejected"].includes(String(status || "").toLowerCase());
@@ -59,7 +61,9 @@ const castVote = async (req, res, next) => {
 
     if (
       election.allowVoting === false ||
-      String(election.status || "").toLowerCase() === "ended"
+      String(election.status || "").toLowerCase() === "ended" ||
+      election.resultFrozen ||
+      election.resultsPublishedAt
     ) {
       return next(new AppError("Election voting is closed", 400));
     }
@@ -112,6 +116,13 @@ const castVote = async (req, res, next) => {
     }
 
     // 5 Cast vote
+    const voteHash = crypto
+      .createHash("sha256")
+      .update(
+        `${userId}:${electionId}:${candidateId || ""}:${partyId || ""}:${Date.now()}:${Math.random()}`,
+      )
+      .digest("hex");
+
     const vote = await Vote.create({
       userId,
       electionId,
@@ -119,6 +130,7 @@ const castVote = async (req, res, next) => {
       partyId,
       createdAt: new Date(),
       transactionHash: "", // blockchain integration later
+      voteHash,
     });
 
     // Update election + party stats (best-effort, non-blocking)
@@ -127,7 +139,9 @@ const castVote = async (req, res, next) => {
         $inc: { totalVotes: 1 },
       });
       if (partyId) {
-        await Party.findByIdAndUpdate(partyId, { $inc: { currentVotes: 1 } });
+        await Party.findByIdAndUpdate(partyId, {
+          $inc: { currentVotes: 1, totalVotes: 1 },
+        });
         const matched = await Election.updateOne(
           { _id: electionId, "participatingParties.partyId": partyId },
           { $inc: { "participatingParties.$.votes": 1 } },
@@ -146,6 +160,19 @@ const castVote = async (req, res, next) => {
     } catch (err) {
       console.error("Failed to update vote counters", err.message);
     }
+
+    await writeAuditLog({
+      action: "VOTE_CAST",
+      userId,
+      userRole: "voter",
+      req,
+      metadata: {
+        electionId,
+        candidateId: candidateId || null,
+        partyId: partyId || null,
+        voteHash,
+      },
+    });
 
     res.status(201).json({
       status: "success",
