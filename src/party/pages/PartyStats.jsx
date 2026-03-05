@@ -13,11 +13,14 @@ const TimelineIcon = ({ label }) => {
 export default function PartyStats() {
   const [current, setCurrent] = useState({
     electionName: "Current Election",
+    electionSystem: "FPTP",
+    totalSeats: 0,
     partyName: "",
     votes: 0,
     position: 0,
     share: 0,
     lead: 0,
+    seats: 0,
     status: "PENDING",
     short: "PRT",
     logoSrc: "",
@@ -26,6 +29,8 @@ export default function PartyStats() {
   const [rankings, setRankings] = useState([]);
   const [timeline, setTimeline] = useState([]);
   const [lastUpdated, setLastUpdated] = useState("");
+  const [coalitionSuggestions, setCoalitionSuggestions] = useState([]);
+  const [majorityInfo, setMajorityInfo] = useState(null);
 
   useEffect(() => {
     const load = async () => {
@@ -35,6 +40,17 @@ export default function PartyStats() {
         const statsData = statsRes.data?.data || {};
         const ownStats = statsData.stats || {};
         const totalVotes = Number(statsData.totalVotes || 0);
+        const electionId =
+          statsData.currentElection?.id ||
+          statsData.currentElection?._id ||
+          null;
+        const standingsRes = electionId
+          ? await api.get(`/results/party/${electionId}`).catch(() => null)
+          : null;
+        const standingsData = standingsRes?.data?.data || {};
+        const standingsRows = Array.isArray(standingsData.parties)
+          ? standingsData.parties
+          : [];
 
         const allParties = Array.isArray(statsData.allParties) ? statsData.allParties : [];
         const rankingData = allParties
@@ -42,6 +58,7 @@ export default function PartyStats() {
             const votes = Number(item.votes || 0);
             const shareValue = totalVotes ? Number(((votes / totalVotes) * 100).toFixed(1)) : 0;
             return {
+              id: (item.id || item.partyId || "").toString(),
               rank: Number(item.position || index + 1),
               name: item.name || "Party",
               short: getPartyShortLabel(
@@ -73,19 +90,34 @@ export default function PartyStats() {
             logoSrc: "",
             color: "#dc2626",
           };
+        const ownStanding =
+          standingsRows.find(
+            (row) =>
+              String(row.id || row.partyId || "") === String(ownParty?.id || "") ||
+              String(row.name || "").toLowerCase() === String(ownParty?.name || "").toLowerCase(),
+          ) || {};
 
         setCurrent({
           electionName: statsData.currentElection?.title || "Current Election",
+          electionSystem: standingsData.electionSystem || "FPTP",
+          totalSeats: Number(standingsData.totalSeats || 0),
           partyName: ownParty?.name || "Your Party",
           votes: Number(ownStats.ownVotes || 0),
           position: Number(ownStats.ownPosition || 0),
           share: Number(ownStats.voteShare || 0),
           lead: Number(ownStats.leadOverSecond || 0),
+          seats: Number(ownStanding?.seats || 0),
           status: statsData.currentElection?.status || "PENDING",
           short: ownParty?.short || "PRT",
           logoSrc: ownParty?.logoSrc || "",
           color: ownParty?.color || "#dc2626",
         });
+        setCoalitionSuggestions(
+          Array.isArray(standingsData.coalitionSuggestions)
+            ? standingsData.coalitionSuggestions
+            : [],
+        );
+        setMajorityInfo(standingsData.majority || null);
 
         setRankings(rankingData);
         setLastUpdated(new Date().toLocaleString());
@@ -113,6 +145,19 @@ export default function PartyStats() {
     const interval = setInterval(load, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  const isSeatBasedElection = ["PR", "HYBRID"].includes(
+    String(current.electionSystem || "").toUpperCase(),
+  );
+  const seatsMajorityMark = Math.floor(Number(current.totalSeats || 0) / 2) + 1;
+  const majorityGap = isSeatBasedElection
+    ? Math.max(seatsMajorityMark - Number(current.seats || 0), 0)
+    : Math.max(
+        Math.floor(rankings.reduce((sum, item) => sum + Number(item.votes || 0), 0) / 2) +
+          1 -
+          Number(current.votes || 0),
+        0,
+      );
 
   return (
     <div className="party-page party-page--stats">
@@ -161,8 +206,8 @@ export default function PartyStats() {
             <strong>{current.share}%</strong>
           </div>
           <div>
-            <span>Lead</span>
-            <strong>{current.lead}</strong>
+            <span>{isSeatBasedElection ? "Seats Won" : "Lead"}</span>
+            <strong>{isSeatBasedElection ? current.seats : current.lead}</strong>
           </div>
         </div>
       </div>
@@ -238,14 +283,10 @@ export default function PartyStats() {
               <strong>{rankings.length}</strong>
             </div>
             <div className="stats-compare-item">
-              <span className="stats-compare-label">Votes needed for majority</span>
-              <strong>
-                {Math.max(
-                  Math.floor(rankings.reduce((sum, item) => sum + Number(item.votes || 0), 0) / 2) + 1 -
-                    Number(current.votes || 0),
-                  0,
-                ).toLocaleString()}
-              </strong>
+              <span className="stats-compare-label">
+                {isSeatBasedElection ? "Seats needed for majority" : "Votes needed for majority"}
+              </span>
+              <strong>{majorityGap.toLocaleString()}</strong>
             </div>
           </div>
         </div>
@@ -277,6 +318,32 @@ export default function PartyStats() {
           </div>
         </div>
       </div>
+
+      {isSeatBasedElection ? (
+        <div className="stats-card">
+          <h3>PR Majority & Coalition</h3>
+          <div className="stats-compare">
+            <div className="stats-compare-item highlight">
+              <span className="stats-compare-label">Majority mark</span>
+              <strong>
+                {seatsMajorityMark} / {Number(current.totalSeats || 0)} seats
+              </strong>
+            </div>
+            <div className="stats-compare-item">
+              <span className="stats-compare-label">Majority status</span>
+              <strong>{majorityInfo?.type || "Coalition Required"}</strong>
+            </div>
+            {coalitionSuggestions.slice(0, 3).map((item, index) => (
+              <div key={`${item.partyNames?.join("-") || index}`} className="stats-compare-item">
+                <span className="stats-compare-label">
+                  {(item.partyNames || []).join(" + ") || "Coalition"}
+                </span>
+                <strong>{Number(item.totalSeats || 0)} seats</strong>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <div className="stats-info">
         <div className="stats-info-head">

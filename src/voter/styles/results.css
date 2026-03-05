@@ -137,6 +137,20 @@
   padding: 20px;
 }
 
+.result-system-tag {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
 .result-winner {
   display: flex;
   align-items: center;
@@ -173,6 +187,11 @@
   font-size: 13px;
   color: var(--gray-500);
   margin-top: 4px;
+}
+
+.result-info p:last-child {
+  color: #334155;
+  font-weight: 600;
 }
 
 .result-stats {
@@ -226,4 +245,28 @@
   padding: 16px;
   color: var(--gray-600);
   font-size: 13px;
+}
+
+.result-coalitions {
+  margin-top: 12px;
+  border: 1px solid #dbeafe;
+  background: #f8fbff;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.result-coalitions > span {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1e3a8a;
+}
+
+.result-coalitions ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: #334155;
+  font-size: 12px;
+  display: grid;
+  gap: 4px;
 }

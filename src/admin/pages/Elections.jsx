@@ -42,6 +42,10 @@ export default function Elections() {
   const [form, setForm] = useState({
     title: "",
     type: "Political",
+    electionSystem: "FPTP",
+    totalSeats: 100,
+    prMethod: "DHONDT",
+    partyThresholdPercent: 0,
     startDate: "",
     endDate: "",
     autoClose: true,
@@ -66,6 +70,10 @@ export default function Elections() {
             id: e._id || e.id,
             title: e.title || e.name,
             type: e.type ? e.type[0].toUpperCase() + e.type.slice(1) : "Political",
+            electionSystem: e.electionSystem || "FPTP",
+            totalSeats: Number(e.totalSeats || 100),
+            prMethod: e.prMethod || "DHONDT",
+            partyThresholdPercent: Number(e.partyThresholdPercent || 0),
             status: deriveElectionStatus(
               {
                 ...e,
@@ -119,12 +127,30 @@ export default function Elections() {
       await api.post("/elections", {
         title: form.title,
         type: form.type.toLowerCase(),
+        electionSystem: form.electionSystem,
+        totalSeats: Number(form.totalSeats || 0),
+        prMethod: form.prMethod,
+        partyThresholdPercent: Number(form.partyThresholdPercent || 0),
         startDate: form.startDate,
         endDate: form.endDate,
         autoClose: form.autoClose,
         autoResults: form.autoResults,
         emergencyShutdown: form.emergencyShutdown,
         tieHandling: form.tieHandling,
+      });
+      setForm({
+        title: "",
+        type: "Political",
+        electionSystem: "FPTP",
+        totalSeats: 100,
+        prMethod: "DHONDT",
+        partyThresholdPercent: 0,
+        startDate: "",
+        endDate: "",
+        autoClose: true,
+        autoResults: true,
+        emergencyShutdown: true,
+        tieHandling: true,
       });
       setShowCreate(false);
       await loadElections();
@@ -484,6 +510,7 @@ export default function Elections() {
                       {election.status}
                     </span>
                     <span className="admin-pill purple">{election.type}</span>
+                    <span className="admin-pill blue">{election.electionSystem}</span>
                   </div>
                 </div>
               <div className="election-actions">
@@ -547,6 +574,14 @@ export default function Elections() {
                     {election.autoResults ? "Enabled" : "Disabled"}
                   </div>
                 </div>
+                <div>
+                  <div className="stat-label">Seats</div>
+                  <div className="stat-number">{Number(election.totalSeats || 0)}</div>
+                </div>
+                <div>
+                  <div className="stat-label">PR Method</div>
+                  <div className="stat-number">{election.prMethod || "-"}</div>
+                </div>
               </div>
             </div>
           ))
@@ -567,7 +602,7 @@ export default function Elections() {
                   required
                 />
               </label>
-                <label>
+              <label>
                   Election Type
                   <select
                     value={form.type}
@@ -578,6 +613,62 @@ export default function Elections() {
                     <option>Student</option>
                   </select>
                 </label>
+              <div className="two-col">
+                <label>
+                  Election System
+                  <select
+                    value={form.electionSystem}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        electionSystem: e.target.value,
+                      })
+                    }
+                    className="select-input"
+                  >
+                    <option value="FPTP">FPTP</option>
+                    <option value="PR">PR</option>
+                    <option value="Hybrid">Hybrid</option>
+                  </select>
+                </label>
+                <label>
+                  Total Seats
+                  <input
+                    type="number"
+                    min={1}
+                    max={1000}
+                    value={form.totalSeats}
+                    onChange={(e) => setForm({ ...form, totalSeats: e.target.value })}
+                    required
+                  />
+                </label>
+              </div>
+              <div className="two-col">
+                <label>
+                  PR Method
+                  <select
+                    value={form.prMethod}
+                    onChange={(e) => setForm({ ...form, prMethod: e.target.value })}
+                    className="select-input"
+                  >
+                    <option value="DHONDT">D'Hondt</option>
+                    <option value="SAINTE_LAGUE">Sainte-Laguë</option>
+                    <option value="SIMPLE">Simple Proportional</option>
+                  </select>
+                </label>
+                <label>
+                  Party Threshold (%)
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={form.partyThresholdPercent}
+                    onChange={(e) =>
+                      setForm({ ...form, partyThresholdPercent: e.target.value })
+                    }
+                  />
+                </label>
+              </div>
               <div className="two-col">
                 <label>
                   Start Date & Time
@@ -794,6 +885,14 @@ export default function Elections() {
                 <div className="stat-label">Voter Turnout</div>
                 <div className="stat-number">{preview.turnout}</div>
               </div>
+              <div>
+                <div className="stat-label">System</div>
+                <div className="stat-number">{preview.electionSystem || "FPTP"}</div>
+              </div>
+              <div>
+                <div className="stat-label">Seat Count</div>
+                <div className="stat-number">{Number(preview.totalSeats || 0)}</div>
+              </div>
             </div>
             <div className="preview-divider" />
             <div className="preview-settings-title">Election Settings</div>
@@ -813,6 +912,14 @@ export default function Elections() {
               <div className="preview-setting">
                 <span>Tie-handling logic</span>
                 <span>Enabled</span>
+              </div>
+              <div className="preview-setting">
+                <span>PR Method</span>
+                <span>{preview.prMethod || "DHONDT"}</span>
+              </div>
+              <div className="preview-setting">
+                <span>Party threshold</span>
+                <span>{Number(preview.partyThresholdPercent || 0)}%</span>
               </div>
             </div>
           </div>

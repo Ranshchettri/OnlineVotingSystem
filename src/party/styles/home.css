@@ -20,7 +20,7 @@
   height: 96px;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.16);
-  border: 2px solid rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.9);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -100,6 +100,7 @@
   display: block;
   margin-top: 2px;
   font-size: 13px;
+  font-weight: 500;
   color: #fff;
 }
 
@@ -112,7 +113,7 @@
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.25);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .party-home-page .party-profile-badge i {

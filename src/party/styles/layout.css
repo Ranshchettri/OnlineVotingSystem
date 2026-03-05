@@ -169,7 +169,7 @@
 .party-topbar {
   background: #fff;
   border-bottom: 1px solid var(--gray-200);
-  padding: 8px 14px;
+  padding: 18px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -232,6 +232,7 @@
   line-height: 1.5;
 }
 
+
 .party-logout {
   padding: 8px 12px;
   border-radius: 8px;
@@ -242,10 +243,16 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  margin-right: 18px;
   line-height: 1.5;
   font-weight: 500;
   cursor: pointer;
 }
+
+.party-logout:hover {
+  background: var(--gray-200);
+}
+
 
 .party-badge i,
 .party-logout i {

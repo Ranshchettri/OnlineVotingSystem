@@ -1,5 +1,5 @@
 .party-profile {
-  width: 100%;
+  width:100%;
   max-width: none;
   margin: 0;
   
@@ -71,6 +71,7 @@
 }
 
 .party-profile .party-hero-title {
+  color: #fff;
   font-size: 26px;
   font-weight: 700;
   display: flex;
@@ -118,6 +119,7 @@
   display: block;
   margin-top: 2px;
   font-size: 13px;
+  font-weight: 500;
   color: #fff;
 }
 
@@ -475,7 +477,7 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  border: 1px solid #e2e8f0;
+  /* border: 1px solid #e2e8f0; */
   border-radius: 12px;
   background: #fff;
   padding: 10px;
@@ -485,8 +487,8 @@
   width: 48px;
   height: 48px;
   border-radius: 10px;
-  border: 1px solid #fca5a5;
-  background: linear-gradient(145deg, #fff1f2, #ffe4e6);
+  border: px solid #fca5a5;
+  background: linear-gradient(145deg, #fed2d5, #ffc3c7);
   color: #b91c1c;
   display: inline-flex;
   align-items: center;
@@ -524,8 +526,8 @@
 }
 
 .party-profile .party-social-link {
-  border: 1px solid #93c5fd;
-  background: linear-gradient(145deg, #eff6ff, #dbeafe);
+  border: px solid #93c5fd;
+  background: linear-gradient(145deg, #c3dbfa, #c6ddfb);
   border-radius: 12px;
   padding: 10px 12px;
   font-size: 13px;
@@ -535,7 +537,7 @@
   justify-content: center;
   gap: 8px;
   text-decoration: none;
-  font-weight: 700;
+  font-weight: 600;
   box-shadow: 0 6px 14px rgba(37, 99, 235, 0.12);
 }
 

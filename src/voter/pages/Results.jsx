@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "../../services/api";
-import { getPartyLogoSrc, getPartyShortLabel } from "../../shared/utils/partyDisplay";
+import { getPartyShortLabel } from "../../shared/utils/partyDisplay";
 import { getTimeLeft, normalizeElectionStatus, pickCurrentElection } from "../utils/election";
 import "../styles/results.css";
 
 const resolveElectionStandings = (election, standingsByElection) => {
   const electionId = (election._id || election.id || "").toString();
-  const standings = Array.isArray(standingsByElection[electionId])
-    ? standingsByElection[electionId]
-    : [];
+  const electionBundle = standingsByElection[electionId] || {};
+  const standings = Array.isArray(electionBundle.parties) ? electionBundle.parties : [];
 
   if (standings.length === 0) {
     return {
@@ -18,6 +17,14 @@ const resolveElectionStandings = (election, standingsByElection) => {
       winnerVotes: 0,
       marginVotes: 0,
       winnerShare: "0.0%",
+      winnerSeats: 0,
+      totalSeats: Number(electionBundle.totalSeats || election.totalSeats || 0),
+      majority: electionBundle.majority || null,
+      coalitionSuggestions: Array.isArray(electionBundle.coalitionSuggestions)
+        ? electionBundle.coalitionSuggestions
+        : [],
+      electionSystem:
+        electionBundle.electionSystem || election.electionSystem || "FPTP",
     };
   }
 
@@ -39,6 +46,14 @@ const resolveElectionStandings = (election, standingsByElection) => {
     winnerVotes,
     marginVotes,
     winnerShare,
+    winnerSeats: Number(winner?.seats || 0),
+    totalSeats: Number(electionBundle.totalSeats || election.totalSeats || 0),
+    majority: electionBundle.majority || null,
+    coalitionSuggestions: Array.isArray(electionBundle.coalitionSuggestions)
+      ? electionBundle.coalitionSuggestions
+      : [],
+    electionSystem:
+      electionBundle.electionSystem || election.electionSystem || "FPTP",
   };
 };
 
@@ -74,12 +89,30 @@ export default function Results() {
           electionIds.map(async (id) => {
             try {
               const response = await api.get(`/results/party/${id}`);
-              const parties = Array.isArray(response.data?.data?.parties)
-                ? response.data.data.parties
-                : [];
-              return [id, parties];
+              const data = response.data?.data || {};
+              return [
+                id,
+                {
+                  parties: Array.isArray(data.parties) ? data.parties : [],
+                  totalSeats: Number(data.totalSeats || 0),
+                  majority: data.majority || null,
+                  coalitionSuggestions: Array.isArray(data.coalitionSuggestions)
+                    ? data.coalitionSuggestions
+                    : [],
+                  electionSystem: data.electionSystem || "",
+                },
+              ];
             } catch {
-              return [id, []];
+              return [
+                id,
+                {
+                  parties: [],
+                  totalSeats: 0,
+                  majority: null,
+                  coalitionSuggestions: [],
+                  electionSystem: "",
+                },
+              ];
             }
           }),
         );
@@ -161,6 +194,11 @@ export default function Results() {
             winnerVotes,
             marginVotes,
             winnerShare,
+            winnerSeats,
+            totalSeats,
+            majority,
+            coalitionSuggestions,
+            electionSystem,
           } = resolveElectionStandings(election, standingsByElection);
 
           return (
@@ -179,6 +217,7 @@ export default function Results() {
               </div>
 
               <div className="result-body">
+                <div className="result-system-tag">{electionSystem || "FPTP"}</div>
                 {winner ? (
                   <>
                     <div className="result-winner">
@@ -193,6 +232,7 @@ export default function Results() {
                       <div className="result-info">
                         <h5>{winner?.name || "Winner unavailable"}</h5>
                         <p>{runnerUp ? `Runner-up: ${runnerUp.name}` : "Runner-up data unavailable"}</p>
+                        <p>Seats: {winnerSeats} / {Number(totalSeats || 0)}</p>
                       </div>
                     </div>
 
@@ -209,12 +249,33 @@ export default function Results() {
                         <strong>{winnerShare}</strong>
                         <small>Total Votes: {Number(totalVotes || 0).toLocaleString()}</small>
                       </div>
+
+                      <div className="result-divider" />
+
+                      <div>
+                        <span>Seats Won</span>
+                        <strong>{Number(winnerSeats || 0)}</strong>
+                        <small>Total Seats: {Number(totalSeats || 0)}</small>
+                      </div>
                     </div>
 
                     <div className="result-margin">
                       <span>Victory Margin</span>
                       <strong>{marginVotes.toLocaleString()} votes</strong>
                     </div>
+
+                    {majority?.type === "Coalition Required" && coalitionSuggestions.length > 0 ? (
+                      <div className="result-coalitions">
+                        <span>Possible Coalitions</span>
+                        <ul>
+                          {coalitionSuggestions.slice(0, 3).map((entry, idx) => (
+                            <li key={`${entry.partyNames?.join("-") || idx}`}>
+                              {(entry.partyNames || []).join(" + ")} ({Number(entry.totalSeats || 0)} seats)
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
                   </>
                 ) : (
                   <div className="result-empty">
