@@ -130,6 +130,27 @@ const normalizePartyDocuments = (documents = []) => {
     .filter(Boolean);
 };
 
+const buildFallbackPartyDocuments = (party = {}) => {
+  const registeredAt = party.createdAt ? new Date(party.createdAt).toISOString() : new Date().toISOString();
+  const overview = [
+    `Party Name: ${party.name || "-"}`,
+    `Leader: ${party.leader || "-"}`,
+    `Email: ${party.email || "-"}`,
+    `Status: ${formatPartyStatus(party)}`,
+    `Registered: ${registeredAt}`,
+  ].join("\n");
+
+  return [
+    {
+      name: `${party.name || "Party"} Registration Summary.txt`,
+      mimeType: "text/plain",
+      size: overview.length,
+      dataUrl: `data:text/plain;charset=utf-8,${encodeURIComponent(overview)}`,
+      uploadedAt: registeredAt,
+    },
+  ];
+};
+
 const formatPartyStatus = (party) => {
   const raw = String(party.status || "").toLowerCase();
   const isBlocked = raw === "rejected" || raw === "blocked" || party.isActive === false;
@@ -256,7 +277,10 @@ const formatPartyPayload = (party, index = 0) => ({
   gallery: Array.isArray(party.gallery) ? party.gallery : [],
   contact: party.contact || {},
   socialMedia: party.socialMedia || {},
-  documents: normalizePartyDocuments(party.documents || []),
+  documents: (() => {
+    const normalizedDocuments = normalizePartyDocuments(party.documents || []);
+    return normalizedDocuments.length ? normalizedDocuments : buildFallbackPartyDocuments(party);
+  })(),
   createdAt: party.createdAt,
   registeredAt: party.createdAt,
   rank: index + 1,

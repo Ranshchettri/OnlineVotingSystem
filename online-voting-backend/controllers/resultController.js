@@ -9,11 +9,6 @@ const {
   notifyPartyIds,
 } = require("../utils/electionPartyNotifications");
 
-const isBlockedParty = (party = {}) => {
-  const status = String(party?.status || "").toLowerCase();
-  return ["blocked", "rejected"].includes(status);
-};
-
 const buildPartyVoteRows = async (election) => {
   const partyVotes = await Vote.aggregate([
     { $match: { electionId: election._id, partyId: { $ne: null } } },
@@ -36,25 +31,14 @@ const buildPartyVoteRows = async (election) => {
     votesByParty.set(id, Math.max(existing, Number(row?.votes || 0)));
   });
 
-  if (!votesByParty.size) {
-    const electionTypeRegex = election?.type
-      ? new RegExp(
-          `^${String(election.type).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`,
-          "i",
-        )
-      : null;
-    const activeParties = await Party.find({
-      status: "approved",
-      isActive: true,
-      ...(electionTypeRegex ? { electionType: electionTypeRegex } : {}),
-    })
-      .select("_id")
-      .lean();
-    activeParties.forEach((item) => {
-      const id = item?._id?.toString?.();
-      if (id) votesByParty.set(id, 0);
-    });
-  }
+  const electionLinkedParties = await Party.find({ electionId: election._id })
+    .select("_id")
+    .lean();
+  electionLinkedParties.forEach((item) => {
+    const id = item?._id?.toString?.();
+    if (!id || votesByParty.has(id)) return;
+    votesByParty.set(id, 0);
+  });
 
   const partyIds = [...votesByParty.keys()];
   if (!partyIds.length) {
@@ -74,7 +58,6 @@ const buildPartyVoteRows = async (election) => {
   const rows = partyIds
     .map((id) => {
       const ref = partyById.get(id) || {};
-      if (ref?._id && isBlockedParty(ref)) return null;
       return {
         partyId: id,
         partyName: ref.name || "Party",

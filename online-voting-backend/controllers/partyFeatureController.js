@@ -153,6 +153,114 @@ const buildEndedElectionFilter = () => ({
   ],
 });
 
+const buildElectionPartyRanking = async (election, party) => {
+  if (!election?._id) {
+    return {
+      totalVotes: 0,
+      ownVotes: 0,
+      ownPosition: 0,
+      totalParties: 0,
+      ranking: [],
+    };
+  }
+
+  const voteAgg = await Vote.aggregate([
+    {
+      $match: {
+        electionId: new mongoose.Types.ObjectId(election._id),
+        partyId: { $ne: null },
+      },
+    },
+    {
+      $group: {
+        _id: "$partyId",
+        votes: { $sum: 1 },
+      },
+    },
+    { $sort: { votes: -1 } },
+  ]);
+
+  const votesByPartyId = new Map(
+    voteAgg.map((row) => [row._id?.toString(), Number(row.votes || 0)]),
+  );
+
+  const participatingIds = Array.isArray(election.participatingParties)
+    ? election.participatingParties
+        .map((row) => row?.partyId?.toString?.() || row?.partyId || null)
+        .filter(Boolean)
+    : [];
+
+  const requestedPartyIds = [
+    ...new Set([...participatingIds, party?._id?.toString?.()].filter(Boolean)),
+  ];
+  const votedPartyIds = [...votesByPartyId.keys()];
+  const electionTypeRegex = election?.type
+    ? new RegExp(`^${escapeRegex(String(election.type))}$`, "i")
+    : null;
+
+  const partiesById = new Map();
+  const mergeParties = (items = []) => {
+    items.forEach((item) => {
+      const id = item?._id?.toString?.();
+      if (id) partiesById.set(id, item);
+    });
+  };
+
+  if (requestedPartyIds.length) {
+    mergeParties(await Party.find({ _id: { $in: requestedPartyIds } }).lean());
+  }
+
+  if (votedPartyIds.length) {
+    mergeParties(await Party.find({ _id: { $in: votedPartyIds } }).lean());
+  }
+
+  if (partiesById.size <= 1) {
+    const fallbackFilter = {
+      status: "approved",
+      isActive: true,
+      $or: [{ electionId: election._id }, { isActive: true }, { status: "approved" }],
+    };
+    if (electionTypeRegex) {
+      fallbackFilter.$or.push({ electionType: electionTypeRegex });
+    }
+    mergeParties(await Party.find(fallbackFilter).lean());
+  }
+
+  if (!party || !partiesById.has(party._id.toString())) {
+    const ownParty = party?._id ? await Party.findById(party._id).lean() : null;
+    if (ownParty?._id) mergeParties([ownParty]);
+  }
+
+  const ranking = [...partiesById.values()]
+    .map((item) => ({
+      partyId: item._id,
+      name: item.name || "Unknown",
+      logo: item.logo || item.symbol,
+      color: item.color || "#7c7cff",
+      development: item.development ?? item.goodWorkPercent ?? 0,
+      votes: votesByPartyId.get(item._id.toString()) || 0,
+    }))
+    .sort((a, b) => {
+      if (b.votes === a.votes) {
+        return String(a.name || "").localeCompare(String(b.name || ""));
+      }
+      return b.votes - a.votes;
+    });
+
+  const totalVotes = ranking.reduce((acc, cur) => acc + Number(cur.votes || 0), 0);
+  const ownIndex = ranking.findIndex(
+    (entry) => entry.partyId?.toString() === party?._id?.toString?.(),
+  );
+
+  return {
+    totalVotes,
+    ownVotes: ownIndex >= 0 ? Number(ranking[ownIndex]?.votes || 0) : 0,
+    ownPosition: ownIndex >= 0 ? ownIndex + 1 : 0,
+    totalParties: ranking.length,
+    ranking,
+  };
+};
+
 const computePartyWins = async (partyId) => {
   const endedElections = await Election.find(buildEndedElectionFilter())
     .select("_id")
@@ -381,6 +489,7 @@ const getPastPerformance = async (req, res, next) => {
   try {
     const party = await resolveParty(req);
     const partyId = party._id.toString();
+    const now = new Date();
     const endedElections = await Election.find(buildEndedElectionFilter())
       .select("_id title endDate type participatingParties")
       .lean();
@@ -493,31 +602,101 @@ const getPastPerformance = async (req, res, next) => {
           .filter((row) => row.year || row.electionId || row.votes > 0 || row.won)
       : [];
 
+    const historicalElectionIds = [
+      ...new Set(
+        historicalRows.map((row) => row.electionId).filter(Boolean),
+      ),
+    ];
+    const historicalElectionRefs = historicalElectionIds.length
+      ? await Election.find({ _id: { $in: historicalElectionIds } })
+          .select("_id title status isEnded allowVoting startDate endDate")
+          .lean()
+      : [];
+    const historicalStatusById = new Map(
+      historicalElectionRefs.map((item) => [
+        item._id.toString(),
+        deriveElectionStatus(item),
+      ]),
+    );
+
+    const normalizedHistoricalRows = historicalRows.map((row) => {
+      const status = row.electionId
+        ? historicalStatusById.get(row.electionId) || "Ended"
+        : "Ended";
+
+      return {
+        ...row,
+        status,
+        won: status === "Ended" ? Boolean(row.won) : false,
+      };
+    });
+
     const mergedByKey = new Map();
-    historicalRows.forEach((row) => {
+    normalizedHistoricalRows.forEach((row) => {
       const key = row.electionId || `${row.year}-${row.election}`;
       mergedByKey.set(key, row);
     });
     voteBasedHistory.forEach((row) => {
       const key = row.electionId || `${row.year}-${row.election}`;
-      mergedByKey.set(key, row);
+      mergedByKey.set(key, { ...row, status: "Ended" });
     });
 
     const mergedHistory = [...mergedByKey.values()]
       .filter((row) => row.year || row.election)
       .sort((a, b) => Number(b.year || 0) - Number(a.year || 0));
 
-    const totalWins = mergedHistory.filter((item) => item.won).length;
+    const completedHistory = mergedHistory.filter(
+      (item) => String(item.status || "Ended").toLowerCase() === "ended",
+    );
+
+    const relevantElection = await findRelevantElectionForParty(party, now);
+    let currentElectionRow = null;
+
+    if (relevantElection) {
+      const currentStatus = deriveElectionStatus(relevantElection, now);
+      if (currentStatus !== "Ended") {
+        const currentStats = await buildElectionPartyRanking(relevantElection, party);
+        const ownVotes = Number(currentStats.ownVotes || 0);
+        const ownPosition = Number(currentStats.ownPosition || 0);
+        const totalParties = Number(currentStats.totalParties || 0);
+        const yearSource =
+          relevantElection.startDate || relevantElection.endDate || relevantElection.createdAt;
+
+        currentElectionRow = {
+          electionId: relevantElection._id.toString(),
+          year:
+            yearSource && !Number.isNaN(new Date(yearSource).getTime())
+              ? new Date(yearSource).getFullYear()
+              : new Date().getFullYear(),
+          election: relevantElection.title || "Election",
+          votes: ownVotes,
+          position: ownPosition,
+          totalParties,
+          won: false,
+          status: currentStatus,
+        };
+      }
+    }
+
+    const endedHistory = completedHistory.slice(0, 2);
+    const finalHistory = [
+      ...(currentElectionRow ? [currentElectionRow] : []),
+      ...endedHistory.filter(
+        (item) => String(item.electionId || "") !== String(currentElectionRow?.electionId || ""),
+      ),
+    ];
+
+    const totalWins = completedHistory.filter((item) => item.won).length;
     const averageVotes =
-      mergedHistory.length > 0
+      completedHistory.length > 0
         ? Math.round(
-            mergedHistory.reduce((acc, current) => acc + Number(current.votes || 0), 0) /
-              mergedHistory.length,
+            completedHistory.reduce((acc, current) => acc + Number(current.votes || 0), 0) /
+              completedHistory.length,
           )
         : 0;
     const winRate =
-      mergedHistory.length > 0
-        ? `${((totalWins / mergedHistory.length) * 100).toFixed(1)}%`
+      completedHistory.length > 0
+        ? `${((totalWins / completedHistory.length) * 100).toFixed(1)}%`
         : "0%";
 
     if (party.electionWins !== totalWins) {
@@ -527,7 +706,7 @@ const getPastPerformance = async (req, res, next) => {
 
     res.json({
       data: {
-        pastElections: mergedHistory.slice(0, 8),
+        pastElections: finalHistory,
         summary: {
           totalWins,
           averageVotes,
@@ -566,102 +745,11 @@ const getCurrentStats = async (req, res, next) => {
       });
     }
 
-    const voteAgg = await Vote.aggregate([
-      {
-        $match: {
-          electionId: new mongoose.Types.ObjectId(election._id),
-          partyId: { $ne: null },
-        },
-      },
-      { $group: { _id: "$partyId", votes: { $sum: 1 } } },
-      { $sort: { votes: -1 } },
-    ]);
-
-    const votesByPartyId = new Map(
-      voteAgg.map((row) => [row._id?.toString(), Number(row.votes || 0)]),
-    );
-
-    const fromParticipatingList = Array.isArray(election.participatingParties)
-      ? election.participatingParties
-          .map((row) => row?.partyId?.toString?.() || row?.partyId || null)
-          .filter(Boolean)
-      : [];
-
-    const requestedPartyIds = [...new Set([...fromParticipatingList, party._id.toString()])];
-    const votedPartyIds = [...votesByPartyId.keys()];
-    const electionTypeRegex = election?.type
-      ? new RegExp(`^${escapeRegex(String(election.type))}$`, "i")
-      : null;
-
-    const partiesById = new Map();
-    const mergeParties = (items = []) => {
-      items.forEach((item) => {
-        const id = item?._id?.toString?.();
-        if (id) partiesById.set(id, item);
-      });
-    };
-
-    if (requestedPartyIds.length) {
-      const linkedParties = await Party.find({ _id: { $in: requestedPartyIds } }).lean();
-      mergeParties(linkedParties);
-    }
-
-    if (votedPartyIds.length) {
-      const votedParties = await Party.find({ _id: { $in: votedPartyIds } }).lean();
-      mergeParties(votedParties);
-    }
-
-    if (partiesById.size <= 1) {
-      const fallbackFilter = {
-        status: "approved",
-        isActive: true,
-        $or: [{ electionId: election._id }, { isActive: true }, { status: "approved" }],
-      };
-      if (electionTypeRegex) {
-        fallbackFilter.$or.push({ electionType: electionTypeRegex });
-      }
-      const fallbackParties = await Party.find(fallbackFilter).lean();
-      mergeParties(fallbackParties);
-    }
-
-    if (partiesById.size <= 1) {
-      const broadFallback = await Party.find({
-        status: "approved",
-        isActive: true,
-      }).lean();
-      mergeParties(broadFallback);
-    }
-
-    if (!partiesById.has(party._id.toString())) {
-      const ownParty = await Party.findById(party._id).lean();
-      if (ownParty?._id) mergeParties([ownParty]);
-    }
-
-    const electionParties = [...partiesById.values()];
-
-    const partiesWithNames = electionParties.map((item) => ({
-      partyId: item._id,
-      name: item.name || "Unknown",
-      logo: item.logo || item.symbol,
-      color: item.color || "#7c7cff",
-      development: item.development ?? item.goodWorkPercent ?? 0,
-      votes: votesByPartyId.get(item._id.toString()) || 0,
-    }));
-
-    const sorted = partiesWithNames.sort((a, b) => {
-      if (b.votes === a.votes) {
-        return String(a.name || "").localeCompare(String(b.name || ""));
-      }
-      return b.votes - a.votes;
-    });
-
-    const totalVotes = sorted.reduce((acc, cur) => acc + Number(cur.votes || 0), 0);
-    const own = sorted.find((p) => p.partyId?.toString() === party._id.toString()) || {
-      votes: 0,
-    };
-    const ownPosition = sorted.findIndex(
-      (p) => p.partyId?.toString() === party._id.toString(),
-    );
+    const currentRanking = await buildElectionPartyRanking(election, party);
+    const sorted = currentRanking.ranking;
+    const totalVotes = Number(currentRanking.totalVotes || 0);
+    const own = sorted.find((p) => p.partyId?.toString() === party._id.toString()) || { votes: 0 };
+    const ownPosition = Number(currentRanking.ownPosition || 0) - 1;
     const voteShare = totalVotes ? Number(((own.votes / totalVotes) * 100).toFixed(2)) : 0;
     const leadOverSecond =
       sorted.length > 1 ? (ownPosition === 0 ? own.votes - sorted[1].votes : 0) : own.votes;

@@ -227,13 +227,29 @@ const getMyVotes = async (req, res) => {
 
     const votes = await Vote.find({ userId })
       .populate("partyId", "name")
-      .populate("electionId", "title")
+      .populate(
+        "electionId",
+        "title status isEnded resultFrozen resultsPublishedAt startDate endDate createdAt",
+      )
       .sort({ createdAt: -1 });
 
     const formatted = votes.map((v) => ({
       _id: v._id,
       electionId: v.electionId?._id,
       electionName: v.electionId?.title,
+      election: v.electionId
+        ? {
+            _id: v.electionId?._id,
+            title: v.electionId?.title,
+            status: v.electionId?.status,
+            isEnded: Boolean(v.electionId?.isEnded),
+            resultFrozen: Boolean(v.electionId?.resultFrozen),
+            resultsPublishedAt: v.electionId?.resultsPublishedAt || null,
+            startDate: v.electionId?.startDate || null,
+            endDate: v.electionId?.endDate || null,
+            createdAt: v.electionId?.createdAt || null,
+          }
+        : null,
       partyId: v.partyId?._id,
       partyName: v.partyId?.name,
       createdAt: v.createdAt,
