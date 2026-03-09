@@ -580,6 +580,7 @@ const getPastPerformance = async (req, res, next) => {
           position,
           totalParties,
           won: ownIndex === 0 && ownVotes > 0,
+          sortDate: election.endDate || election.createdAt || null,
         };
       }),
     );
@@ -628,6 +629,7 @@ const getPastPerformance = async (req, res, next) => {
         ...row,
         status,
         won: status === "Ended" ? Boolean(row.won) : false,
+        sortDate: row.sortDate || null,
       };
     });
 
@@ -643,7 +645,12 @@ const getPastPerformance = async (req, res, next) => {
 
     const mergedHistory = [...mergedByKey.values()]
       .filter((row) => row.year || row.election)
-      .sort((a, b) => Number(b.year || 0) - Number(a.year || 0));
+      .sort((a, b) => {
+        const aTime = a.sortDate ? new Date(a.sortDate).getTime() : 0;
+        const bTime = b.sortDate ? new Date(b.sortDate).getTime() : 0;
+        if (bTime !== aTime) return bTime - aTime;
+        return Number(b.year || 0) - Number(a.year || 0);
+      });
 
     const completedHistory = mergedHistory.filter(
       (item) => String(item.status || "Ended").toLowerCase() === "ended",
@@ -674,6 +681,7 @@ const getPastPerformance = async (req, res, next) => {
           totalParties,
           won: false,
           status: currentStatus,
+          sortDate: relevantElection.startDate || relevantElection.createdAt || null,
         };
       }
     }
