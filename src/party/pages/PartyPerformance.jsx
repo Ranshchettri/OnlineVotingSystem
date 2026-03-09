@@ -87,13 +87,20 @@ export default function PartyPerformance() {
             </div>
           ) : (
             history.map((item, index) => {
-              const won = Boolean(item.won || Number(item.position || 0) === 1);
+              const status = String(item.status || "Ended").toLowerCase();
+              const isRunning = status === "running";
+              const isUpcoming = status === "upcoming";
+              const won = !isRunning && !isUpcoming && Boolean(item.won || Number(item.position || 0) === 1);
               const positionLabel =
                 Number(item.position || 0) > 0
                   ? item.totalParties
                     ? `${item.position} / ${item.totalParties}`
                     : `${item.position}`
                   : "-";
+              const badgeClass = isRunning ? "info" : isUpcoming ? "neutral" : won ? "success" : "neutral";
+              const badgeLabel = isRunning ? "Running" : isUpcoming ? "Upcoming" : won ? "Winner" : "Lost";
+              const resultLabel = isRunning ? "Running" : isUpcoming ? "Scheduled" : won ? "Won" : "Not Won";
+              const resultClass = isRunning || isUpcoming ? "pending" : won ? "good" : "bad";
 
               return (
                 <div
@@ -105,9 +112,9 @@ export default function PartyPerformance() {
                       <h4>{item.election || "Election"}</h4>
                       <span>Year: {item.year || "-"}</span>
                     </div>
-                    <span className={`performance-badge ${won ? "success" : "neutral"}`}>
+                    <span className={`performance-badge ${badgeClass}`}>
                       {won ? <i className="ri-trophy-line" aria-hidden="true" /> : null}
-                      {won ? "Winner" : "Lost"}
+                      {badgeLabel}
                     </span>
                   </div>
                   <div className="performance-history-boxes">
@@ -121,8 +128,8 @@ export default function PartyPerformance() {
                     </div>
                     <div className="performance-box">
                       <span>Result</span>
-                      <strong className={won ? "good" : "bad"}>
-                        {won ? "Won" : "Not Won"}
+                      <strong className={resultClass}>
+                        {resultLabel}
                       </strong>
                     </div>
                   </div>

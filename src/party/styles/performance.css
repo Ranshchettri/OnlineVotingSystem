@@ -134,6 +134,10 @@
   color: var(--red-700);
 }
 
+.performance-box strong.pending {
+  color: var(--blue-700);
+}
+
 .performance-badge {
   width: fit-content;
   padding: 4px 10px;
@@ -154,6 +158,12 @@
   background: var(--green-50);
   color: var(--green-700);
   border: 1px solid var(--green-200);
+}
+
+.performance-badge.info {
+  background: var(--blue-50);
+  color: var(--blue-700);
+  border: 1px solid var(--blue-200);
 }
 
 .performance-badge.neutral {

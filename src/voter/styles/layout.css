@@ -56,6 +56,11 @@
   justify-content: center;
 }
 
+.voter-avatar i {
+  font-size: 22px;
+  line-height: 1;
+}
+
 .voter-profile-name {
   font-weight: 600;
   font-size: 15px;

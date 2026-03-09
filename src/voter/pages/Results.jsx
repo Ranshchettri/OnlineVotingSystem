@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import { getPartyShortLabel } from "../../shared/utils/partyDisplay";
 import { getTimeLeft, normalizeElectionStatus, pickCurrentElection } from "../utils/election";
@@ -58,15 +59,31 @@ const resolveElectionStandings = (election, standingsByElection) => {
 };
 
 export default function Results() {
+  const navigate = useNavigate();
   const [elections, setElections] = useState([]);
   const [standingsByElection, setStandingsByElection] = useState({});
+  const [voterCreatedAt, setVoterCreatedAt] = useState(null);
+  const [voteHistory, setVoteHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       try {
         setLoading(true);
-        const electionsRes = await api.get("/elections");
+        const [profileRes, electionsRes, votesRes] = await Promise.all([
+          api.get("/auth/me").catch(() => ({ data: { data: null } })),
+          api.get("/elections"),
+          api.get("/votes/me").catch(() => ({ data: { data: [] } })),
+        ]);
+
+        const profile = profileRes.data?.data || null;
+        setVoterCreatedAt(profile?.createdAt ? new Date(profile.createdAt) : null);
+        const votes = Array.isArray(votesRes.data?.data)
+          ? votesRes.data.data
+          : Array.isArray(votesRes.data)
+            ? votesRes.data
+            : [];
+        setVoteHistory(votes);
 
         const electionList = Array.isArray(electionsRes.data?.data)
           ? electionsRes.data.data
@@ -122,6 +139,8 @@ export default function Results() {
         console.error("Failed to load results:", error?.response?.data || error.message);
         setElections([]);
         setStandingsByElection({});
+        setVoterCreatedAt(null);
+        setVoteHistory([]);
       } finally {
         setLoading(false);
       }
@@ -131,13 +150,28 @@ export default function Results() {
   }, []);
 
   const currentElection = useMemo(() => pickCurrentElection(elections), [elections]);
+  const hasVotedInCurrentElection = useMemo(() => {
+    const currentElectionId = String(currentElection?._id || currentElection?.id || "");
+    if (!currentElectionId) return false;
+    return voteHistory.some((vote) => String(vote?.electionId || "") === currentElectionId);
+  }, [currentElection, voteHistory]);
 
   const pastResults = useMemo(
     () =>
       elections
         .filter((election) => normalizeElectionStatus(election) === "ended")
+        .filter((election) => {
+          if (!voterCreatedAt) return true;
+          const visibilityDate = new Date(
+            election.endDate ||
+              election.startDate ||
+              election.createdAt ||
+              0,
+          );
+          return !Number.isNaN(visibilityDate.getTime()) && visibilityDate >= voterCreatedAt;
+        })
         .sort((a, b) => new Date(b.endDate || 0) - new Date(a.endDate || 0)),
-    [elections],
+    [elections, voterCreatedAt],
   );
 
   return (
@@ -176,6 +210,27 @@ export default function Results() {
           </p>
         </div>
       </div>
+
+      {currentElection && normalizeElectionStatus(currentElection) === "running" && !hasVotedInCurrentElection ? (
+        <div className="results-alert pending">
+          <div>
+            <strong>You have not voted in this election yet.</strong>
+            <p>Vote first to track your party and see your election participation status here.</p>
+          </div>
+          <button type="button" onClick={() => navigate("/voter/dashboard")}>
+            Vote Now
+          </button>
+        </div>
+      ) : null}
+
+      {currentElection && normalizeElectionStatus(currentElection) === "running" && hasVotedInCurrentElection ? (
+        <div className="results-alert submitted">
+          <div>
+            <strong>Your vote has already been submitted.</strong>
+            <p>Final winner and seat result will appear after the election ends and results are published.</p>
+          </div>
+        </div>
+      ) : null}
 
       <div className="results-section">
         <h3>Past Election Results</h3>

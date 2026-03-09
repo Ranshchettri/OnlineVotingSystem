@@ -95,6 +95,9 @@ export default function Elections() {
             isActive: Boolean(e.isActive),
             allowVoting: e.allowVoting !== false,
             parties: e.parties || [],
+            participatingParties: Array.isArray(e.participatingParties)
+              ? e.participatingParties
+              : [],
           };
         });
         setElections(mapped);
@@ -169,21 +172,33 @@ export default function Elections() {
   const handleExport = async (election) => {
     try {
       const electionId = election.id || election._id;
-      const [standingsRes, partiesRes] = await Promise.all([
+      const [standingsRes, electionPartiesRes, allPartiesRes] = await Promise.all([
         electionId ? api.get(`/results/party/${electionId}`).catch(() => null) : Promise.resolve(null),
+        electionId ? api.get(`/parties?electionId=${electionId}`).catch(() => null) : Promise.resolve(null),
         api.get("/parties").catch(() => null),
       ]);
 
       const standings = Array.isArray(standingsRes?.data?.data?.parties)
         ? standingsRes.data.data.parties
         : [];
-      const allParties = Array.isArray(partiesRes?.data?.data?.parties)
-        ? partiesRes.data.data.parties
-        : Array.isArray(partiesRes?.data?.data)
-          ? partiesRes.data.data
+      const electionParties = Array.isArray(electionPartiesRes?.data?.data?.parties)
+        ? electionPartiesRes.data.data.parties
+        : Array.isArray(electionPartiesRes?.data?.data)
+          ? electionPartiesRes.data.data
           : [];
+      const allParties = Array.isArray(allPartiesRes?.data?.data?.parties)
+        ? allPartiesRes.data.data.parties
+        : Array.isArray(allPartiesRes?.data?.data)
+          ? allPartiesRes.data.data
+          : [];
+      const metadataPool = [...electionParties, ...allParties];
       const partyByName = new Map(
-        allParties.map((item) => [String(item.name || "").toLowerCase(), item]),
+        metadataPool.map((item) => [String(item.name || "").toLowerCase(), item]),
+      );
+      const partyById = new Map(
+        metadataPool
+          .map((item) => [String(item._id || item.id || ""), item])
+          .filter(([id]) => Boolean(id)),
       );
 
       const mappedParties = standings.map((item, index) => {
@@ -207,21 +222,29 @@ export default function Elections() {
         };
       });
 
-      const fallbackSnapshot = allParties
-        .filter((party) => {
-          const status = String(party.status || "").toUpperCase();
-          return !["BLOCKED", "REJECTED", "PENDING"].includes(status) && party.isActive !== false;
-        })
-        .map((party, index) => ({
-          name: party.name || "Party",
-          leader: party.leader || "N/A",
-          votes: 0,
-          percentage: "0.0%",
-          color: party.color || "#2563eb",
-          logo: getPartyLogoSrc(party),
-          rank: index + 1,
-          shortLabel: getPartyShortLabel(party, "P"),
-        }));
+      const explicitParticipantIds = Array.isArray(election.participatingParties)
+        ? election.participatingParties
+            .map((row) => String(row?.partyId?._id || row?.partyId || ""))
+            .filter(Boolean)
+        : [];
+
+      const fallbackSource =
+        explicitParticipantIds.length > 0
+          ? explicitParticipantIds
+              .map((id) => partyById.get(id))
+              .filter(Boolean)
+          : electionParties;
+
+      const fallbackSnapshot = fallbackSource.map((party, index) => ({
+        name: party.name || "Party",
+        leader: party.leader || party.leaderName || "N/A",
+        votes: 0,
+        percentage: "0.0%",
+        color: party.color || "#2563eb",
+        logo: getPartyLogoSrc(party),
+        rank: index + 1,
+        shortLabel: getPartyShortLabel(party, "P"),
+      }));
 
       setExportElection({
         ...election,

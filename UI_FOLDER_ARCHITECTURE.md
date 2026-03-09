@@ -1,99 +1,139 @@
-# UI Folder Architecture (Admin / Voter / Party)
+# Frontend UI Architecture
 
-Frontend UI map only (navigation, layout, page content, and style files).
+This file documents the current frontend-only structure inside `src/`.
 
-## 1) Global entry + route wiring
-- `src/app/router.jsx`: Full route mapping for Admin, Voter, Party, landing, and 404.
-- `src/app/AccessLanding.jsx`: First landing page (`Get Started` -> role selection -> login route).
-- `src/shared/NotFound.jsx`, `src/shared/notFound.css`: 404 UI.
-- `src/services/api.js`: Shared axios client for all role UIs.
+## Stack
+- Framework: `React` + `Vite`
+- Routing: `react-router-dom`
+- API client: `axios`
+- Icons: `Remix Icon` loaded from CDN in `index.html`
+- Fonts:
+  - Tailwind base `font-sans`
+  - system sans stack from `src/styles/theme.css`
 
-## 2) Admin UI map
-### Layout/Nav files
-- `src/admin/layout/AdminLayout.jsx`: Admin shell composition.
-- `src/admin/layout/Sidebar.jsx`: Admin left nav links and bottom system-status card.
-- `src/admin/layout/Topbar.jsx`: Admin topbar, notification dropdown, profile/logout.
-- `src/admin/admin.css`: Shared admin shell/topbar/sidebar styles.
+## Root app wiring
+- `src/main.jsx`: React bootstrap
+- `src/App.jsx`: root wrapper
+- `src/app/router.jsx`: all routes
+- `src/app/AccessLanding.jsx`: landing page / access entry
+- `src/app/guards/PartyGuard.jsx`: party-only route guard
+- `src/app/guards/VoterGuard.jsx`: voter-only route guard
+- `src/auth/RoleProtected.jsx`: role protection helper
 
-### Admin page content files
-- `src/admin/pages/AdminDashboard.jsx`: Dashboard cards + summaries.
-- `src/admin/pages/Elections.jsx`: Election list/create/export modal + report actions.
-- `src/admin/pages/Parties.jsx`: Party register/list, docs modal, block/activate, analytics edit.
-- `src/admin/pages/Voters.jsx`: Voter management list/actions.
-- `src/admin/pages/Analytics.jsx`: Party analytics cards + full report/history/update modals.
-- `src/admin/pages/Results.jsx`: Results overview.
-- `src/admin/pages/Notifications.jsx`: Admin notification center.
-- `src/admin/pages/CreateElection.jsx`, `src/admin/pages/ElectionResults.jsx`: Extra election workflows.
-- `src/admin/pages/adminLogin.jsx`: Admin auth screen.
+## Shared auth and API layer
+- `src/auth/PortalLogin.jsx`: combined role login page
+- `src/auth/PartyLogin.jsx`: party login page
+- `src/auth/PartyOTP.jsx`: party OTP page
+- `src/services/api.js`: main axios instance
+- `src/services/adminService.js`: admin API helpers
+- `src/services/authService.js`: auth helpers
+- `src/services/partyService.js`: party API helpers
+- `src/services/voterService.js`: voter API helpers
+- `src/services/voteService.js`: voting API helpers
+- `src/api/axios.js`, `src/api/partyApi.js`, `src/api/voterApi.js`: alternate API wrappers still present in frontend
 
-### Admin style files
-- `src/admin/styles/adminDashboard.css`
+## Admin portal
+### Layout
+- `src/admin/layout/AdminLayout.jsx`: admin shell wrapper
+- `src/admin/layout/Sidebar.jsx`: admin sidebar
+- `src/admin/layout/Topbar.jsx`: admin topbar
+- `src/admin/admin.css`: shared admin shell/sidebar/topbar styles
+
+### Pages
+- `src/admin/pages/AdminDashboard.jsx`: dashboard cards, recent activity, election timeline
+- `src/admin/pages/Elections.jsx`: election list, create modal, preview modal, export modal
+- `src/admin/pages/ElectionResults.jsx`: detailed results page
+- `src/admin/pages/CreateElection.jsx`: standalone create-election view
+- `src/admin/pages/Parties.jsx`: party management, docs, analytics edit
+- `src/admin/pages/PartyRegistrationRequests.jsx`: party request list
+- `src/admin/pages/ActivePartiesManagement.jsx`: active party management view
+- `src/admin/pages/Voters.jsx`: voter list and voter creation
+- `src/admin/pages/Analytics.jsx`: analytics dashboard and history/report modals
+- `src/admin/pages/Results.jsx`: admin result summary
+- `src/admin/pages/Notifications.jsx`: admin notifications
+- `src/admin/pages/adminLogin.jsx`: admin auth page
+- `src/admin/pages/VerifyOTP.jsx`: admin OTP step
+- `src/admin/pages/PartyCard.jsx`: reusable admin party card
+
+### Admin styles/services/components
+- `src/admin/components/AdminNavbar.jsx`: older admin navbar helper
+- `src/admin/services/adminAuthService.js`: admin auth helper
+- `src/admin/styles/AdminDashboard.css`
 - `src/admin/styles/elections.css`
+- `src/admin/styles/electionResults.css`
+- `src/admin/styles/createElection.css`
+- `src/admin/styles/analytics.css`
+- `src/admin/styles/parties.css`
+- `src/admin/styles/partiesPage.css`
 - `src/admin/styles/partyManagement.css`
 - `src/admin/styles/voters.css`
-- `src/admin/styles/analytics.css`
-- `src/admin/styles/*.css` (other role-specific admin page styling)
+- `src/admin/styles/adminLogin.css`
+- `src/admin/styles/adminAuth.css`
+- `src/admin/styles/adminNav.css`
+- `src/admin/styles/auth.css`
 
-## 3) Voter UI map
-### Layout/Nav files
-- `src/voter/layout/VoterLayout.jsx`: Voter shell and outlet.
-- `src/voter/layout/Sidebar.jsx`: Voter left nav + election status mini-card.
-- `src/voter/layout/Topbar.jsx`: Voter topbar + verified badge/logout.
-- `src/voter/styles/layout.css`: Sidebar/topbar/layout styling.
+## Voter portal
+### Layout
+- `src/voter/layout/VoterLayout.jsx`: voter shell
+- `src/voter/layout/Sidebar.jsx`: voter sidebar and status card
+- `src/voter/layout/Topbar.jsx`: voter topbar, verified badge, logout
+- `src/voter/styles/layout.css`: layout/sidebar/topbar styling
 
-### Voter page content files
-- `src/voter/pages/Overview.jsx`: Live election dashboard + party cards + vote flow modals.
-- `src/voter/pages/Profile.jsx`: Voter personal details + voting history.
-- `src/voter/pages/Results.jsx`: Current/past election outcomes.
-- `src/voter/pages/Timeline.jsx`: Election timeline.
-- `src/voter/pages/Rules.jsx`: Voter rules/how-to page.
-- `src/voter/pages/PartyProfile.jsx`: Public party profile view for voters.
+### Pages
+- `src/voter/pages/Overview.jsx`: main voting dashboard
+- `src/voter/pages/Profile.jsx`: voter profile and voting history
+- `src/voter/pages/Results.jsx`: current and past election results
+- `src/voter/pages/Timeline.jsx`: election timeline
+- `src/voter/pages/Rules.jsx`: voter rules/how-to
+- `src/voter/pages/PartyProfile.jsx`: voter-facing public party profile
+- `src/voter/Login.jsx`: voter login
+- `src/voter/OTP.jsx`: voter OTP verification
+- `src/voter/VoteOTP.jsx`: vote OTP step
 
-### Voter components (reusable page blocks)
-- `src/voter/components/PartyCard.jsx`
-- `src/voter/components/VoteBanner.jsx`
-- `src/voter/components/StatCard.jsx`
-- `src/voter/components/EmailBanner.jsx`
-- `src/voter/components/OtpModal.jsx`
-- `src/voter/components/FaceVerifyModal.jsx`
-- `src/voter/components/VoteConfirmModal.jsx`
-- `src/voter/components/WarningNotice.jsx`
+### Components
+- `src/voter/components/PartyCard.jsx`: party card on voter dashboard
+- `src/voter/components/VoteConfirmModal.jsx`: vote confirm modal
+- `src/voter/components/OtpModal.jsx`: OTP modal
+- `src/voter/components/FaceVerifyModal.jsx`: face verification modal
+- `src/voter/components/VoteBanner.jsx`: success/info banner
+- `src/voter/components/EmailBanner.jsx`: email notice
+- `src/voter/components/WarningNotice.jsx`: warning component
+- `src/voter/components/StatCard.jsx`: stat card
+- `src/voter/components/ProgressBar.jsx`: progress helper
 
-### Voter auth/utils/services
-- `src/voter/Login.jsx`, `src/voter/OTP.jsx`, `src/voter/VoteOTP.jsx`
-- `src/voter/services/voteApi.js`
-- `src/voter/utils/election.js`
-- `src/voter/utils/user.js`
-
-### Voter style files
+### Utils/services/styles
+- `src/voter/utils/election.js`: election formatting and status helpers
+- `src/voter/utils/user.js`: local voter helper methods
+- `src/voter/services/voteApi.js`: vote API wrapper
 - `src/voter/styles/base.css`
 - `src/voter/styles/components.css`
 - `src/voter/styles/overview.css`
 - `src/voter/styles/profile.css`
 - `src/voter/styles/results.css`
-- `src/voter/styles/party-profile.css`
-- `src/voter/styles/rules.css`
 - `src/voter/styles/timeline.css`
+- `src/voter/styles/rules.css`
+- `src/voter/styles/party-profile.css`
 
-## 4) Party UI map
-### Layout/Nav files
-- `src/party/layout/PartyLayout.jsx`: Party shell.
-- `src/party/layout/PartySidebar.jsx`: Left nav + party logo card + deadline card.
-- `src/party/layout/PartyHeader.jsx`: Topbar with emblem, account badge, logout.
-- `src/party/styles/layout.css`: Sidebar/topbar structure styling.
-- `src/party/styles/components.css`: Shared buttons, page header, card helpers.
+## Party portal
+### Layout
+- `src/party/layout/PartyLayout.jsx`: party shell
+- `src/party/layout/PartySidebar.jsx`: party sidebar
+- `src/party/layout/PartyHeader.jsx`: party topbar
+- `src/party/styles/layout.css`: party layout/sidebar/topbar styles
+- `src/party/styles/components.css`: shared party components
+- `src/party/styles/base.css`: base party styles
 
-### Party page content files
-- `src/party/pages/PartyHome.jsx`: Party profile edit/home (logo, team, gallery, contact/social).
-- `src/party/pages/PartyAbout.jsx`: Future plans view/edit.
-- `src/party/pages/PartyProgress.jsx`: Admin-controlled progress analytics.
-- `src/party/pages/PartyPerformance.jsx`: Past performance summary + election history.
-- `src/party/pages/PartyStats.jsx`: Current live stats/ranking/timeline.
-- `src/party/pages/PartyNotifications.jsx`: Party notifications center.
-- `src/party/pages/PartyRules.jsx`: Rules & guideline page.
+### Pages
+- `src/party/pages/PartyHome.jsx`: party profile/home editor
+- `src/party/pages/PartyAbout.jsx`: about/future plans
+- `src/party/pages/PartyProgress.jsx`: progress analytics
+- `src/party/pages/PartyPerformance.jsx`: past performance
+- `src/party/pages/PartyStats.jsx`: current election stats
+- `src/party/pages/PartyNotifications.jsx`: notifications
+- `src/party/pages/PartyRules.jsx`: rules
 
-### Party hooks + style files
-- `src/party/hooks/usePartyData.js`
+### Hooks/styles
+- `src/party/hooks/usePartyData.js`: party data fetch hook
 - `src/party/styles/home.css`
 - `src/party/styles/about.css`
 - `src/party/styles/progress.css`
@@ -101,18 +141,36 @@ Frontend UI map only (navigation, layout, page content, and style files).
 - `src/party/styles/stats.css`
 - `src/party/styles/notifications.css`
 - `src/party/styles/rules.css`
-- `src/party/styles/base.css`
+- `src/party/styles/party-auth.css`
 
-## 5) Shared UI helpers used across roles
-- `src/shared/utils/partyDisplay.js`: Safe party logo/short-label helpers.
-- `src/assets/*`: Emblems, logos, and static UI images.
+## Shared frontend utilities
+- `src/shared/NotFound.jsx`: 404 page
+- `src/shared/notFound.css`: 404 styles
+- `src/shared/utils/partyDisplay.js`: party logo / short-label helpers
+- `src/shared/ui/Button.jsx`: generic button
+- `src/shared/ui/Card.jsx`: generic card
+- `src/shared/ui/Badge.jsx`: generic badge
 
-## 6) Quick edit shortcuts
-- Admin sidebar/nav: `src/admin/layout/Sidebar.jsx`
+## Global styles
+- `src/index.css`: Tailwind import and base layer
+- `src/styles/theme.css`: theme variables and global system font
+- `src/styles/landing.css`: landing page styles
+- `src/styles/portal-login.css`: portal login styles
+- `src/styles/auth.css`: shared auth styles
+- `src/styles/gradient-auth.css`: gradient auth styles
+
+## Assets
+- `src/assets/nepal-emblem.svg`
+- `src/assets/parliament-login-clear.jpg`
+- `src/assets/react.svg`
+
+## Quick lookup
+- Landing page: `src/app/AccessLanding.jsx`
+- Login page: `src/auth/PortalLogin.jsx`
+- Admin sidebar: `src/admin/layout/Sidebar.jsx`
+- Voter sidebar: `src/voter/layout/Sidebar.jsx`
+- Party sidebar: `src/party/layout/PartySidebar.jsx`
 - Admin topbar: `src/admin/layout/Topbar.jsx`
-- Voter sidebar/nav: `src/voter/layout/Sidebar.jsx`
 - Voter topbar: `src/voter/layout/Topbar.jsx`
-- Party sidebar/nav: `src/party/layout/PartySidebar.jsx`
 - Party topbar: `src/party/layout/PartyHeader.jsx`
-- Landing role flow: `src/app/AccessLanding.jsx`
-- Route remap: `src/app/router.jsx`
+- Route map: `src/app/router.jsx`

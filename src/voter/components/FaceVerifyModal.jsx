@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { getPartyLogoSrc } from "../../shared/utils/partyDisplay";
 
 /**
  * Face verification modal used before OTP submission while voting.
@@ -40,8 +41,9 @@ export default function FaceVerifyModal({
 
   useEffect(() => {
     startCamera();
+    const currentVideo = videoRef.current;
     return () => {
-      const currentStream = videoRef.current?.srcObject;
+      const currentStream = currentVideo?.srcObject;
       if (currentStream?.getTracks) {
         currentStream.getTracks().forEach((t) => t.stop());
       } else if (stream) {
@@ -97,17 +99,24 @@ export default function FaceVerifyModal({
 
   const partyName = party?.name || "Party";
   const partyLeader = party?.leader;
+  const partyLogo = getPartyLogoSrc(party);
 
   return (
     <div className="otp-backdrop">
       <div className="face-modal" role="dialog" aria-modal="true">
         <header className="face-hero">
           <div className="face-hero-party">
-            <div className="face-party-logo">{(party?.short || partyName[0] || "V").slice(0, 2)}</div>
+            <div className="face-party-logo">
+              {partyLogo ? (
+                <img src={partyLogo} alt={partyName} />
+              ) : (
+                (party?.short || partyName[0] || "V").slice(0, 2)
+              )}
+            </div>
             <div>
-              <p className="face-hero-label">You are voting for</p>
+              <p className="face-hero-label">Voter verification </p>
               <h4>{partyName}</h4>
-              {partyLeader ? <span>Leader: {partyLeader}</span> : null}
+              <span>{partyLeader ? `Leader: ${partyLeader}` : " Verify your identity to login"}</span>Voter
             </div>
           </div>
           <button className="face-close" type="button" onClick={onClose} aria-label="Close face verification">
@@ -140,7 +149,7 @@ export default function FaceVerifyModal({
           ) : (
             <div className="face-hint">
               <i className="ri-information-line" aria-hidden="true" />
-              Keep your face centered. This is a demo approval flow.
+              Keep your face centered. This is the voter approval step before OTP verification.
             </div>
           )}
 

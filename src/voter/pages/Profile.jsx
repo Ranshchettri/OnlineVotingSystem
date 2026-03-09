@@ -19,7 +19,7 @@ const deriveProvince = (profile) => {
 };
 
 export default function Profile() {
-  const stored = getStoredVoter();
+  const stored = useMemo(() => getStoredVoter(), []);
   const [profile, setProfile] = useState(stored || null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,7 +46,14 @@ export default function Profile() {
             ? historyRes.data
             : [];
 
-        const electionIds = [...new Set(voteHistory.map((item) => String(item.electionId || "")).filter(Boolean))];
+        const electionIds = [
+          ...new Set(
+            voteHistory
+              .filter((item) => Boolean(item?.election?.resultsPublishedAt))
+              .map((item) => String(item.electionId || ""))
+              .filter(Boolean),
+          ),
+        ];
         const standingEntries = await Promise.all(
           electionIds.map(async (id) => {
             try {
@@ -64,29 +71,43 @@ export default function Profile() {
 
         const enrichedHistory = voteHistory.map((item) => {
           const electionId = String(item.electionId || "");
+          const electionStatus = String(item?.election?.status || "").toLowerCase();
+          const isResultFinal =
+            Boolean(item?.election?.resultsPublishedAt) &&
+            (Boolean(item?.election?.isEnded) || electionStatus === "ended");
           const standings = Array.isArray(standingsByElection[electionId])
             ? standingsByElection[electionId]
             : [];
-          const winner = standings[0] || null;
+          const winner = isResultFinal ? standings[0] || null : null;
           const votedPartyName = String(item.partyName || "").toLowerCase();
           const winnerName = String(winner?.name || "");
           const voteWon =
             winnerName &&
             votedPartyName &&
             votedPartyName === winnerName.toLowerCase();
-          const voteStatusLabel = !winnerName
-            ? "Your Vote Submitted"
-            : voteWon
-              ? "Your Vote Won"
-              : "Your Vote Lost";
-          const voteStatusClass = !winnerName ? "submitted" : voteWon ? "won" : "lost";
+          const voteStatusLabel = !isResultFinal
+            ? "Vote Submitted"
+            : !winnerName
+              ? "Result Pending"
+              : voteWon
+                ? "Your Vote Won"
+                : "Your Vote Lost";
+          const voteStatusClass =
+            !isResultFinal || !winnerName ? "submitted" : voteWon ? "won" : "lost";
+          const voteStatusIcon =
+            !isResultFinal || !winnerName
+              ? "ri-checkbox-circle-line"
+              : voteWon
+                ? "ri-trophy-line"
+                : "ri-close-circle-line";
 
           return {
             ...item,
-            winnerName: winnerName || "-",
-            voteWon,
+            winnerName: isResultFinal ? winnerName || "-" : "-",
+            voteWon: Boolean(isResultFinal && voteWon),
             voteStatusLabel,
             voteStatusClass,
+            voteStatusIcon,
           };
         });
 
@@ -100,7 +121,7 @@ export default function Profile() {
     };
 
     loadProfile();
-  }, []);
+  }, [stored]);
 
   const displayProfile = profile || stored || {};
   const photo =
@@ -196,7 +217,16 @@ export default function Profile() {
             </div>
           ) : (
             sortedHistory.map((item) => {
-              const year = item.createdAt ? new Date(item.createdAt).getFullYear() : "-";
+              const yearSource =
+                item?.election?.endDate ||
+                item?.election?.startDate ||
+                item?.election?.createdAt ||
+                item?.createdAt ||
+                null;
+              const year =
+                yearSource && !Number.isNaN(new Date(yearSource).getTime())
+                  ? new Date(yearSource).getFullYear()
+                  : "-";
               return (
                 <div key={item._id} className="profile-history-item">
                   <div className="profile-history-top">
@@ -205,8 +235,8 @@ export default function Profile() {
                       <span>Year: {year}</span>
                     </div>
                     <div className={`profile-history-badge ${item.voteStatusClass || "submitted"}`}>
-                      <i className="ri-trophy-line" aria-hidden="true" />
-                      {item.voteStatusLabel || "Your Vote Submitted"}
+                      <i className={item.voteStatusIcon || "ri-checkbox-circle-line"} aria-hidden="true" />
+                      {item.voteStatusLabel || "Vote Submitted"}
                     </div>
                   </div>
                   <div className="profile-history-grid">

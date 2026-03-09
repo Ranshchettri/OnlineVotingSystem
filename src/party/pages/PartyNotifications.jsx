@@ -45,72 +45,6 @@ const normalizeType = (item = {}) => {
   return "info";
 };
 
-const buildDeadlineNotification = (startDate) => {
-  if (!startDate) return null;
-
-  const start = new Date(startDate);
-  if (Number.isNaN(start.getTime())) return null;
-
-  const lockAt = new Date(start.getTime() - 24 * 60 * 60 * 1000);
-  const now = Date.now();
-  const diff = lockAt.getTime() - now;
-
-  if (diff <= 0) {
-    return {
-      id: "synthetic-editing-deadline",
-      synthetic: true,
-      isRead: false,
-      type: "warning",
-      title: "Profile Editing Deadline",
-      message: "Profile editing is locked within 24 hours of election start.",
-      createdAt: lockAt.toISOString(),
-    };
-  }
-
-  const days = Math.ceil(diff / (24 * 60 * 60 * 1000));
-  return {
-    id: "synthetic-editing-deadline",
-    synthetic: true,
-    isRead: false,
-    type: "warning",
-    title: "Profile Editing Deadline",
-    message: `Profile editing will be locked in ${days} day${days > 1 ? "s" : ""}. Please complete all updates.`,
-    createdAt: lockAt.toISOString(),
-  };
-};
-
-const buildElectionStatusNotification = (election = {}) => {
-  const status = String(election?.status || "").toLowerCase();
-  const title = election?.title || "Election";
-  if (!status) return null;
-
-  if (status === "running") {
-    return {
-      id: `synthetic-election-running-${election?.id || "current"}`,
-      synthetic: true,
-      isRead: false,
-      type: "success",
-      title: "Election Started",
-      message: `${title} is now running. Voting is open.`,
-      createdAt: election?.startDate || new Date().toISOString(),
-    };
-  }
-
-  if (status === "ended") {
-    return {
-      id: `synthetic-election-ended-${election?.id || "current"}`,
-      synthetic: true,
-      isRead: false,
-      type: "warning",
-      title: "Election Ended",
-      message: `${title} has ended. Results will be published soon.`,
-      createdAt: election?.endDate || new Date().toISOString(),
-    };
-  }
-
-  return null;
-};
-
 const Icon = ({ item }) => {
   const text = `${item?.title || ""} ${item?.message || ""}`.toLowerCase();
   if (text.includes("election started")) return <i className="ri-notification-3-line" aria-hidden="true" />;
@@ -133,10 +67,7 @@ export default function PartyNotifications() {
 
   const load = async () => {
     try {
-      const [notifRes, statsRes] = await Promise.all([
-        api.get("/notifications"),
-        api.get("/parties/current-stats").catch(() => null),
-      ]);
+      const notifRes = await api.get("/notifications");
 
       const notifPayload = notifRes.data?.data || {};
       const sourceNotifications = Array.isArray(notifPayload.notifications)
@@ -148,29 +79,14 @@ export default function PartyNotifications() {
         type: normalizeType(item),
       }));
 
-      const currentElection = statsRes?.data?.data?.currentElection || null;
-      const startDate = currentElection?.startDate || null;
-      const deadlineNotice = buildDeadlineNotification(startDate);
-      const electionNotice = buildElectionStatusNotification(currentElection);
-
-      const hasDeadline = normalized.some((item) =>
-        String(item.title || "").toLowerCase().includes("profile editing deadline"),
-      );
-
-      const merged = [
-        ...normalized,
-        ...(electionNotice ? [electionNotice] : []),
-        ...(deadlineNotice && !hasDeadline ? [deadlineNotice] : []),
-      ].sort((a, b) => {
+      const merged = [...normalized].sort((a, b) => {
         const aTime = new Date(a.createdAt || 0).getTime();
         const bTime = new Date(b.createdAt || 0).getTime();
         return bTime - aTime;
       });
 
       setItems(merged);
-      const unreadFromApi = Number(notifPayload.unreadCount || 0);
-      const syntheticUnread = merged.filter((item) => item.synthetic && !item.isRead).length;
-      setUnreadCount(unreadFromApi + syntheticUnread);
+      setUnreadCount(Number(notifPayload.unreadCount || 0));
       setError("");
     } catch (err) {
       setItems([]);

@@ -149,15 +149,54 @@ export default function PartyStats() {
   const isSeatBasedElection = ["PR", "HYBRID"].includes(
     String(current.electionSystem || "").toUpperCase(),
   );
+  const normalizedStatus = String(current.status || "").toLowerCase();
+  const totalVotesCast = rankings.reduce((sum, item) => sum + Number(item.votes || 0), 0);
+  const leaderVotes = Number(rankings[0]?.votes || 0);
   const seatsMajorityMark = Math.floor(Number(current.totalSeats || 0) / 2) + 1;
   const majorityGap = isSeatBasedElection
     ? Math.max(seatsMajorityMark - Number(current.seats || 0), 0)
     : Math.max(
-        Math.floor(rankings.reduce((sum, item) => sum + Number(item.votes || 0), 0) / 2) +
+        Math.floor(totalVotesCast / 2) +
           1 -
           Number(current.votes || 0),
         0,
       );
+  const comparisonItems =
+    normalizedStatus === "upcoming"
+      ? [
+          { label: "Election status", value: "Upcoming" },
+          { label: "Registered parties", value: rankings.length || 0 },
+          { label: "Your party status", value: "Waiting for voting" },
+          {
+            label: isSeatBasedElection ? "Majority seats" : "Majority target",
+            value: isSeatBasedElection ? seatsMajorityMark : "Will update live",
+          },
+        ]
+      : normalizedStatus === "running" && totalVotesCast === 0
+        ? [
+            { label: "Election status", value: "Running" },
+            { label: "Votes recorded", value: 0 },
+            { label: "Competing parties", value: rankings.length || 0 },
+            {
+              label: isSeatBasedElection ? "Seats needed for majority" : "Votes needed for majority",
+              value: majorityGap.toLocaleString(),
+            },
+          ]
+        : [
+            {
+              label: current.position === 1 ? "Lead over 2nd place" : "Gap to leader",
+              value:
+                current.position === 1
+                  ? `+${Number(current.lead || 0).toLocaleString()} votes`
+                  : `${Math.max(leaderVotes - Number(current.votes || 0), 0).toLocaleString()} votes`,
+            },
+            { label: "Total votes cast", value: totalVotesCast.toLocaleString() },
+            { label: "Competing parties", value: rankings.length },
+            {
+              label: isSeatBasedElection ? "Seats needed for majority" : "Votes needed for majority",
+              value: majorityGap.toLocaleString(),
+            },
+          ];
 
   return (
     <div className="party-page party-page--stats">
@@ -268,26 +307,12 @@ export default function PartyStats() {
         <div className="stats-card">
           <h3>Vote Comparison</h3>
           <div className="stats-compare">
-            <div className="stats-compare-item highlight">
-              <span className="stats-compare-label">Lead over 2nd place</span>
-              <strong>
-                {current.position === 1 ? `+${current.lead.toLocaleString()} votes` : "0 votes"}
-              </strong>
-            </div>
-            <div className="stats-compare-item">
-              <span className="stats-compare-label">Total votes cast</span>
-              <strong>{rankings.reduce((sum, item) => sum + Number(item.votes || 0), 0).toLocaleString()}</strong>
-            </div>
-            <div className="stats-compare-item">
-              <span className="stats-compare-label">Competing parties</span>
-              <strong>{rankings.length}</strong>
-            </div>
-            <div className="stats-compare-item">
-              <span className="stats-compare-label">
-                {isSeatBasedElection ? "Seats needed for majority" : "Votes needed for majority"}
-              </span>
-              <strong>{majorityGap.toLocaleString()}</strong>
-            </div>
+            {comparisonItems.map((item, index) => (
+              <div key={item.label} className={`stats-compare-item ${index === 0 ? "highlight" : ""}`}>
+                <span className="stats-compare-label">{item.label}</span>
+                <strong>{item.value}</strong>
+              </div>
+            ))}
           </div>
         </div>
         <div className="stats-card">

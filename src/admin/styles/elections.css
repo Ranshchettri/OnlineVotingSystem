@@ -122,6 +122,22 @@
   opacity: 0.9;
 }
 
+.admin-elections .election-status-pill.green i {
+  animation: admin-election-live-pulse 1.25s ease-in-out infinite;
+}
+
+@keyframes admin-election-live-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.82);
+  }
+}
+
 .admin-elections .election-status-pill.green {
   background: #dcfce7;
   border-color: #86efac;

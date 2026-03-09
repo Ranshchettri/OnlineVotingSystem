@@ -21,6 +21,21 @@
   background: #86efac;
   margin-top: 6px;
   box-shadow: 0 0 0 4px rgba(134, 239, 172, 0.25);
+  animation: stats-live-pulse 1.25s ease-in-out infinite;
+}
+
+@keyframes stats-live-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 0 4px rgba(134, 239, 172, 0.25);
+  }
+  50% {
+    opacity: 0.65;
+    transform: scale(0.88);
+    box-shadow: 0 0 0 7px rgba(134, 239, 172, 0.1);
+  }
 }
 
 .stats-hero-label {
