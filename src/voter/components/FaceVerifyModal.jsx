@@ -8,6 +8,7 @@ import { getPartyLogoSrc } from "../../shared/utils/partyDisplay";
 export default function FaceVerifyModal({
   isOpen,
   party,
+  mode = "vote",
   onClose,
   onVerified,
 }) {
@@ -97,9 +98,19 @@ export default function FaceVerifyModal({
 
   if (!isOpen) return null;
 
-  const partyName = party?.name || "Party";
+  const isLoginMode = mode === "login";
+  const partyName = party?.name || (isLoginMode ? "Voter Login" : "Party");
   const partyLeader = party?.leader;
   const partyLogo = getPartyLogoSrc(party);
+  const headerLabel = isLoginMode ? "Voter verification" : "You are voting for";
+  const headerSubtext = isLoginMode
+    ? "Verify your identity to continue login"
+    : partyLeader
+      ? `Leader: ${partyLeader}`
+      : "Complete face verification before OTP";
+  const hintText = isLoginMode
+    ? "Keep your face centered. This is the login verification step before OTP."
+    : "Keep your face centered. This is the voter approval step before OTP verification.";
 
   return (
     <div className="otp-backdrop">
@@ -114,9 +125,9 @@ export default function FaceVerifyModal({
               )}
             </div>
             <div>
-              <p className="face-hero-label">Voter verification </p>
+              <p className="face-hero-label">{headerLabel}</p>
               <h4>{partyName}</h4>
-              <span>{partyLeader ? `Leader: ${partyLeader}` : " Verify your identity to login"}</span>Voter
+              <span>{headerSubtext}</span>
             </div>
           </div>
           <button className="face-close" type="button" onClick={onClose} aria-label="Close face verification">
@@ -149,7 +160,7 @@ export default function FaceVerifyModal({
           ) : (
             <div className="face-hint">
               <i className="ri-information-line" aria-hidden="true" />
-              Keep your face centered. This is the voter approval step before OTP verification.
+              {hintText}
             </div>
           )}
 

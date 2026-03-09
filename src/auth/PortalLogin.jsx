@@ -436,6 +436,7 @@ export default function PortalLogin({ initialRole = "voter" }) {
       <FaceVerifyModal
         isOpen={role === "voter" && voterStep === "face"}
         party={null}
+        mode="login"
         onClose={() => setVoterStep("login")}
         onVerified={() => {
           setFaceVerified(true);

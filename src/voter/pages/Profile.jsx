@@ -49,7 +49,14 @@ export default function Profile() {
         const electionIds = [
           ...new Set(
             voteHistory
-              .filter((item) => Boolean(item?.election?.resultsPublishedAt))
+              .filter((item) => {
+                const status = String(item?.election?.status || "").toLowerCase();
+                return (
+                  Boolean(item?.election?.resultsPublishedAt) ||
+                  Boolean(item?.election?.isEnded) ||
+                  status === "ended"
+                );
+              })
               .map((item) => String(item.electionId || ""))
               .filter(Boolean),
           ),
@@ -73,8 +80,9 @@ export default function Profile() {
           const electionId = String(item.electionId || "");
           const electionStatus = String(item?.election?.status || "").toLowerCase();
           const isResultFinal =
-            Boolean(item?.election?.resultsPublishedAt) &&
-            (Boolean(item?.election?.isEnded) || electionStatus === "ended");
+            Boolean(item?.election?.resultsPublishedAt) ||
+            Boolean(item?.election?.isEnded) ||
+            electionStatus === "ended";
           const standings = Array.isArray(standingsByElection[electionId])
             ? standingsByElection[electionId]
             : [];

@@ -451,6 +451,7 @@ export default function Overview() {
       <FaceVerifyModal
         isOpen={voteStep === "face"}
         party={selectedParty}
+        mode="vote"
         onClose={() => {
           setVoteStep("confirm");
           setFaceVerified(false);
