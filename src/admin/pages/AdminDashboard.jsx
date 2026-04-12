@@ -542,7 +542,7 @@ export default function AdminDashboard() {
       {loadingOverview === false && statusLabel.includes("offline") && (
         <div className="dashboard-error">
           Could not reach the backend API. Start the server at{" "}
-          {import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api"}.
+          {import.meta.env.VITE_API_BASE_URL || "https://ovs-backend-b7xo.onrender.com/api"}.
         </div>
       )}
 
