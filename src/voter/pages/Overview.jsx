@@ -20,6 +20,9 @@ import {
 } from "../utils/election";
 import "../styles/overview.css";
 
+const resolveElectionId = (election) =>
+  election?._id?.toString?.() || election?.id?.toString?.() || "";
+
 export default function Overview() {
   const [hasVoted, setHasVoted] = useState(false);
   const [votedPartyId, setVotedPartyId] = useState(null);
@@ -30,6 +33,8 @@ export default function Overview() {
   const [voteStep, setVoteStep] = useState(null);
   const [faceVerified, setFaceVerified] = useState(false);
   const [parties, setParties] = useState([]);
+  const [activeElections, setActiveElections] = useState([]);
+  const [selectedElectionId, setSelectedElectionId] = useState("");
   const [currentElection, setCurrentElection] = useState(null);
   const [roleCanVote, setRoleCanVote] = useState(true);
   const [electionOverview, setElectionOverview] = useState({
@@ -85,14 +90,45 @@ export default function Overview() {
           ? activeElectionsRes.data
           : [];
 
-      const selectedElection = activeElectionList[0] || pickCurrentElection(electionList);
-      const selectedElectionId =
-        selectedElection?._id?.toString?.() || selectedElection?.id?.toString?.();
+      const runningElections = (activeElectionList.length > 0
+        ? activeElectionList
+        : electionList.filter((item) => normalizeElectionStatus(item) === "running")
+      ).sort((a, b) => {
+        const startA = new Date(a.startDate || 0).getTime();
+        const startB = new Date(b.startDate || 0).getTime();
+        return startA - startB;
+      });
+
+      const fallbackElection = pickCurrentElection(electionList);
+      const nextSelectedElectionId = (() => {
+        if (
+          selectedElectionId &&
+          runningElections.some(
+            (election) => resolveElectionId(election) === selectedElectionId,
+          )
+        ) {
+          return selectedElectionId;
+        }
+        if (runningElections.length > 0) return resolveElectionId(runningElections[0]);
+        return resolveElectionId(fallbackElection);
+      })();
+
+      if (nextSelectedElectionId && nextSelectedElectionId !== selectedElectionId) {
+        setSelectedElectionId(nextSelectedElectionId);
+      }
+
+      setActiveElections(runningElections);
+
+      const selectedElection =
+        runningElections.find(
+          (election) => resolveElectionId(election) === nextSelectedElectionId,
+        ) || fallbackElection;
+      const selectedElectionKey = resolveElectionId(selectedElection);
       const selectedStatus = normalizeElectionStatus(selectedElection);
       const statusLabel = selectedStatus.toUpperCase();
 
-      const standingsRes = selectedElectionId
-        ? await api.get(`/results/party/${selectedElectionId}`).catch(() => null)
+      const standingsRes = selectedElectionKey
+        ? await api.get(`/results/party/${selectedElectionKey}`).catch(() => null)
         : null;
       const standingsData = standingsRes?.data?.data || {};
       const standingsRows = Array.isArray(standingsData.parties)
@@ -125,8 +161,8 @@ export default function Overview() {
           party.electionId?._id?.toString?.() ||
           party.electionId?.toString?.() ||
           null;
-        if (!selectedElectionId) return true;
-        return !partyElectionId || partyElectionId === selectedElectionId;
+        if (!selectedElectionKey) return true;
+        return !partyElectionId || partyElectionId === selectedElectionKey;
       });
 
       const partySource = filteredByElection.length > 0 ? filteredByElection : partyListRaw;
@@ -197,11 +233,11 @@ export default function Overview() {
         : Array.isArray(votesRes.data)
           ? votesRes.data
           : [];
-      const relevantVote = selectedElectionId
+      const relevantVote = selectedElectionKey
         ? voteList.find(
             (vote) =>
-              vote.electionId?.toString?.() === selectedElectionId ||
-              vote.electionId === selectedElectionId,
+              vote.electionId?.toString?.() === selectedElectionKey ||
+              vote.electionId === selectedElectionKey,
           )
         : voteList[0];
 
@@ -223,10 +259,20 @@ export default function Overview() {
       setElectionOverview({
         title: selectedElection?.title || "Election Overview",
         subtitle: selectedElection
-          ? `${selectedElection.type || "Election"} election`
+          ? `${selectedElection.type || "Election"} - ${(
+              standingsData.electionSystem ||
+              selectedElection.electionSystem ||
+              "FPTP"
+            ).toUpperCase()}`
           : "No active election available",
         electionName: selectedElection?.title || "",
-        activeLabel: selectedElection ? `Status: ${statusLabel}` : "Status: N/A",
+        activeLabel: selectedElection
+          ? `Status: ${statusLabel} • ${(
+              standingsData.electionSystem ||
+              selectedElection.electionSystem ||
+              "FPTP"
+            ).toUpperCase()}`
+          : "Status: N/A",
         activeEnds: activeEndsText,
       });
 
@@ -264,7 +310,7 @@ export default function Overview() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedElectionId]);
 
   useEffect(() => {
     loadLive();
@@ -378,6 +424,30 @@ export default function Overview() {
           </div>
         </div>
       </div>
+
+      {activeElections.length > 1 ? (
+        <div className="overview-election-switcher">
+          {activeElections.map((election) => {
+            const id = resolveElectionId(election);
+            const system = String(election.electionSystem || "FPTP").toUpperCase();
+            const isActive = id === resolveElectionId(currentElection);
+            return (
+              <button
+                key={id}
+                type="button"
+                className={`overview-election-chip ${isActive ? "active" : ""}`}
+                onClick={() => {
+                  setSelectedElectionId(id);
+                  setCurrentElection(election);
+                }}
+              >
+                <strong>{election.title || "Election"}</strong>
+                <span>{system}</span>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
 
       <EmailBanner
         visible={showEmailBanner}

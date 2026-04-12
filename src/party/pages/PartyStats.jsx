@@ -11,6 +11,8 @@ const TimelineIcon = ({ label }) => {
 };
 
 export default function PartyStats() {
+  const [activeElections, setActiveElections] = useState([]);
+  const [selectedElectionId, setSelectedElectionId] = useState("");
   const [current, setCurrent] = useState({
     electionName: "Current Election",
     electionSystem: "FPTP",
@@ -35,15 +37,68 @@ export default function PartyStats() {
   useEffect(() => {
     const load = async () => {
       try {
-        const statsRes = await api.get("/parties/current-stats");
+        const [profileRes, activeRes] = await Promise.all([
+          api.get("/parties/profile/full").catch(() => ({ data: { data: {} } })),
+          api.get("/elections/active").catch(() => ({ data: [] })),
+        ]);
 
-        const statsData = statsRes.data?.data || {};
-        const ownStats = statsData.stats || {};
-        const totalVotes = Number(statsData.totalVotes || 0);
-        const electionId =
-          statsData.currentElection?.id ||
-          statsData.currentElection?._id ||
-          null;
+        const ownPartyProfile = profileRes.data?.data || {};
+        const activeElectionList = Array.isArray(activeRes.data?.data)
+          ? activeRes.data.data
+          : Array.isArray(activeRes.data)
+            ? activeRes.data
+            : [];
+        const sortedActive = [...activeElectionList].sort((a, b) => {
+          const startA = new Date(a.startDate || 0).getTime();
+          const startB = new Date(b.startDate || 0).getTime();
+          return startA - startB;
+        });
+
+        setActiveElections(sortedActive);
+
+        if (sortedActive.length === 0) {
+          setCurrent((prev) => ({
+            ...prev,
+            electionName: "Current Election",
+            electionSystem: "FPTP",
+            partyName: ownPartyProfile.name || "Your Party",
+            votes: 0,
+            position: 0,
+            share: 0,
+            lead: 0,
+            seats: 0,
+            status: "PENDING",
+            short: getPartyShortLabel(ownPartyProfile, "PRT"),
+            logoSrc: getPartyLogoSrc(ownPartyProfile),
+            color: ownPartyProfile.color || "#dc2626",
+          }));
+          setRankings([]);
+          setCoalitionSuggestions([]);
+          setMajorityInfo(null);
+          setTimeline([]);
+          setLastUpdated(new Date().toLocaleString());
+          return;
+        }
+
+        const nextElectionId =
+          selectedElectionId &&
+          sortedActive.some(
+            (election) =>
+              String(election._id || election.id || "") === String(selectedElectionId),
+          )
+            ? selectedElectionId
+            : String(sortedActive[0]._id || sortedActive[0].id || "");
+
+        if (nextElectionId && nextElectionId !== selectedElectionId) {
+          setSelectedElectionId(nextElectionId);
+        }
+
+        const selectedElection =
+          sortedActive.find(
+            (election) => String(election._id || election.id || "") === String(nextElectionId),
+          ) || sortedActive[0];
+        const electionId = String(selectedElection?._id || selectedElection?.id || "");
+
         const standingsRes = electionId
           ? await api.get(`/results/party/${electionId}`).catch(() => null)
           : null;
@@ -52,64 +107,71 @@ export default function PartyStats() {
           ? standingsData.parties
           : [];
 
-        const allParties = Array.isArray(statsData.allParties) ? statsData.allParties : [];
-        const rankingData = allParties
+        const rankingData = standingsRows
           .map((item, index) => {
             const votes = Number(item.votes || 0);
-            const shareValue = totalVotes ? Number(((votes / totalVotes) * 100).toFixed(1)) : 0;
+            const shareValue = Number(item.percentage || 0);
             return {
               id: (item.id || item.partyId || "").toString(),
-              rank: Number(item.position || index + 1),
+              rank: Number(item.rank || index + 1),
               name: item.name || "Party",
-              short: getPartyShortLabel(
-                {
-                  name: item.name,
-                  shortName: item.shortName,
-                  short: item.short,
-                  symbol: item.logo,
-                },
-                "PRT",
-              ),
-              logoSrc: getPartyLogoSrc({ logo: item.logo, symbol: item.symbol }),
+              short: getPartyShortLabel(item, "PRT"),
+              logoSrc: getPartyLogoSrc({ logo: item.logo, symbol: item.logo }),
               votes,
-              share: `${shareValue}%`,
+              share: `${shareValue.toFixed(1)}%`,
               shareWidth: `${shareValue}%`,
               color: item.color || "#7c7cff",
-              isOwn: Boolean(item.isOwn),
-              highlight: Boolean(item.isOwn),
+              isOwn:
+                String(item.id || item.partyId || "") ===
+                  String(ownPartyProfile.id || ownPartyProfile._id || "") ||
+                String(item.name || "").trim().toLowerCase() ===
+                  String(ownPartyProfile.name || "").trim().toLowerCase(),
+              highlight: false,
+              seats: Number(item.seats || 0),
+              percentage: shareValue,
             };
           })
-          .sort((a, b) => a.rank - b.rank);
+          .sort((a, b) => a.rank - b.rank)
+          .map((item) => ({ ...item, highlight: item.isOwn }));
 
         const ownParty =
           rankingData.find((item) => item.isOwn) ||
-          rankingData.find((item) => item.rank === Number(ownStats.ownPosition || 0)) ||
-          {
-            name: "Your Party",
-            short: "PRT",
-            logoSrc: "",
-            color: "#dc2626",
+          rankingData.find(
+            (item) =>
+              String(item.name || "").trim().toLowerCase() ===
+              String(ownPartyProfile.name || "").trim().toLowerCase(),
+          ) || {
+            id: ownPartyProfile.id || ownPartyProfile._id || "",
+            name: ownPartyProfile.name || "Your Party",
+            short: getPartyShortLabel(ownPartyProfile, "PRT"),
+            logoSrc: getPartyLogoSrc(ownPartyProfile),
+            color: ownPartyProfile.color || "#dc2626",
+            rank: 0,
+            votes: 0,
+            seats: 0,
+            percentage: 0,
           };
-        const ownStanding =
-          standingsRows.find(
-            (row) =>
-              String(row.id || row.partyId || "") === String(ownParty?.id || "") ||
-              String(row.name || "").toLowerCase() === String(ownParty?.name || "").toLowerCase(),
-          ) || {};
+        const ownPosition = Number(ownParty.rank || 0);
+        const ownVotes = Number(ownParty.votes || 0);
+        const ownVoteShare = Number(ownParty.percentage || 0);
+        const leadOverSecond =
+          rankingData.length > 1 && ownPosition === 1
+            ? Math.max(ownVotes - Number(rankingData[1]?.votes || 0), 0)
+            : 0;
 
         setCurrent({
-          electionName: statsData.currentElection?.title || "Current Election",
-          electionSystem: standingsData.electionSystem || "FPTP",
+          electionName: selectedElection?.title || "Current Election",
+          electionSystem: standingsData.electionSystem || selectedElection?.electionSystem || "FPTP",
           totalSeats: Number(standingsData.totalSeats || 0),
           partyName: ownParty?.name || "Your Party",
-          votes: Number(ownStats.ownVotes || 0),
-          position: Number(ownStats.ownPosition || 0),
-          share: Number(ownStats.voteShare || 0),
-          lead: Number(ownStats.leadOverSecond || 0),
-          seats: Number(ownStanding?.seats || 0),
-          status: statsData.currentElection?.status || "PENDING",
-          short: ownParty?.short || "PRT",
-          logoSrc: ownParty?.logoSrc || "",
+          votes: ownVotes,
+          position: ownPosition,
+          share: ownVoteShare,
+          lead: leadOverSecond,
+          seats: Number(ownParty?.seats || 0),
+          status: selectedElection?.status || "PENDING",
+          short: ownParty?.short || getPartyShortLabel(ownPartyProfile, "PRT"),
+          logoSrc: ownParty?.logoSrc || getPartyLogoSrc(ownPartyProfile),
           color: ownParty?.color || "#dc2626",
         });
         setCoalitionSuggestions(
@@ -124,15 +186,15 @@ export default function PartyStats() {
 
         setTimeline(
           [
-            { label: "Voting Started", value: statsData.currentElection?.startDate },
+            { label: "Voting Started", value: selectedElection?.startDate },
             { label: "In Progress", value: "Live" },
-            { label: "Voting Ends", value: statsData.currentElection?.endDate },
+            { label: "Voting Ends", value: selectedElection?.endDate },
             {
               label: "Results Announcement",
               value:
-                String(statsData.currentElection?.status || "").toLowerCase() === "ended"
+                String(selectedElection?.status || "").toLowerCase() === "ended"
                   ? "Published"
-                  : statsData.currentElection?.endDate,
+                  : selectedElection?.endDate,
             },
           ].filter(Boolean),
         );
@@ -144,7 +206,7 @@ export default function PartyStats() {
     load();
     const interval = setInterval(load, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedElectionId]);
 
   const isSeatBasedElection = ["PR", "HYBRID"].includes(
     String(current.electionSystem || "").toUpperCase(),
@@ -207,6 +269,26 @@ export default function PartyStats() {
         </div>
         <span className="party-pill green">Live Data</span>
       </div>
+
+      {activeElections.length > 1 ? (
+        <div className="stats-election-switcher">
+          {activeElections.map((election) => {
+            const id = String(election._id || election.id || "");
+            const active = id === String(selectedElectionId || "");
+            return (
+              <button
+                key={id}
+                type="button"
+                className={`stats-election-chip ${active ? "active" : ""}`}
+                onClick={() => setSelectedElectionId(id)}
+              >
+                <strong>{election.title || "Election"}</strong>
+                <span>{String(election.electionSystem || "FPTP").toUpperCase()}</span>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
 
       <div className="stats-hero">
         <div className="stats-hero-header">
